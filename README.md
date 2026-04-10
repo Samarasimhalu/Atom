@@ -1,4 +1,4 @@
-# ATOM - Smart Automated Testing & Orchestration Mesh
+# ATOM - Automated Testing & Orchestration Mesh
 
 ![SAINT Logo](https://img.shields.io/badge/SAINT-v1.0.0-blue?style=for-the-badge&logo=robot)
 ![Enterprise Ready](https://img.shields.io/badge/Enterprise-Ready-green?style=for-the-badge)
@@ -327,5 +327,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 **ATOM v1.0.0** - Built with ❤️ for the future of testing
 
-*Smart AI for Integrated Next-gen Testing*
+*Automated Testing & Orchestration Mesh*
 
