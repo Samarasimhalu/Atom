@@ -1,10 +1,10 @@
-# SAINT - Smart AI for Integrated Next-gen Testing
+# ATOM - Smart Automated Testing & Orchestration Mesh
 
 ![SAINT Logo](https://img.shields.io/badge/SAINT-v1.0.0-blue?style=for-the-badge&logo=robot)
 ![Enterprise Ready](https://img.shields.io/badge/Enterprise-Ready-green?style=for-the-badge)
 ![AI Powered](https://img.shields.io/badge/AI-Powered-purple?style=for-the-badge)
 
-**SAINT** is an enterprise-level AI chat assistant for intelligent test generation, execution, and management. Built with modern technologies and designed for next-generation testing workflows.
+**ATOM** is an enterprise-level AI chat assistant for intelligent test generation, execution, and management. Built with modern technologies and designed for next-generation testing workflows.
 
 ## 🚀 Features
 
@@ -52,7 +52,7 @@
 ### 1. Clone and Install
 ```bash
 git clone <repository-url>
-cd saint-app
+cd atom-app
 npm install
 ```
 
@@ -252,7 +252,7 @@ CMD ["npm", "run", "dev"]
 
 ### Project Structure
 ```
-saint-app/
+atom-app/
 ├── src/
 │   ├── backend/          # Node.js backend
 │   │   ├── server.js     # Main server file
@@ -325,7 +325,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-**SAINT v1.0.0** - Built with ❤️ for the future of testing
+**ATOM v1.0.0** - Built with ❤️ for the future of testing
 
 *Smart AI for Integrated Next-gen Testing*
 
