@@ -1,6 +1,6 @@
 # ATOM - Automated Testing & Orchestration Mesh
 
-![SAINT Logo](https://img.shields.io/badge/SAINT-v1.0.0-blue?style=for-the-badge&logo=robot)
+![ATOM Logo](https://img.shields.io/badge/ATOM-v1.0.0-blue?style=for-the-badge&logo=robot)
 ![Enterprise Ready](https://img.shields.io/badge/Enterprise-Ready-green?style=for-the-badge)
 ![AI Powered](https://img.shields.io/badge/AI-Powered-purple?style=for-the-badge)
 
