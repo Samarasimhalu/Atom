@@ -1,5 +1,9 @@
 # ATOM - Automated Testing & Orchestration Mesh
 
+<div align="center">
+  <img src="assets/atom-logo.png" alt="ATOM Logo" width="200" height="200">
+</div>
+
 ![ATOM Logo](https://img.shields.io/badge/ATOM-v1.0.0-blue?style=for-the-badge&logo=robot)
 ![Enterprise Ready](https://img.shields.io/badge/Enterprise-Ready-green?style=for-the-badge)
 ![AI Powered](https://img.shields.io/badge/AI-Powered-purple?style=for-the-badge)
@@ -328,4 +332,3 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 **ATOM v1.0.0** - Built with ❤️ for the future of testing
 
 *Automated Testing & Orchestration Mesh*
-
