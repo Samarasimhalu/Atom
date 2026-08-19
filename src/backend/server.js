@@ -11,6 +11,15 @@ const AITestGenerator = require('./aiTestGenerator');
 const MCPExecutor = require('./mcpExecutor');
 const TestManager = require('./testManager');
 const StreamingService = require('./streamingService');
+const { Persistence } = require('./persistence');
+const RunQueue = require('./runQueue');
+const ObjectStorage = require('./objectStorage');
+const RunService = require('./runService');
+const PolicyEngine = require('./policyEngine');
+const ApprovalWorkflow = require('./approvalWorkflow');
+const EvaluationHarness = require('./evaluationHarness');
+const { normalizeGeneratedTest } = require('./testSpecification');
+const { verifyPayload } = require('./signedWebhook');
 const {
   createLogger,
   correlationIdMiddleware,
@@ -18,6 +27,7 @@ const {
   createRateLimiter,
   authenticate,
   requireTenant,
+  requirePermission,
   denyUnsafeExecution,
   verifyHs256Jwt
 } = require('./security');
@@ -47,7 +57,7 @@ app.use(cors({
     return callback(new Error('origin_not_allowed'));
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Correlation-Id', 'X-Tenant-Id', 'X-Dev-User'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key', 'X-Idempotency-Key', 'X-Correlation-Id', 'X-Tenant-Id', 'X-Project-Id', 'X-Dev-User'],
   credentials: true
 }));
 app.use(express.json({ limit: config.request.jsonLimit }));
@@ -63,6 +73,24 @@ const aiGenerator = new AITestGenerator(config);
 const mcpExecutor = new MCPExecutor(config);
 const testManager = new TestManager(config);
 const streamingService = new StreamingService(wss);
+const store = new Persistence(config, logger);
+const runQueue = new RunQueue(config, logger);
+const objectStorage = new ObjectStorage(config, logger);
+const policyEngine = new PolicyEngine(config);
+const approvalWorkflow = new ApprovalWorkflow(config, store, logger);
+const evaluationHarness = new EvaluationHarness(config, aiGenerator, policyEngine, logger);
+const runService = new RunService({ store, queue: runQueue, executor: mcpExecutor, streaming: streamingService, objectStorage, config, logger, policyEngine });
+let retentionTimer;
+if (require.main === module) {
+  retentionTimer = setInterval(async () => {
+    try {
+      const expired = await store.listExpiredArtifacts();
+      for (const artifact of expired) { await objectStorage.deleteObject(artifact.object_key || artifact.objectKey); await store.markArtifactDeleted(artifact.id); }
+      if (expired.length) logger.info('artifacts.retention.cleaned', { count: expired.length });
+    } catch (error) { logger.error('artifacts.retention.failed', { error: error.message }); }
+  }, 60 * 60 * 1000);
+  retentionTimer.unref();
+}
 
 // Artifacts are intentionally not served as public filesystem paths. They must be
 // delivered through an authorization-aware object-storage service in production.
@@ -101,7 +129,7 @@ app.post('/api/generate/test', createRateLimiter({ windowMs: config.rateLimit.wi
       timestamp: new Date().toISOString()
     });
 
-    const result = await aiGenerator.generateTest(prompt, testType, options);
+    const result = await aiGenerator.generateTest(prompt, testType, options, { tenantId: req.tenantId, correlationId: req.correlationId });
     
     streamingService.sendToChannel(`tenant-${req.tenantId}`, {
       type: 'generation-completed',
@@ -111,7 +139,10 @@ app.post('/api/generate/test', createRateLimiter({ windowMs: config.rateLimit.wi
       timestamp: new Date().toISOString()
     });
 
-    res.json(result);
+    const specification = normalizeGeneratedTest(result);
+    const policy = policyEngine.evaluate(specification, { tenantId: req.tenantId, userId: req.user.id });
+    await store.recordAudit({ tenantId: req.tenantId, actorId: req.user.id, action: 'ai.test_generated', resourceType: 'test', resourceId: result.id, metadata: { correlationId: req.correlationId, policy } });
+    res.json({ ...result, specification, policy });
   } catch (error) {
     logger.error('test.generation.failed', { correlationId: req.correlationId, tenantId: req.tenantId, error: error.message });
     
@@ -128,38 +159,85 @@ app.post('/api/generate/test', createRateLimiter({ windowMs: config.rateLimit.wi
 
 // MCP Test Execution Endpoints. Unsafe execution is denied unless an isolated
 // prebuilt worker image is explicitly configured and enabled.
-app.post('/api/execute/test', validationMiddleware(validateExecutionRequest), denyUnsafeExecution(config), async (req, res) => {
+app.post('/api/execute/test', requirePermission('runs:create'), validationMiddleware(validateExecutionRequest), denyUnsafeExecution(config), async (req, res) => {
   try {
     const { testData, sessionId } = req.validated;
-
-    // Start execution asynchronously
-    mcpExecutor.executeTest(testData, sessionId, streamingService)
-      .then(result => {
-        streamingService.broadcast({
-          type: 'execution-completed',
-          sessionId,
-          result,
-          timestamp: new Date().toISOString()
-        });
-      })
-      .catch(error => {
-        streamingService.broadcast({
-          type: 'execution-error',
-          sessionId,
-          error: error.message,
-          timestamp: new Date().toISOString()
-        });
-      });
-
-    res.json({ 
-      status: 'started',
-      sessionId,
-      message: 'Test execution started. Monitor via WebSocket for real-time updates.'
-    });
+    const specification = normalizeGeneratedTest(testData);
+    const policy = policyEngine.evaluate(specification, { tenantId: req.tenantId, userId: req.user.id });
+    if (!policy.allowed) return res.status(403).json({ error: 'policy_denied', reasons: policy.reasons, correlationId: req.correlationId });
+    if (policy.approvalRequired) {
+      const approval = req.get('x-approval-id') ? await approvalWorkflow.get(req.get('x-approval-id'), req.tenantId) : null;
+      if (!approval || approval.status !== 'approved') return res.status(409).json({ error: 'approval_required', correlationId: req.correlationId });
+    }
+    const idempotencyKey = req.get('idempotency-key') || req.get('x-idempotency-key');
+    if (!idempotencyKey || idempotencyKey.length > 200) return res.status(400).json({ error: 'idempotency_key_required', correlationId: req.correlationId });
+    const submission = await runService.submit({ tenantId: req.tenantId, userId: req.user.id, projectId: req.get('x-project-id') || 'default', testData, sessionId, idempotencyKey, correlationId: req.correlationId });
+    res.status(submission.replayed ? 200 : 202).json({ status: submission.run.state, run: submission.run, replayed: submission.replayed, sessionId: submission.run.session_id, correlationId: req.correlationId });
   } catch (error) {
     logger.error('test.execution.failed', { correlationId: req.correlationId, tenantId: req.tenantId, error: error.message });
-    res.status(500).json({ error: 'execution_failed', correlationId: req.correlationId });
+    const status = error.message.includes('quota') ? 429 : 500;
+    res.status(status).json({ error: error.message === 'tenant_run_quota_exceeded' ? error.message : 'execution_submission_failed', correlationId: req.correlationId });
   }
+});
+
+app.get('/api/runs', requirePermission('runs:read'), async (req, res) => {
+  res.json({ runs: await store.listRuns(req.tenantId, Math.min(Number(req.query.limit || 50), 200)) });
+});
+
+app.get('/api/runs/:id', requirePermission('runs:read'), async (req, res) => {
+  const run = await store.getRun(req.params.id, req.tenantId);
+  if (!run) return res.status(404).json({ error: 'run_not_found', correlationId: req.correlationId });
+  res.json(run);
+});
+
+app.get('/api/runs/:id/events', requirePermission('runs:read'), async (req, res) => {
+  const run = await store.getRun(req.params.id, req.tenantId);
+  if (!run) return res.status(404).json({ error: 'run_not_found', correlationId: req.correlationId });
+  res.json({ events: await runService.replay(req.params.id, req.tenantId, Number(req.query.after || 0)) });
+});
+
+app.post('/api/runs/:id/cancel', requirePermission('runs:cancel'), async (req, res) => {
+  const run = await runService.cancel(req.params.id, req.tenantId, 'user_requested');
+  if (!run) return res.status(404).json({ error: 'run_not_found', correlationId: req.correlationId });
+  res.json(run);
+});
+
+app.get('/api/audit', requirePermission('audit:read'), async (req, res) => {
+  res.json({ events: await store.listAudit(req.tenantId, Math.min(Number(req.query.limit || 100), 500)) });
+});
+
+app.get('/api/dashboard', requirePermission('dashboard:read'), async (req, res) => {
+  res.json(await store.getDashboard(req.tenantId));
+});
+
+app.post('/api/approvals', requirePermission('runs:approve'), async (req, res) => {
+  const run = await store.getRun(req.body.runId, req.tenantId);
+  if (!run) return res.status(404).json({ error: 'run_not_found', correlationId: req.correlationId });
+  const approval = await approvalWorkflow.request({ tenantId: req.tenantId, runId: run.id, requesterId: req.user.id, policy: req.body.policy || {} });
+  res.status(201).json(approval);
+});
+
+app.get('/api/approvals', requirePermission('runs:read'), async (req, res) => {
+  res.json({ approvals: await approvalWorkflow.list(req.tenantId) });
+});
+
+app.post('/api/approvals/:id/decision', requirePermission('runs:approve'), async (req, res) => {
+  const approval = await approvalWorkflow.decide(req.params.id, req.tenantId, req.user.id, req.body.decision, req.body.comment || '');
+  if (!approval) return res.status(404).json({ error: 'approval_not_found', correlationId: req.correlationId });
+  res.json(approval);
+});
+
+app.post('/api/evaluations/run', requirePermission('admin:ai'), async (req, res) => {
+  const dataset = req.body.dataset || await evaluationHarness.loadDataset(req.body.datasetPath);
+  const evaluation = await evaluationHarness.evaluate(dataset);
+  await store.recordAudit({ tenantId: req.tenantId, actorId: req.user.id, action: 'ai.evaluation_completed', resourceType: 'evaluation', metadata: evaluation });
+  res.status(evaluation.passed ? 200 : 422).json(evaluation);
+});
+
+app.post('/api/webhooks/verify', requirePermission('admin:ai'), (req, res) => {
+  const body = JSON.stringify(req.body.payload || {});
+  const valid = verifyPayload(body, req.get('x-atom-webhook-signature'), config.webhooks.signingSecret, req.get('x-atom-webhook-timestamp'));
+  res.json({ valid });
 });
 
 // Test Management Endpoints
@@ -231,13 +309,13 @@ app.get('/api/results/:sessionId', async (req, res) => {
 });
 
 // Analytics and Insights Endpoints
-app.get('/api/analytics/dashboard', async (req, res) => {
+app.get('/api/analytics/dashboard', requirePermission('dashboard:read'), async (req, res) => {
   try {
     const analytics = await testManager.getDashboardAnalytics();
-    res.json(analytics);
+    res.json({ ...analytics, runs: await store.getDashboard(req.tenantId) });
   } catch (error) {
-    console.error('Error fetching analytics:', error);
-    res.status(500).json({ error: error.message });
+    logger.error('analytics.failed', { correlationId: req.correlationId, error: error.message });
+    res.status(500).json({ error: 'analytics_failed', correlationId: req.correlationId });
   }
 });
 
@@ -259,12 +337,15 @@ wss.on('connection', (ws, req) => {
   }
   ws.tenantId = String(identity.tenant_id);
   ws.userId = String(identity.sub);
-  logger.info('websocket.connected', { userId: ws.userId, tenantId: ws.tenantId });
+  const connectionId = `${ws.userId}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+  ws.connectionId = connectionId;
+  streamingService.addConnection(ws, connectionId);
+  logger.info('websocket.connected', { userId: ws.userId, tenantId: ws.tenantId, connectionId });
   
   ws.on('message', (message) => {
     try {
       const data = JSON.parse(message);
-      streamingService.handleMessage(ws, data);
+      streamingService.handleMessage(ws, { ...data, connectionId: data.connectionId || connectionId });
     } catch (error) {
       console.error('WebSocket message error:', error);
       ws.send(JSON.stringify({
@@ -276,7 +357,7 @@ wss.on('connection', (ws, req) => {
 
   ws.on('close', () => {
     logger.info('websocket.closed', { userId: ws.userId, tenantId: ws.tenantId });
-    streamingService.removeConnection(ws);
+    streamingService.removeConnection(connectionId);
   });
 
   ws.on('error', (error) => {
@@ -301,6 +382,21 @@ app.use((error, req, res, next) => {
 });
 
 // 404 handler
+app.get('/api/artifacts/:id/download', requirePermission('artifacts:read'), async (req, res) => {
+  const artifact = await store.getArtifact(req.params.id, req.tenantId);
+  if (!artifact) return res.status(404).json({ error: 'artifact_not_found', correlationId: req.correlationId });
+  const url = await objectStorage.getSignedDownloadUrl(artifact.objectKey, 300);
+  res.json({ url, expiresIn: 300 });
+});
+
+app.get('/api/artifacts/local/:key(*)', requirePermission('artifacts:read'), async (req, res) => {
+  if (objectStorage.s3) return res.status(404).end();
+  const safeKey = objectStorage.safeKey(req.params.key);
+  const filePath = objectStorage.resolveLocalPath(safeKey);
+  if (!filePath || !fs.existsSync(filePath)) return res.status(404).end();
+  res.sendFile(path.resolve(filePath));
+});
+
 app.use('*', (req, res) => {
   res.status(404).json({
     error: 'Endpoint not found',
@@ -329,12 +425,12 @@ if (require.main === module) {
 if (require.main === module) {
   process.on('SIGTERM', () => {
     logger.info('server.shutdown.requested', { signal: 'SIGTERM' });
-    server.close(() => process.exit(0));
+    server.close(async () => { if (retentionTimer) clearInterval(retentionTimer); await runQueue.close(); await store.close(); process.exit(0); });
   });
 
   process.on('SIGINT', () => {
     logger.info('server.shutdown.requested', { signal: 'SIGINT' });
-    server.close(() => process.exit(0));
+    server.close(async () => { if (retentionTimer) clearInterval(retentionTimer); await runQueue.close(); await store.close(); process.exit(0); });
   });
 }
 

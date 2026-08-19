@@ -11,7 +11,12 @@
     "build": "npm run build:frontend",
     "build:frontend": "cd src/frontend && npm run build",
     "start": "npm run dev",
-    "lint:backend": "node --check src/backend/server.js && node --check src/backend/security.js && node --check src/backend/validation.js && node --check src/backend/mcpExecutor.js",
+    "lint:backend": "node --check src/backend/server.js && node --check src/backend/security.js && node --check src/backend/validation.js && node --check src/backend/mcpExecutor.js && node --check src/backend/persistence.js && node --check src/backend/runQueue.js && node --check src/backend/runService.js && node --check src/backend/objectStorage.js && node --check src/backend/aiGateway.js && node --check src/backend/testSpecification.js && node --check src/backend/policyEngine.js && node --check src/backend/approvalWorkflow.js && node --check src/backend/evaluationHarness.js && node --check src/backend/signedWebhook.js",
+    "infra:up": "docker compose -f infra/docker-compose.yml up -d",
+    "infra:down": "docker compose -f infra/docker-compose.yml down",
+    "db:migrate": "psql \"$DATABASE_URL\" -f infra/migrations/001_enterprise_foundation.sql",
+    "evaluate:ai": "node scripts/run-evaluation.js",
+    "backup:restore:smoke": "./scripts/backup-restore-smoke.sh",
     "test": "node --test tests/*.test.js"
   },
   "keywords": [
@@ -25,18 +30,22 @@
   "author": "SAINT Team",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "ws": "^8.14.2",
-    "uuid": "^9.0.1",
-    "fs-extra": "^11.1.1",
-    "openai": "^4.20.1",
-    "concurrently": "^8.2.2",
+    "@aws-sdk/client-s3": "^3.1113.0",
+    "@aws-sdk/s3-request-presigner": "^3.1113.0",
     "@playwright/test": "^1.40.0",
-    "multer": "^1.4.5-lts.1"
+    "bullmq": "^6.1.2",
+    "concurrently": "^8.2.2",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "fs-extra": "^11.1.1",
+    "ioredis": "^6.0.0",
+    "multer": "^1.4.5-lts.1",
+    "openai": "^4.20.1",
+    "pg": "^8.23.0",
+    "uuid": "^9.0.1",
+    "ws": "^8.14.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
   }
 }
-

@@ -1,0 +1,71 @@
+flowchart TB
+  subgraph Internet[Customer and operator boundary]
+    User[Customer browser / API client]
+    IdP[Enterprise IdP\nOIDC or SAML]
+    Webhook[Customer webhook receiver]
+  end
+
+  subgraph Edge[Production edge]
+    WAF[WAF / API Gateway\nTLS, request limits, correlation ID]
+    Ingress[Ingress / load balancer]
+  end
+
+  subgraph Control[Atom control plane - stateless, horizontally scalable]
+    API[Atom API service\nExpress routes]
+    Auth[Authentication + tenant context\nJWT claim mapping / RBAC]
+    Policy[Policy engine + approval workflow\nstructured test specification]
+    AIGateway[AI gateway\nmodel allowlist, budgets, redaction]
+    RunService[Run service\nidempotency + state machine]
+    EventAPI[Event replay API\nsequence-numbered events]
+    Dashboard[Operations dashboard\nrun health, audit, quotas]
+  end
+
+  subgraph Durable[Durable platform services]
+    PG[(Managed PostgreSQL\nruns, events, audit, approvals, artifacts, quotas)]
+    Redis[(Managed Redis\nBullMQ durable queue)]
+    S3[(Private object storage\nS3/MinIO, encryption, lifecycle)]
+    Backup[(Backup vault\nPITR + object versioning)]
+  end
+
+  subgraph Execution[Execution plane - isolated worker pool]
+    Worker[Hardened Playwright worker image\nnon-root, read-only root, no network, limits]
+    Target[Approved customer test target\nprivate allowlist / egress policy]
+  end
+
+  subgraph Assurance[Delivery and assurance]
+    CI[CI pipeline\ntests, lint, build, audit]
+    SBOM[SBOM + provenance\nCycloneDX, attestations]
+    Scan[Image and dependency scanning\nTrivy + dependency review]
+    Runbooks[Incident runbooks\nbackup/restore smoke test]
+  end
+
+  User -->|HTTPS / WebSocket| WAF --> Ingress --> API
+  IdP -->|claims| Auth
+  API --> Auth
+  Auth --> Policy
+  Policy --> AIGateway
+  AIGateway -->|approved provider call| Provider[Approved AI provider]
+  Policy --> RunService
+  RunService -->|transactional metadata| PG
+  RunService -->|enqueue stable run ID| Redis
+  Redis --> Worker
+  Worker -->|restricted execution| Target
+  Worker -->|results and artifacts| RunService
+  RunService --> S3
+  RunService --> EventAPI
+  EventAPI --> User
+  Dashboard --> PG
+  PG --> Backup
+  S3 --> Backup
+  RunService -->|HMAC signed terminal event| Webhook
+  CI --> SBOM --> Scan
+  CI -->|immutable worker image| Worker
+  Runbooks --> PG
+  Runbooks --> S3
+
+  classDef trust fill:#e8f0fe,stroke:#3b82f6,stroke-width:1px;
+  classDef durable fill:#ecfdf5,stroke:#10b981,stroke-width:1px;
+  classDef restricted fill:#fff7ed,stroke:#f97316,stroke-width:1px;
+  class Edge,Control trust;
+  class Durable durable;
+  class Execution restricted;

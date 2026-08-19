@@ -1,14 +1,15 @@
-const OpenAI = require('openai');
 const { v4: uuidv4 } = require('uuid');
+const AIGateway = require('./aiGateway');
 
 class AITestGenerator {
   constructor(config) {
     this.config = config;
-    this.openai = config.openaiApiKey ? new OpenAI({ apiKey: config.openaiApiKey }) : null;
+    this.gateway = new AIGateway(config);
+    this.openai = this.gateway.client;
     this.fallbackGenerator = new FallbackTestGenerator();
   }
 
-  async generateTest(prompt, testType = 'ui', options = {}) {
+  async generateTest(prompt, testType = 'ui', options = {}, context = {}) {
     const testId = uuidv4();
     const timestamp = new Date().toISOString();
 
@@ -19,7 +20,7 @@ class AITestGenerator {
 
       // Try OpenAI first, fallback if it fails
       try {
-        const result = await this.generateWithAI(prompt, testType, options);
+        const result = await this.generateWithAI(prompt, testType, options, context);
         testCode = result.code;
         summary = result.summary;
       } catch (error) {
@@ -54,26 +55,28 @@ class AITestGenerator {
     }
   }
 
-  async generateWithAI(prompt, testType, options) {
+  async generateWithAI(prompt, testType, options, context = {}) {
     if (!this.openai) throw new Error('ai_provider_not_configured');
     const systemPrompt = this.getSystemPrompt(testType);
     const userPrompt = this.getUserPrompt(prompt, testType, options);
 
-    const response = await this.openai.chat.completions.create({
-      model: 'gpt-4',
+    const response = await this.gateway.chatCompletion({
+      model: this.config.ai.generationModel,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
       temperature: 0.3,
-      max_tokens: 3000
+      maxTokens: 3000,
+      tenantId: context.tenantId,
+      correlationId: context.correlationId
     });
 
     const code = this.cleanCode(response.choices[0].message.content);
     
     // Generate summary
-    const summaryResponse = await this.openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+    const summaryResponse = await this.gateway.chatCompletion({
+      model: this.config.ai.summaryModel,
       messages: [
         { 
           role: 'system', 
@@ -85,7 +88,9 @@ class AITestGenerator {
         }
       ],
       temperature: 0.3,
-      max_tokens: 300
+      maxTokens: 300,
+      tenantId: context.tenantId,
+      correlationId: context.correlationId
     });
 
     return {

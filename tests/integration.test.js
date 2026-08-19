@@ -10,7 +10,7 @@ const { app } = require('../src/backend/server');
 function testToken() {
   const encode = value => Buffer.from(JSON.stringify(value)).toString('base64url');
   const header = encode({ alg: 'HS256', typ: 'JWT' });
-  const payload = encode({ sub: 'smoke-user', tenant_id: 'smoke-tenant', exp: Math.floor(Date.now() / 1000) + 60 });
+  const payload = encode({ sub: 'smoke-user', tenant_id: 'smoke-tenant', roles: ['developer'], exp: Math.floor(Date.now() / 1000) + 60 });
   const signature = crypto.createHmac('sha256', process.env.JWT_SECRET).update(`${header}.${payload}`).digest('base64url');
   return `${header}.${payload}.${signature}`;
 }

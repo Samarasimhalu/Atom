@@ -27,6 +27,7 @@ import {
   Rocket
 } from 'lucide-react';
 import './App.css';
+import EnterpriseDashboard from './components/EnterpriseDashboard.jsx';
 
 function App() {
   const [prompt, setPrompt] = useState('');
@@ -218,6 +219,7 @@ function App() {
       </header>
 
       <div className="container mx-auto px-6 py-8">
+        <EnterpriseDashboard />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Panel - Chat Interface */}
           <div className="lg:col-span-1">

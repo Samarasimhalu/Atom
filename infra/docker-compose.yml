@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: atom
+      POSTGRES_USER: atom
+      POSTGRES_PASSWORD: atom
+    ports:
+      - "5432:5432"
+    volumes:
+      - atom-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atom -d atom"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - atom-redis:/data
+    command: ["redis-server", "--appendonly", "yes"]
+
+  minio:
+    image: minio/minio:RELEASE.2025-02-18T16-25-55Z
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - atom-minio:/data
+    command: ["server", "/data", "--console-address", ":9001"]
+
+volumes:
+  atom-postgres:
+  atom-redis:
+  atom-minio:

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "ui-login",
+    "prompt": "Create a smoke test for the login form with valid and invalid credentials",
+    "testType": "ui",
+    "mustContain": ["login", "expect"]
+  },
+  {
+    "id": "api-health",
+    "prompt": "Create an API test for the health endpoint and assert a 200 response",
+    "testType": "api",
+    "mustContain": ["api", "expect"]
+  },
+  {
+    "id": "accessibility-home",
+    "prompt": "Check the home page for keyboard navigation and accessibility violations",
+    "testType": "ui",
+    "mustContain": ["expect"]
+  }
+]

@@ -7,6 +7,7 @@ class MCPExecutor {
   constructor(config) {
     this.config = config;
     this.activeExecutions = new Map();
+    this.processes = new Map();
     this.executionQueue = [];
     this.maxConcurrent = config.mcp.maxConcurrentTests;
   }
@@ -190,6 +191,7 @@ export default defineConfig({
         stdio: 'pipe',
         env: { PATH: process.env.PATH, CI: 'true' }
       });
+      this.processes.set(sessionId, child);
 
           let output = '';
           let errorOutput = '';
@@ -222,6 +224,7 @@ export default defineConfig({
           const timeout = setTimeout(() => child.kill('SIGKILL'), this.config.execution.hardTimeoutMs);
           child.on('close', (code) => {
             clearTimeout(timeout);
+            this.processes.delete(sessionId);
             const endTime = new Date();
             const duration = endTime - startTime;
 
@@ -266,6 +269,14 @@ export default defineConfig({
 
   /* Runtime dependency installation was intentionally removed. Worker images
      must be built and scanned in CI from a committed lockfile. */
+  cancelExecution(sessionId) {
+    const child = this.processes.get(sessionId);
+    if (!child) return false;
+    child.kill('SIGKILL');
+    this.processes.delete(sessionId);
+    return true;
+  }
+
   async installDependencies() {
     throw new Error('runtime_dependency_installation_disabled');
   }

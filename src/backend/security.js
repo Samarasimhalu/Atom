@@ -133,6 +133,25 @@ function requireTenant(req, res, next) {
   next();
 }
 
+const ROLE_PERMISSIONS = {
+  viewer: ['runs:read', 'artifacts:read', 'dashboard:read'],
+  developer: ['runs:read', 'runs:create', 'runs:cancel', 'artifacts:read', 'dashboard:read'],
+  approver: ['runs:read', 'runs:create', 'runs:cancel', 'runs:approve', 'artifacts:read', 'dashboard:read'],
+  admin: ['runs:read', 'runs:create', 'runs:cancel', 'runs:approve', 'artifacts:read', 'artifacts:delete', 'audit:read', 'dashboard:read', 'quota:manage', 'admin:ai'],
+  owner: ['*']
+};
+
+function hasPermission(roles = [], permission) {
+  return roles.some(role => ROLE_PERMISSIONS[role]?.includes('*') || ROLE_PERMISSIONS[role]?.includes(permission));
+}
+
+function requirePermission(permission) {
+  return (req, res, next) => {
+    if (!hasPermission(req.user?.roles || [], permission)) return res.status(403).json({ error: 'permission_denied', permission, correlationId: req.correlationId });
+    next();
+  };
+}
+
 function denyUnsafeExecution(config) {
   return (req, res, next) => {
     const code = req.body?.testData?.code;
@@ -157,6 +176,8 @@ module.exports = {
   createRateLimiter,
   authenticate,
   requireTenant,
+  requirePermission,
+  hasPermission,
   denyUnsafeExecution,
   verifyHs256Jwt
 };
