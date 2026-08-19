@@ -19,14 +19,28 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - name: Install frontend dependencies
+          cache-dependency-path: package-lock.json
+      - name: Verify committed dependency lockfiles
+        shell: bash
+        run: |
+          test -s package-lock.json || { echo "Missing root package-lock.json"; exit 1; }
+          test -s src/frontend/pnpm-lock.yaml || { echo "Missing frontend pnpm-lock.yaml"; exit 1; }
+      - name: Install backend dependencies
         run: npm ci
+        working-directory: .
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.4.1
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
         working-directory: src/frontend
       - run: npm run lint:backend
       - run: npm test
-      - run: npm run build
-      - run: npm audit --audit-level=high
+      - name: Build frontend
+        run: pnpm run build
+        working-directory: src/frontend
+      - run: npm audit --audit-level=high --package-lock-only
       - name: Secret scan
         uses: gitleaks/gitleaks-action@v2
         env:
