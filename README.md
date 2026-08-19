@@ -479,7 +479,7 @@ Use a feature branch, include tests for behavior changes, and run the local vali
 
 ## License
 
-This project is distributed under the MIT License; include the applicable license text with every source distribution.
+This project is distributed under the [Apache License 2.0](LICENSE). Include the complete `LICENSE` file with every source distribution and retain applicable third-party notices.
 
 ---
 
