@@ -2,11 +2,11 @@
 
 <div align="center">
   <img src="assets/atom-logo.png" alt="ATOM Logo" width="200" height="200">
+  <br/>
+  <img src="https://img.shields.io/badge/ATOM-v1.0.0-blue?style=for-the-badge&logo=robot" alt="ATOM Logo" />
+  <img src="https://img.shields.io/badge/Enterprise-Ready-green?style=for-the-badge" alt="Enterprise Ready" />
+  <img src="https://img.shields.io/badge/AI-Powered-purple?style=for-the-badge" alt="AI Powered" />
 </div>
-
-![ATOM Logo](https://img.shields.io/badge/ATOM-v1.0.0-blue?style=for-the-badge&logo=robot)
-![Enterprise Ready](https://img.shields.io/badge/Enterprise-Ready-green?style=for-the-badge)
-![AI Powered](https://img.shields.io/badge/AI-Powered-purple?style=for-the-badge)
 
 **ATOM** is an enterprise-level AI chat assistant for intelligent test generation, execution, and management. Built with modern technologies and designed for next-generation testing workflows.
 
