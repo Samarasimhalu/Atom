@@ -12,6 +12,9 @@ class MCPExecutor {
   }
 
   async executeTest(testData, sessionId, streamingService) {
+    if (!this.config.execution.enabled || this.config.execution.workerMode !== 'isolated-image' || !this.config.execution.workerImage) {
+      throw new Error('execution_disabled_or_worker_not_configured');
+    }
     try {
       // Add to queue if at capacity
       if (this.activeExecutions.size >= this.maxConcurrent) {
@@ -102,22 +105,14 @@ class MCPExecutor {
     const mcpConfigFile = path.join(executionDir, 'mcp.json');
     await fs.writeJson(mcpConfigFile, testData.mcpConfig, { spaces: 2 });
 
-    // Create package.json
-    const packageJson = {
-      name: `saint-test-${sessionId}`,
-      version: "1.0.0",
-      type: "module",
-      dependencies: {
-        "@playwright/test": "^1.40.0"
-      }
-    };
-    await fs.writeJson(path.join(executionDir, 'package.json'), packageJson, { spaces: 2 });
-
+    // The worker image already contains the pinned Playwright runtime. Never
+    // create a package manifest or install dependencies during a customer run.
+    await fs.ensureDir(path.join(executionDir, 'results'));
     return executionDir;
   }
 
   generatePlaywrightConfig(mcpConfig, sessionId) {
-    const outputDir = path.join(this.config.storage.results, sessionId);
+    const outputDir = `/results/${sessionId}`;
     
     return `import { defineConfig, devices } from '@playwright/test';
 
@@ -155,8 +150,6 @@ export default defineConfig({
     ['line']
   ],
 
-  globalSetup: require.resolve('./global-setup.js'),
-  globalTeardown: require.resolve('./global-teardown.js'),
 });`;
   }
 
@@ -175,22 +168,34 @@ export default defineConfig({
 
   async runTest(testData, sessionId, executionDir, streamingService) {
     return new Promise((resolve, reject) => {
-      // Install dependencies first
-      this.installDependencies(executionDir, sessionId, streamingService)
-        .then(() => {
-          // Run the actual test
-          const args = ['playwright', 'test', '--config', 'playwright.config.ts'];
-          const process = spawn('npx', args, {
-            cwd: executionDir,
-            stdio: 'pipe',
-            env: { ...process.env, CI: 'true' }
-          });
+      const resultRoot = path.resolve(this.config.storage.results);
+      const args = [
+        'run', '--rm',
+        '--network=none',
+        '--read-only',
+        '--cap-drop=ALL',
+        '--security-opt=no-new-privileges:true',
+        '--pids-limit=128',
+        '--memory=2g',
+        '--cpus=2',
+        '--tmpfs=/tmp:rw,noexec,nosuid,size=256m',
+        '-v', `${path.resolve(executionDir)}:/work:rw`,
+        '-v', `${resultRoot}:/results:rw`,
+        '-w', '/work',
+        this.config.execution.workerImage,
+        'test', '--config', 'playwright.config.ts'
+      ];
+      const child = spawn('docker', args, {
+        cwd: executionDir,
+        stdio: 'pipe',
+        env: { PATH: process.env.PATH, CI: 'true' }
+      });
 
           let output = '';
           let errorOutput = '';
           const startTime = new Date();
 
-          process.stdout.on('data', (data) => {
+          child.stdout.on('data', (data) => {
             const chunk = data.toString();
             output += chunk;
             
@@ -202,7 +207,7 @@ export default defineConfig({
             });
           });
 
-          process.stderr.on('data', (data) => {
+          child.stderr.on('data', (data) => {
             const chunk = data.toString();
             errorOutput += chunk;
             
@@ -214,7 +219,9 @@ export default defineConfig({
             });
           });
 
-          process.on('close', (code) => {
+          const timeout = setTimeout(() => child.kill('SIGKILL'), this.config.execution.hardTimeoutMs);
+          child.on('close', (code) => {
+            clearTimeout(timeout);
             const endTime = new Date();
             const duration = endTime - startTime;
 
@@ -244,7 +251,7 @@ export default defineConfig({
             resolve(result);
           });
 
-          process.on('error', (error) => {
+          child.on('error', (error) => {
             streamingService.broadcast({
               type: 'test-execution-error',
               sessionId,
@@ -254,67 +261,13 @@ export default defineConfig({
 
             reject(error);
           });
-        })
-        .catch(reject);
     });
   }
 
-  async installDependencies(executionDir, sessionId, streamingService) {
-    return new Promise((resolve, reject) => {
-      streamingService.broadcast({
-        type: 'dependency-installation-started',
-        sessionId,
-        timestamp: new Date().toISOString()
-      });
-
-      const process = spawn('npm', ['install'], {
-        cwd: executionDir,
-        stdio: 'pipe'
-      });
-
-      let output = '';
-
-      process.stdout.on('data', (data) => {
-        const chunk = data.toString();
-        output += chunk;
-        
-        streamingService.broadcast({
-          type: 'dependency-output',
-          sessionId,
-          data: chunk,
-          timestamp: new Date().toISOString()
-        });
-      });
-
-      process.stderr.on('data', (data) => {
-        const chunk = data.toString();
-        output += chunk;
-        
-        streamingService.broadcast({
-          type: 'dependency-error',
-          sessionId,
-          data: chunk,
-          timestamp: new Date().toISOString()
-        });
-      });
-
-      process.on('close', (code) => {
-        if (code === 0) {
-          streamingService.broadcast({
-            type: 'dependency-installation-completed',
-            sessionId,
-            timestamp: new Date().toISOString()
-          });
-          resolve();
-        } else {
-          reject(new Error(`Dependency installation failed with exit code ${code}`));
-        }
-      });
-
-      process.on('error', (error) => {
-        reject(error);
-      });
-    });
+  /* Runtime dependency installation was intentionally removed. Worker images
+     must be built and scanned in CI from a committed lockfile. */
+  async installDependencies() {
+    throw new Error('runtime_dependency_installation_disabled');
   }
 
   async processResults(result, sessionId, executionDir) {

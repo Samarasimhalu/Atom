@@ -4,9 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 class AITestGenerator {
   constructor(config) {
     this.config = config;
-    this.openai = new OpenAI({
-      apiKey: config.openaiApiKey
-    });
+    this.openai = config.openaiApiKey ? new OpenAI({ apiKey: config.openaiApiKey }) : null;
     this.fallbackGenerator = new FallbackTestGenerator();
   }
 
@@ -57,6 +55,7 @@ class AITestGenerator {
   }
 
   async generateWithAI(prompt, testType, options) {
+    if (!this.openai) throw new Error('ai_provider_not_configured');
     const systemPrompt = this.getSystemPrompt(testType);
     const userPrompt = this.getUserPrompt(prompt, testType, options);
 

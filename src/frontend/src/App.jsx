@@ -38,11 +38,18 @@ function App() {
   const [wsConnected, setWsConnected] = useState(false);
   const [activeTab, setActiveTab] = useState('code');
   const wsRef = useRef(null);
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+  const wsUrl = import.meta.env.VITE_WS_URL || apiBaseUrl.replace(/^http/, 'ws');
+  const requestHeaders = {
+    'Content-Type': 'application/json',
+    ...(import.meta.env.VITE_DEV_USER ? { 'X-Dev-User': import.meta.env.VITE_DEV_USER } : {}),
+    ...(import.meta.env.VITE_DEV_TENANT_ID ? { 'X-Tenant-Id': import.meta.env.VITE_DEV_TENANT_ID } : {})
+  };
 
   // WebSocket connection
   useEffect(() => {
     const connectWebSocket = () => {
-      const ws = new WebSocket('ws://localhost:3001');
+      const ws = new WebSocket(wsUrl);
       
       ws.onopen = () => {
         console.log('WebSocket connected');
@@ -75,7 +82,7 @@ function App() {
         wsRef.current.close();
       }
     };
-  }, []);
+  }, [wsUrl]);
 
   const handleWebSocketMessage = (data) => {
     switch (data.type) {
@@ -119,11 +126,9 @@ function App() {
     if (!prompt.trim()) return;
 
     try {
-      const response = await fetch('http://localhost:3001/api/generate/test', {
+      const response = await fetch(`${apiBaseUrl}/api/generate/test`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: requestHeaders,
         body: JSON.stringify({
           prompt: prompt.trim(),
           testType: 'ui',
@@ -147,11 +152,9 @@ function App() {
     try {
       const sessionId = `session-${Date.now()}`;
       
-      const response = await fetch('http://localhost:3001/api/execute/test', {
+      const response = await fetch(`${apiBaseUrl}/api/execute/test`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: requestHeaders,
         body: JSON.stringify({
           testData: currentTest,
           sessionId

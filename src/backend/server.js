@@ -11,21 +11,47 @@ const AITestGenerator = require('./aiTestGenerator');
 const MCPExecutor = require('./mcpExecutor');
 const TestManager = require('./testManager');
 const StreamingService = require('./streamingService');
+const {
+  createLogger,
+  correlationIdMiddleware,
+  securityHeaders,
+  createRateLimiter,
+  authenticate,
+  requireTenant,
+  denyUnsafeExecution,
+  verifyHs256Jwt
+} = require('./security');
+const {
+  validationMiddleware,
+  validateGenerationRequest,
+  validateExecutionRequest,
+  validateSavedTest
+} = require('./validation');
 
+const logger = createLogger();
 const app = express();
 const server = http.createServer(app);
 
 // Initialize WebSocket server
 const wss = new WebSocket.Server({ server });
 
-// Middleware
+// Security and request middleware. Authentication is required for all API routes
+// except health; development mode only accepts the explicit local identity headers.
+app.disable('x-powered-by');
+app.set('trust proxy', 1);
+app.use(correlationIdMiddleware(logger));
+app.use(securityHeaders);
 app.use(cors({
-  origin: '*',
+  origin: (origin, callback) => {
+    if (!origin || config.auth.allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('origin_not_allowed'));
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Correlation-Id', 'X-Tenant-Id', 'X-Dev-User'],
+  credentials: true
 }));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: config.request.jsonLimit }));
+app.use(express.urlencoded({ extended: false, limit: config.request.jsonLimit }));
 
 // Ensure data directories exist
 Object.values(config.storage).forEach(dir => {
@@ -38,11 +64,8 @@ const mcpExecutor = new MCPExecutor(config);
 const testManager = new TestManager(config);
 const streamingService = new StreamingService(wss);
 
-// Static file serving
-app.use('/screenshots', express.static(config.storage.screenshots));
-app.use('/videos', express.static(config.storage.videos));
-app.use('/traces', express.static(config.storage.traces));
-app.use('/results', express.static(config.storage.results));
+// Artifacts are intentionally not served as public filesystem paths. They must be
+// delivered through an authorization-aware object-storage service in production.
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -59,52 +82,55 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// AI Test Generation Endpoints
-app.post('/api/generate/test', async (req, res) => {
-  try {
-    const { prompt, testType = 'ui', options = {} } = req.body;
-    
-    if (!prompt) {
-      return res.status(400).json({ error: 'Prompt is required' });
-    }
+// Authentication, tenant context, and bounded API request rates.
+app.use('/api', authenticate(config), requireTenant, createRateLimiter(config.rateLimit));
 
-    streamingService.broadcast({
+// Health check is intentionally public and contains no tenant data.
+
+// AI Test Generation Endpoints
+app.post('/api/generate/test', createRateLimiter({ windowMs: config.rateLimit.windowMs, max: config.rateLimit.generationMax }), validationMiddleware(validateGenerationRequest), async (req, res) => {
+  try {
+    const { prompt, testType, options } = req.validated;
+
+    streamingService.sendToChannel(`tenant-${req.tenantId}`, {
       type: 'generation-started',
       prompt,
       testType,
+      tenantId: req.tenantId,
+      correlationId: req.correlationId,
       timestamp: new Date().toISOString()
     });
 
     const result = await aiGenerator.generateTest(prompt, testType, options);
     
-    streamingService.broadcast({
+    streamingService.sendToChannel(`tenant-${req.tenantId}`, {
       type: 'generation-completed',
       result,
+      tenantId: req.tenantId,
+      correlationId: req.correlationId,
       timestamp: new Date().toISOString()
     });
 
     res.json(result);
   } catch (error) {
-    console.error('Test generation error:', error);
+    logger.error('test.generation.failed', { correlationId: req.correlationId, tenantId: req.tenantId, error: error.message });
     
-    streamingService.broadcast({
+    streamingService.sendToChannel(`tenant-${req.tenantId}`, {
       type: 'generation-error',
-      error: error.message,
+      error: 'generation_failed',
+      correlationId: req.correlationId,
       timestamp: new Date().toISOString()
     });
 
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'generation_failed', correlationId: req.correlationId });
   }
 });
 
-// MCP Test Execution Endpoints
-app.post('/api/execute/test', async (req, res) => {
+// MCP Test Execution Endpoints. Unsafe execution is denied unless an isolated
+// prebuilt worker image is explicitly configured and enabled.
+app.post('/api/execute/test', validationMiddleware(validateExecutionRequest), denyUnsafeExecution(config), async (req, res) => {
   try {
-    const { testData, sessionId } = req.body;
-    
-    if (!testData || !sessionId) {
-      return res.status(400).json({ error: 'Test data and session ID are required' });
-    }
+    const { testData, sessionId } = req.validated;
 
     // Start execution asynchronously
     mcpExecutor.executeTest(testData, sessionId, streamingService)
@@ -131,8 +157,8 @@ app.post('/api/execute/test', async (req, res) => {
       message: 'Test execution started. Monitor via WebSocket for real-time updates.'
     });
   } catch (error) {
-    console.error('Test execution error:', error);
-    res.status(500).json({ error: error.message });
+    logger.error('test.execution.failed', { correlationId: req.correlationId, tenantId: req.tenantId, error: error.message });
+    res.status(500).json({ error: 'execution_failed', correlationId: req.correlationId });
   }
 });
 
@@ -160,9 +186,9 @@ app.get('/api/tests/:id', async (req, res) => {
   }
 });
 
-app.post('/api/tests', async (req, res) => {
+app.post('/api/tests', validationMiddleware(validateSavedTest), async (req, res) => {
   try {
-    const test = await testManager.saveTest(req.body);
+    const test = await testManager.saveTest({ ...req.validated, tenantId: req.tenantId, ownerId: req.user.id });
     res.json(test);
   } catch (error) {
     console.error('Error saving test:', error);
@@ -217,7 +243,23 @@ app.get('/api/analytics/dashboard', async (req, res) => {
 
 // WebSocket connection handling
 wss.on('connection', (ws, req) => {
-  console.log('New WebSocket connection established');
+  const requestUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+  const bearer = req.headers.authorization?.startsWith('Bearer ')
+    ? req.headers.authorization.slice(7)
+    : requestUrl.searchParams.get('access_token');
+  const claims = verifyHs256Jwt(bearer, config.auth.jwtSecret);
+  const devClaims = config.auth.mode === 'development'
+    ? { sub: req.headers['x-dev-user'] || 'local-developer', tenant_id: req.headers['x-tenant-id'] || 'local-tenant' }
+    : null;
+  const identity = claims || devClaims;
+  if (!identity?.sub || !identity?.tenant_id) {
+    logger.warn('websocket.authentication.failed', { correlationId: req.headers['x-correlation-id'] });
+    ws.close(1008, 'authentication_required');
+    return;
+  }
+  ws.tenantId = String(identity.tenant_id);
+  ws.userId = String(identity.sub);
+  logger.info('websocket.connected', { userId: ws.userId, tenantId: ws.tenantId });
   
   ws.on('message', (message) => {
     try {
@@ -233,12 +275,12 @@ wss.on('connection', (ws, req) => {
   });
 
   ws.on('close', () => {
-    console.log('WebSocket connection closed');
+    logger.info('websocket.closed', { userId: ws.userId, tenantId: ws.tenantId });
     streamingService.removeConnection(ws);
   });
 
   ws.on('error', (error) => {
-    console.error('WebSocket error:', error);
+    logger.error('websocket.error', { userId: ws.userId, tenantId: ws.tenantId, error: error.message });
   });
 
   // Send welcome message
@@ -249,13 +291,12 @@ wss.on('connection', (ws, req) => {
   }));
 });
 
-// Error handling middleware
+// Error handling middleware. Do not expose raw internal messages to clients.
 app.use((error, req, res, next) => {
-  console.error('Server error:', error);
-  res.status(500).json({
-    error: 'Internal server error',
-    message: error.message,
-    timestamp: new Date().toISOString()
+  logger.error('request.failed', { correlationId: req.correlationId, error: error.message, stack: error.stack });
+  res.status(error.message === 'origin_not_allowed' ? 403 : 500).json({
+    error: error.message === 'origin_not_allowed' ? 'origin_not_allowed' : 'internal_server_error',
+    correlationId: req.correlationId
   });
 });
 
@@ -269,31 +310,33 @@ app.use('*', (req, res) => {
   });
 });
 
-// Start server
-server.listen(config.port, '0.0.0.0', () => {
-  console.log(`🚀 SAINT Backend Server running on port ${config.port}`);
-  console.log(`📡 WebSocket server running on ws://localhost:${config.port}`);
-  console.log(`🌍 Environment: ${config.environment}`);
-  console.log(`🧪 Max concurrent tests: ${config.mcp.maxConcurrentTests}`);
-  console.log(`📁 Data directory: ${path.resolve('./data')}`);
-});
+// Start server only when executed directly. Tests and embedding applications
+// can import the configured Express app without opening a listener.
+if (require.main === module) {
+  server.listen(config.port, '0.0.0.0', () => {
+    logger.info('server.started', {
+      port: config.port,
+      environment: config.environment,
+      maxConcurrentTests: config.mcp.maxConcurrentTests,
+      executionEnabled: config.execution.enabled,
+      workerMode: config.execution.workerMode,
+      workerImageConfigured: Boolean(config.execution.workerImage)
+    });
+  });
+}
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  server.close(() => {
-    console.log('Server closed');
-    process.exit(0);
+if (require.main === module) {
+  process.on('SIGTERM', () => {
+    logger.info('server.shutdown.requested', { signal: 'SIGTERM' });
+    server.close(() => process.exit(0));
   });
-});
 
-process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully');
-  server.close(() => {
-    console.log('Server closed');
-    process.exit(0);
+  process.on('SIGINT', () => {
+    logger.info('server.shutdown.requested', { signal: 'SIGINT' });
+    server.close(() => process.exit(0));
   });
-});
+}
 
-module.exports = app;
+module.exports = { app, server, wss };
 
