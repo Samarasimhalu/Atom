@@ -16,9 +16,10 @@ RUN useradd --create-home --uid 10001 atom-worker \
     && chown -R atom-worker:atom-worker /opt/atom-worker /work /results
 
 WORKDIR /opt/atom-worker
-COPY package.json package-lock.json ./
+COPY workers/playwright/package.json workers/playwright/package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts \
-    && npm cache clean --force
+    && npm cache clean --force \
+    && rm -rf /usr/lib/node_modules/npm /usr/lib/node_modules/corepack /usr/lib/node_modules/yarn
 
 ENV PATH=/opt/atom-worker/node_modules/.bin:$PATH
 WORKDIR /work
