@@ -1,0 +1,76 @@
+version: 1
+methodology: likelihood-impact-1-to-5
+review_frequency: quarterly
+risks:
+  - id: R-001
+    title: Production identity bypass or stale access
+    likelihood: 3
+    impact: 5
+    score: 15
+    treatment: mitigate
+    owner: iam-platform
+    controls: [CC6.1, CC6.2]
+    due: 2026-09-15
+  - id: R-002
+    title: Unsafe browser execution reaches a sensitive target
+    likelihood: 3
+    impact: 5
+    score: 15
+    treatment: mitigate
+    owner: platform-security
+    controls: [CC5.1, PI1.1]
+    due: 2026-09-30
+  - id: R-003
+    title: Database, queue, or object storage outage causes data loss or prolonged downtime
+    likelihood: 3
+    impact: 5
+    score: 15
+    treatment: mitigate
+    owner: platform-sre
+    controls: [CC9.1, A1.1]
+    due: 2026-10-01
+  - id: R-004
+    title: AI provider receives secrets or regulated data
+    likelihood: 3
+    impact: 5
+    score: 15
+    treatment: mitigate
+    owner: ai-governance
+    controls: [C1.1, P1.1, PI1.1]
+    due: 2026-10-15
+  - id: R-005
+    title: Vulnerable or unproven worker artifact reaches production
+    likelihood: 3
+    impact: 5
+    score: 15
+    treatment: mitigate
+    owner: devsecops
+    controls: [CC7.1, CC8.1]
+    due: 2026-09-30
+  - id: R-006
+    title: Control failure is not detected or evidence is not retained
+    likelihood: 3
+    impact: 4
+    score: 12
+    treatment: mitigate
+    owner: security-operations
+    controls: [CC4.1, CC7.1]
+    due: 2026-10-01
+  - id: R-007
+    title: Customer data remains after retention or deletion request
+    likelihood: 3
+    impact: 5
+    score: 15
+    treatment: mitigate
+    owner: privacy-legal
+    controls: [C1.1, P1.1, CC9.1]
+    due: 2026-10-15
+  - id: R-008
+    title: Unreviewed code or configuration change bypasses controls
+    likelihood: 3
+    impact: 5
+    score: 15
+    treatment: mitigate
+    owner: devsecops
+    controls: [CC5.1, CC8.1]
+    due: 2026-09-15

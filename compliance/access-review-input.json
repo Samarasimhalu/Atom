@@ -1,0 +1,14 @@
+{
+  "period": "2026-Q3",
+  "reviewer": "security-reviewer@example.com",
+  "records": [
+    {
+      "userId": "user-example",
+      "tenantId": "tenant-example",
+      "roles": ["developer"],
+      "privileged": false,
+      "decision": "approved",
+      "ticket": "IAM-0000"
+    }
+  ]
+}

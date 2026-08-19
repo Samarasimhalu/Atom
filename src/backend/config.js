@@ -18,7 +18,15 @@ module.exports = {
     mode: process.env.AUTH_MODE || (environment === 'development' ? 'development' : 'strict'),
     jwtSecret: process.env.JWT_SECRET || '',
     allowedOrigins: (process.env.ALLOWED_ORIGINS || 'http://localhost:5173').split(',').map(value => value.trim()).filter(Boolean),
-    oidc: { issuer: process.env.OIDC_ISSUER || '', clientId: process.env.OIDC_CLIENT_ID || '', audience: process.env.OIDC_AUDIENCE || '' },
+    oidc: {
+      issuer: process.env.OIDC_ISSUER || '',
+      clientId: process.env.OIDC_CLIENT_ID || '',
+      audience: process.env.OIDC_AUDIENCE || '',
+      jwksUri: process.env.OIDC_JWKS_URI || '',
+      groupClaim: process.env.OIDC_GROUP_CLAIM || 'groups',
+      roleMappingJson: process.env.OIDC_ROLE_MAPPING_JSON || '{}',
+      requiredMfaClaim: process.env.OIDC_REQUIRED_MFA_CLAIM || ''
+    },
     saml: { entryPoint: process.env.SAML_ENTRY_POINT || '', issuer: process.env.SAML_ISSUER || '', cert: process.env.SAML_CERT || '' }
   },
   rateLimit: {
@@ -30,16 +38,20 @@ module.exports = {
     jsonLimit: process.env.JSON_LIMIT || '2mb'
   },
   persistence: {
+    mode: process.env.PERSISTENCE_MODE || (environment === 'production' ? 'postgres' : 'local'),
     databaseUrl: process.env.DATABASE_URL || '',
-    poolMax: Number(process.env.DATABASE_POOL_MAX || 10)
+    poolMax: Number(process.env.DATABASE_POOL_MAX || 10),
+    statementTimeoutMs: Number(process.env.DATABASE_STATEMENT_TIMEOUT_MS || 30000)
   },
   queue: {
+    mode: process.env.QUEUE_MODE || (environment === 'production' ? 'bullmq' : 'local'),
     name: process.env.QUEUE_NAME || 'atom-runs',
     redisUrl: process.env.REDIS_URL || '',
     concurrency: Number(process.env.QUEUE_CONCURRENCY || 2),
     attempts: Number(process.env.QUEUE_ATTEMPTS || 2)
   },
   objectStorage: {
+    mode: process.env.OBJECT_STORAGE_MODE || (environment === 'production' ? 's3' : 'local'),
     endpoint: process.env.S3_ENDPOINT || '',
     region: process.env.S3_REGION || 'us-east-1',
     bucket: process.env.S3_BUCKET || 'atom-artifacts',

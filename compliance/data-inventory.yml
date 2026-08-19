@@ -1,0 +1,44 @@
+version: 1
+owner: privacy-legal
+review_frequency: annual-and-on-change
+records:
+  - name: prompts-and-generated-code
+    system: atom-api-and-ai-gateway
+    data_subjects: customer-users-and-test-targets
+    classification: confidential
+    purpose: generate-and-execute-authorized-tests
+    retention_days: 30
+    subprocessors: [approved-ai-provider]
+    deletion_path: tenant-data-deletion-job
+  - name: run-metadata-and-events
+    system: postgres
+    data_subjects: customer-users
+    classification: confidential
+    purpose: execution-accountability-and-replay
+    retention_days: 365
+    subprocessors: [managed-postgresql]
+    deletion_path: tenant-data-deletion-job
+  - name: artifacts
+    system: private-object-storage
+    data_subjects: customer-users-and-test-targets
+    classification: confidential
+    purpose: test-evidence-and-debugging
+    retention_days: 30
+    subprocessors: [managed-object-storage]
+    deletion_path: object-retention-cleanup-and-tenant-delete
+  - name: identity-claims
+    system: idp-and-api-audit
+    data_subjects: customer-users
+    classification: personal
+    purpose: authentication-authorization-and-audit
+    retention_days: 365
+    subprocessors: [enterprise-idp]
+    deletion_path: legal-retention-and-audit-review
+  - name: operational-logs
+    system: centralized-observability
+    data_subjects: customer-users
+    classification: internal
+    purpose: security-availability-and-support
+    retention_days: 90
+    subprocessors: [managed-observability]
+    deletion_path: log-lifecycle-policy

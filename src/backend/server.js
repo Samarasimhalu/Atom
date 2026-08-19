@@ -4,6 +4,7 @@ const http = require('http');
 const WebSocket = require('ws');
 const fs = require('fs-extra');
 const path = require('path');
+const crypto = require('crypto');
 const config = require('./config');
 
 // Import core modules
@@ -18,6 +19,7 @@ const RunService = require('./runService');
 const PolicyEngine = require('./policyEngine');
 const ApprovalWorkflow = require('./approvalWorkflow');
 const EvaluationHarness = require('./evaluationHarness');
+const DataLifecycleService = require('./dataLifecycle');
 const { normalizeGeneratedTest } = require('./testSpecification');
 const { verifyPayload } = require('./signedWebhook');
 const {
@@ -29,6 +31,7 @@ const {
   requireTenant,
   requirePermission,
   denyUnsafeExecution,
+  validateProductionConfig,
   verifyHs256Jwt
 } = require('./security');
 const {
@@ -39,6 +42,11 @@ const {
 } = require('./validation');
 
 const logger = createLogger();
+const productionConfigErrors = validateProductionConfig(config);
+if (productionConfigErrors.length) {
+  logger.error('startup.production_config_invalid', { errors: productionConfigErrors });
+  if (require.main === module) process.exit(1);
+}
 const app = express();
 const server = http.createServer(app);
 
@@ -79,6 +87,7 @@ const objectStorage = new ObjectStorage(config, logger);
 const policyEngine = new PolicyEngine(config);
 const approvalWorkflow = new ApprovalWorkflow(config, store, logger);
 const evaluationHarness = new EvaluationHarness(config, aiGenerator, policyEngine, logger);
+const dataLifecycle = new DataLifecycleService({ store, objectStorage, config, logger });
 const runService = new RunService({ store, queue: runQueue, executor: mcpExecutor, streaming: streamingService, objectStorage, config, logger, policyEngine });
 let retentionTimer;
 if (require.main === module) {
@@ -96,6 +105,17 @@ if (require.main === module) {
 // delivered through an authorization-aware object-storage service in production.
 
 // Health check endpoint
+app.get('/api/readyz', async (req, res) => {
+  const checks = {
+    persistence: Boolean(config.persistence.mode === 'postgres' ? config.persistence.databaseUrl : true),
+    queue: Boolean(config.queue.mode === 'bullmq' ? config.queue.redisUrl : true),
+    objectStorage: Boolean(config.objectStorage.mode === 's3' ? config.objectStorage.endpoint && config.objectStorage.bucket : true),
+    productionConfig: productionConfigErrors.length === 0
+  };
+  const ready = Object.values(checks).every(Boolean);
+  res.status(ready ? 200 : 503).json({ status: ready ? 'ready' : 'not_ready', checks, correlationId: req.correlationId });
+});
+
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'healthy',
@@ -204,6 +224,41 @@ app.post('/api/runs/:id/cancel', requirePermission('runs:cancel'), async (req, r
 
 app.get('/api/audit', requirePermission('audit:read'), async (req, res) => {
   res.json({ events: await store.listAudit(req.tenantId, Math.min(Number(req.query.limit || 100), 500)) });
+});
+
+app.get('/api/admin/data/export', requirePermission('admin:privacy'), async (req, res) => {
+  const exportRecord = await dataLifecycle.exportTenant(req.tenantId, req.user.id);
+  res.json(exportRecord);
+});
+
+app.post('/api/admin/data/delete', requirePermission('admin:privacy'), async (req, res) => {
+  if (!req.body?.confirm || req.body.confirm !== req.tenantId) return res.status(400).json({ error: 'tenant_confirmation_required', correlationId: req.correlationId });
+  const result = await dataLifecycle.deleteTenant(req.tenantId, req.user.id, req.body.reason || 'administrative_request');
+  res.json(result);
+});
+
+app.get('/api/admin/runtime-attestation', requirePermission('admin:runtime'), (req, res) => {
+  const configurationChecksum = crypto.createHash('sha256').update(JSON.stringify({
+    environment: config.environment,
+    authMode: config.auth.mode,
+    persistenceMode: config.persistence.mode,
+    queueMode: config.queue.mode,
+    objectStorageMode: config.objectStorage.mode,
+    workerImage: config.execution.workerImage,
+    policy: config.policy,
+    modelAllowlist: config.ai.allowedModels
+  })).digest('hex');
+  res.json({
+    commitSha: process.env.GIT_COMMIT_SHA || 'unconfigured',
+    apiImageDigest: process.env.API_IMAGE_DIGEST || 'unconfigured',
+    workerImageDigest: config.execution.workerImage,
+    migrationVersion: process.env.MIGRATION_VERSION || 'unconfigured',
+    configurationChecksum,
+    policyVersion: process.env.POLICY_VERSION || 'unconfigured',
+    modelAllowlist: config.ai.allowedModels,
+    productionConfigValid: productionConfigErrors.length === 0,
+    correlationId: req.correlationId
+  });
 });
 
 app.get('/api/dashboard', requirePermission('dashboard:read'), async (req, res) => {

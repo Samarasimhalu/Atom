@@ -6,7 +6,8 @@ class RunQueue {
     this.config = config;
     this.logger = logger;
     this.queueName = config.queue.name;
-    this.connection = config.queue.redisUrl ? new IORedis(config.queue.redisUrl, { maxRetriesPerRequest: null }) : null;
+    this.connection = config.queue.redisUrl ? new IORedis(config.queue.redisUrl, { maxRetriesPerRequest: null, enableReadyCheck: true, tls: config.environment === 'production' ? {} : undefined }) : null;
+    if (config.environment === 'production' && config.queue.mode !== 'local' && !this.connection) throw new Error('durable_queue_required');
     this.queue = this.connection ? new Queue(this.queueName, { connection: this.connection }) : null;
     this.worker = null;
     this.localJobs = new Map();

@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
+const { OidcVerifier, mapGroupsToRoles } = require('./identityProvider');
 
 function timingSafeEqualString(left, right) {
   const a = Buffer.from(String(left));
@@ -107,24 +108,30 @@ function createRateLimiter({ windowMs = 60_000, max = 120 } = {}) {
 }
 
 function authenticate(config) {
-  return (req, res, next) => {
-    const authMode = config.auth.mode;
-    const authHeader = req.get('authorization');
-    const bearer = authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-    let claims = verifyHs256Jwt(bearer, config.auth.jwtSecret);
+  const oidcVerifier = config.auth.mode === 'oidc' ? new OidcVerifier(config) : null;
+  return async (req, res, next) => {
+    try {
+      const authMode = config.auth.mode;
+      const authHeader = req.get('authorization');
+      const bearer = authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+      let claims = authMode === 'oidc' ? await oidcVerifier.verify(bearer) : verifyHs256Jwt(bearer, config.auth.jwtSecret);
+      if (authMode === 'oidc') claims = mapGroupsToRoles(claims, config.auth.oidc);
 
-    if (!claims && authMode === 'development') {
-      const devUser = req.get('x-dev-user') || 'local-developer';
-      const devTenant = req.get('x-tenant-id') || 'local-tenant';
-      claims = { sub: devUser, tenant_id: devTenant, roles: ['developer'] };
-    }
+      if (!claims && authMode === 'development') {
+        const devUser = req.get('x-dev-user') || 'local-developer';
+        const devTenant = req.get('x-tenant-id') || 'local-tenant';
+        claims = { sub: devUser, tenant_id: devTenant, roles: ['developer'] };
+      }
 
-    if (!claims || !claims.sub || !claims.tenant_id) {
-      return res.status(401).json({ error: 'authentication_required', correlationId: req.correlationId });
+      if (!claims || !claims.sub || !claims.tenant_id || (authMode === 'oidc' && (!Array.isArray(claims.roles) || claims.roles.length === 0))) {
+        return res.status(401).json({ error: 'authentication_required', correlationId: req.correlationId });
+      }
+      req.user = { id: String(claims.sub), roles: Array.isArray(claims.roles) ? claims.roles : [] };
+      req.tenantId = String(claims.tenant_id);
+      next();
+    } catch (error) {
+      return res.status(401).json({ error: 'authentication_failed', reason: error.message, correlationId: req.correlationId });
     }
-    req.user = { id: String(claims.sub), roles: Array.isArray(claims.roles) ? claims.roles : [] };
-    req.tenantId = String(claims.tenant_id);
-    next();
   };
 }
 
@@ -137,7 +144,7 @@ const ROLE_PERMISSIONS = {
   viewer: ['runs:read', 'artifacts:read', 'dashboard:read'],
   developer: ['runs:read', 'runs:create', 'runs:cancel', 'artifacts:read', 'dashboard:read'],
   approver: ['runs:read', 'runs:create', 'runs:cancel', 'runs:approve', 'artifacts:read', 'dashboard:read'],
-  admin: ['runs:read', 'runs:create', 'runs:cancel', 'runs:approve', 'artifacts:read', 'artifacts:delete', 'audit:read', 'dashboard:read', 'quota:manage', 'admin:ai'],
+  admin: ['runs:read', 'runs:create', 'runs:cancel', 'runs:approve', 'artifacts:read', 'artifacts:delete', 'audit:read', 'dashboard:read', 'quota:manage', 'admin:ai', 'admin:runtime', 'admin:privacy'],
   owner: ['*']
 };
 
@@ -150,6 +157,23 @@ function requirePermission(permission) {
     if (!hasPermission(req.user?.roles || [], permission)) return res.status(403).json({ error: 'permission_denied', permission, correlationId: req.correlationId });
     next();
   };
+}
+
+function validateProductionConfig(config) {
+  if (config.environment !== 'production') return [];
+  const errors = [];
+  const placeholder = value => !value || /replace-with|change-me|example\.com|localhost/.test(String(value));
+  if (!['oidc', 'saml'].includes(config.auth.mode)) errors.push('production_auth_mode_must_be_oidc_or_saml');
+  if (config.auth.mode === 'oidc' && (placeholder(config.auth.oidc.issuer) || placeholder(config.auth.oidc.audience) || placeholder(config.auth.oidc.jwksUri))) errors.push('oidc_provider_not_configured');
+  if (placeholder(config.auth.jwtSecret)) errors.push('jwt_secret_not_configured');
+  if (config.auth.allowedOrigins.some(origin => /localhost|127\.0\.0\.1|\*/.test(origin))) errors.push('insecure_cors_origin');
+  if (config.persistence.mode !== 'postgres' || !config.persistence.databaseUrl) errors.push('postgres_persistence_required');
+  if (config.queue.mode !== 'bullmq' || !config.queue.redisUrl) errors.push('durable_queue_required');
+  if (config.objectStorage.mode !== 's3' || !config.objectStorage.endpoint || !config.objectStorage.bucket || !config.objectStorage.accessKeyId || !config.objectStorage.secretAccessKey) errors.push('private_object_storage_required');
+  if (!config.execution.workerImage || !/@sha256:[a-f0-9]{64}$/.test(config.execution.workerImage)) errors.push('immutable_worker_digest_required');
+  if (!config.execution.enabled) errors.push('execution_must_be_explicitly_enabled');
+  if (!config.webhooks.signingSecret) errors.push('webhook_signing_secret_required');
+  return errors;
 }
 
 function denyUnsafeExecution(config) {
@@ -179,6 +203,7 @@ module.exports = {
   requirePermission,
   hasPermission,
   denyUnsafeExecution,
+  validateProductionConfig,
   verifyHs256Jwt
 };
 

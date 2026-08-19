@@ -1,0 +1,12 @@
+{
+  "commitSha": "replace-with-commit-sha",
+  "apiImageDigest": "registry.example.com/atom-api@sha256:replace-with-64-hex-digest",
+  "workerImageDigest": "registry.example.com/atom-worker@sha256:replace-with-64-hex-digest",
+  "sbomDigest": "sha256:replace-with-sbom-digest",
+  "migrationVersion": "001_enterprise_foundation",
+  "configurationChecksum": "replace-with-runtime-config-sha256",
+  "policyVersion": "policy-1.0",
+  "modelAllowlist": ["gpt-4"],
+  "releaseApprover": "security@example.com",
+  "approvedAt": "2026-09-01T12:00:00Z"
+}

@@ -27,6 +27,13 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm audit --audit-level=high
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Validate release manifest when supplied
+        if: ${{ hashFiles('release-manifest.json') != '' }}
+        run: npm run verify:release
       - name: Run AI evaluation harness
         run: npm run evaluate:ai
         env:

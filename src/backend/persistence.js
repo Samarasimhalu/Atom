@@ -47,7 +47,8 @@ class Persistence {
   constructor(config, logger = console) {
     this.config = config;
     this.logger = logger;
-    this.pool = config.persistence.databaseUrl ? new Pool({ connectionString: config.persistence.databaseUrl, max: config.persistence.poolMax }) : null;
+    this.pool = config.persistence.databaseUrl ? new Pool({ connectionString: config.persistence.databaseUrl, max: config.persistence.poolMax, statement_timeout: config.persistence.statementTimeoutMs, ssl: config.environment === 'production' ? { rejectUnauthorized: true } : undefined }) : null;
+    if (config.environment === 'production' && config.persistence.mode !== 'local' && !this.pool) throw new Error('postgres_persistence_required');
     this.filePath = path.join(config.storage.results, 'enterprise-store.json');
     this.memory = { runs: new Map(), events: new Map(), audit: [], artifacts: new Map(), quotas: new Map(), idempotency: new Map() };
     this.ready = this.initialize();
@@ -168,6 +169,33 @@ class Persistence {
     await this.ready; const artifact = { id: input.id || uuidv4(), ...input, created_at: new Date().toISOString() };
     if (this.pool) { const result = await this.pool.query('INSERT INTO atom_artifacts (id,tenant_id,run_id,object_key,content_type,size_bytes,retention_until) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *', [artifact.id, artifact.tenantId, artifact.runId, artifact.objectKey, artifact.contentType, artifact.sizeBytes || 0, artifact.retentionUntil || null]); return result.rows[0]; }
     this.memory.artifacts.set(artifact.id, artifact); await this.flush(); return artifact;
+  }
+
+  async listTenantArtifacts(tenantId) {
+    await this.ready;
+    if (this.pool) { const result = await this.pool.query('SELECT * FROM atom_artifacts WHERE tenant_id=$1 AND deleted_at IS NULL ORDER BY created_at ASC', [tenantId]); return result.rows; }
+    return [...this.memory.artifacts.values()].filter(artifact => artifact.tenantId === tenantId && !artifact.deleted_at);
+  }
+
+  async deleteTenantData(tenantId) {
+    await this.ready;
+    if (this.pool) {
+      const client = await this.pool.connect();
+      try {
+        await client.query('BEGIN');
+        const result = await client.query('DELETE FROM atom_runs WHERE tenant_id=$1', [tenantId]);
+        await client.query('DELETE FROM atom_audit_events WHERE tenant_id=$1', [tenantId]);
+        await client.query('DELETE FROM atom_quota_usage WHERE tenant_id=$1', [tenantId]);
+        await client.query('COMMIT');
+        return { runsDeleted: result.rowCount };
+      } catch (error) { await client.query('ROLLBACK'); throw error; } finally { client.release(); }
+    }
+    const runsDeleted = [...this.memory.runs.values()].filter(run => run.tenantId === tenantId).length;
+    for (const [id, run] of this.memory.runs) if (run.tenantId === tenantId) { this.memory.runs.delete(id); this.memory.events.delete(id); }
+    this.memory.audit = this.memory.audit.filter(event => event.tenantId !== tenantId);
+    for (const [key, quota] of this.memory.quotas) if (quota.tenantId === tenantId) this.memory.quotas.delete(key);
+    await this.flush();
+    return { runsDeleted };
   }
 
   async getArtifact(id, tenantId) {

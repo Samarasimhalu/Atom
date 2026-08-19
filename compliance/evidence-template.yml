@@ -1,0 +1,17 @@
+control_id: CC6.1
+period_start: 2026-09-01
+period_end: 2026-09-30
+owner: owner@example.com
+system: atom-production
+environment: production
+artifact_type: access-review
+source_url: https://evidence.example.com/atom/cc6.1/2026-09
+source_commit: fe0b5254
+created_at: 2026-10-01T12:00:00Z
+reviewer: reviewer@example.com
+reviewed_at: 2026-10-05T12:00:00Z
+review_result: pass
+exception_ids: []
+retention_until: 2033-10-05
+integrity_sha256: replace-with-sha256
+notes: replace-with-control-operation-summary

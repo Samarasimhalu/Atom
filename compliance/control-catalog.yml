@@ -1,0 +1,59 @@
+version: 1
+owner: security-compliance
+review_frequency: quarterly
+controls:
+  - id: CC1.1
+    objective: Establish approved security governance and accountability.
+    owner: security-compliance
+    frequency: annual-and-on-change
+    evidence: [approved-policies, role-matrix, management-minutes]
+  - id: CC3.1
+    objective: Identify, score, treat, and review risks affecting Atom.
+    owner: security-compliance
+    frequency: quarterly
+    evidence: [risk-register, treatment-tickets, risk-acceptances]
+  - id: CC6.1
+    objective: Authenticate users and enforce tenant-scoped least privilege.
+    owner: iam-platform
+    frequency: continuous
+    evidence: [idp-config, auth-tests, access-reviews, role-change-audit]
+  - id: CC6.2
+    objective: Provision, modify, review, and revoke logical access.
+    owner: iam-platform
+    frequency: quarterly-and-on-change
+    evidence: [joiner-mover-leaver-tickets, access-review, break-glass-log]
+  - id: CC7.1
+    objective: Detect, triage, and resolve security and availability events.
+    owner: security-operations
+    frequency: continuous
+    evidence: [alert-tickets, on-call-roster, incident-reviews]
+  - id: CC8.1
+    objective: Authorize, test, approve, and trace production changes.
+    owner: devsecops
+    frequency: every-change
+    evidence: [pull-request,-ci-results, release-manifest, deployment-approval]
+  - id: CC9.1
+    objective: Mitigate vendor, recovery, and capacity risks.
+    owner: platform-sre
+    frequency: monthly-and-quarterly
+    evidence: [backup-report, restore-test, vendor-review, capacity-report]
+  - id: A1.1
+    objective: Maintain service availability within approved SLOs.
+    owner: platform-sre
+    frequency: monthly
+    evidence: [slo-report, incident-report, failover-test]
+  - id: PI1.1
+    objective: Ensure test generation and execution is valid, authorized, and complete.
+    owner: product-engineering
+    frequency: every-release
+    evidence: [evaluation-result, policy-decision, reconciliation-report]
+  - id: C1.1
+    objective: Protect confidential customer content and artifacts.
+    owner: platform-security
+    frequency: continuous
+    evidence: [storage-config, access-test, key-rotation, artifact-audit]
+  - id: P1.1
+    objective: Process customer data according to documented purpose and retention.
+    owner: privacy-legal
+    frequency: annual-and-on-change
+    evidence: [data-inventory,-retention-report, deletion-report, dpa]

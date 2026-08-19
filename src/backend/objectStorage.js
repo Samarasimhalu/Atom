@@ -8,6 +8,7 @@ class ObjectStorage {
   constructor(config, logger = console) {
     this.config = config;
     this.logger = logger;
+    if (config.environment === 'production' && config.objectStorage.mode !== 'local' && (!config.objectStorage.endpoint || !config.objectStorage.accessKeyId || !config.objectStorage.secretAccessKey)) throw new Error('private_object_storage_required');
     this.s3 = config.objectStorage.endpoint || config.objectStorage.accessKeyId ? new S3Client({
       region: config.objectStorage.region,
       endpoint: config.objectStorage.endpoint || undefined,
