@@ -1,0 +1,163 @@
+name: SOC 2 PR Security Regression
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: soc2-pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+  PNPM_VERSION: '10.4.1'
+  AUTH_MODE: strict
+  NODE_ENV: test
+  EXECUTION_ENABLED: 'false'
+  EVAL_MINIMUM_SCORE: '0.85'
+
+jobs:
+  soc2-regression:
+    name: SOC 2 regression and application security
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Verify committed dependency lockfiles
+        shell: bash
+        run: |
+          test -s package.json || { echo "Missing root package.json in the checked-out revision"; exit 1; }
+          test -s package-lock.json || { echo "Missing root package-lock.json. Commit this lockfile with the workflow before rerunning CI."; exit 1; }
+          test -s src/frontend/package.json || { echo "Missing frontend package manifest"; exit 1; }
+          test -s src/frontend/pnpm-lock.yaml || { echo "Missing frontend pnpm lockfile. Commit this lockfile with the workflow before rerunning CI."; exit 1; }
+
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: .
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: src/frontend
+
+      - name: Backend syntax and lint gate
+        run: npm run lint:backend
+
+      - name: Unit and integration security regression tests
+        run: npm test
+
+      - name: AI policy and evaluation gate
+        run: npm run evaluate:ai
+
+      - name: Non-destructive penetration-testing simulation
+        run: npm run security:pentest:smoke
+
+      - name: Frontend lint
+        run: pnpm run lint
+        working-directory: src/frontend
+
+      - name: Frontend production build
+        run: pnpm run build
+        working-directory: src/frontend
+
+      - name: Dependency audit
+        run: npm audit --audit-level=high --package-lock-only
+
+      - name: Frontend dependency audit
+        run: pnpm audit --audit-level high
+        working-directory: src/frontend
+
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: cyclonedx-json
+          output-file: atom-sbom.cdx.json
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: atom-soc2-sbom-${{ github.sha }}
+          path: atom-sbom.cdx.json
+          retention-days: 30
+
+      - name: Dependency review
+        if: github.event_name == 'pull_request'
+        uses: actions/dependency-review-action@v4
+
+      - name: Shell security script syntax
+        run: bash -n scripts/backup-restore-smoke.sh scripts/object-storage-restore-smoke.sh
+
+  worker-image:
+    name: Hardened worker image scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build worker image with provenance and SBOM
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: workers/playwright/Dockerfile
+          load: true
+          tags: atom-playwright-worker:pr-${{ github.sha }}
+          provenance: true
+          sbom: true
+
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: atom-playwright-worker:pr-${{ github.sha }}
+          format: table
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+
+      - name: Dockle container hardening scan
+        uses: goodwithtech/dockle-action@main
+        with:
+          image: atom-playwright-worker:pr-${{ github.sha }}
+          failure-threshold: fatal
+          exit-code: '1'
+
+  attest:
+    name: PR evidence summary
+    needs: [soc2-regression, worker-image]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce security jobs passed
+        if: needs.soc2-regression.result != 'success' || needs.worker-image.result != 'success'
+        run: |
+          echo "SOC 2 security regression failed"
+          exit 1
+      - name: Publish passed gate summary
+        run: |
+          echo "SOC 2 regression, dependency/security checks, SBOM, and worker-image scans passed for $GITHUB_SHA"

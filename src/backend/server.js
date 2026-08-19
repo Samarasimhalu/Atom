@@ -446,10 +446,15 @@ app.get('/api/artifacts/:id/download', requirePermission('artifacts:read'), asyn
 
 app.get('/api/artifacts/local/:key(*)', requirePermission('artifacts:read'), async (req, res) => {
   if (objectStorage.s3) return res.status(404).end();
-  const safeKey = objectStorage.safeKey(req.params.key);
-  const filePath = objectStorage.resolveLocalPath(safeKey);
-  if (!filePath || !fs.existsSync(filePath)) return res.status(404).end();
-  res.sendFile(path.resolve(filePath));
+  try {
+    const safeKey = objectStorage.safeKey(req.params.key);
+    const filePath = objectStorage.resolveLocalPath(safeKey);
+    if (!filePath || !fs.existsSync(filePath)) return res.status(404).end();
+    return res.sendFile(path.resolve(filePath));
+  } catch (error) {
+    if (error.message === 'invalid_object_key') return res.status(400).json({ error: 'invalid_artifact_key', correlationId: req.correlationId });
+    throw error;
+  }
 });
 
 app.use('*', (req, res) => {
