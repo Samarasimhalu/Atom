@@ -161,7 +161,7 @@ Production configuration attestation, database/Redis/storage settings, image-att
 1. Extend `scripts/backup-restore-smoke.sh` to verify scheduled backup metadata, PostgreSQL row counts/checksums, migration version, audit/run/event relationships, and object-storage manifests.
 2. Add `scripts/object-storage-restore-smoke.sh` to restore a sampled artifact set into an isolated bucket and verify checksums, tenant prefixes, retention metadata, and signed-download behavior.
 3. Configure encrypted daily backups, point-in-time recovery, cross-zone/cross-region copy as required, Redis recovery policy, and object versioning.
-4. Add `docs/DR_PLAN.md` with service dependencies, RTO/RPO, roles, escalation, decision points, communications, and validation steps.
+4. Add `docs/operations/DR_PLAN.md` with service dependencies, RTO/RPO, roles, escalation, decision points, communications, and validation steps.
 5. Run a quarterly restore exercise and an annual disaster-recovery exercise. Record elapsed recovery time, recovered point, missing data, issues, and corrective actions.
 6. Add alerts for missed backups, stale backup age, restore-test failure, object-versioning disablement, and recovery budget breach.
 
@@ -281,7 +281,7 @@ No invalid state transition is possible. A duplicate or delayed queue/webhook ev
 
 **Implementation steps**
 
-1. Convert `runbooks/INCIDENT_RUNBOOKS.md` into versioned runbooks with severity, owner, trigger, containment, evidence preservation, customer communication, recovery, and closure criteria.
+1. Convert `docs/runbooks/INCIDENT_RUNBOOKS.md` into versioned runbooks with severity, owner, trigger, containment, evidence preservation, customer communication, recovery, and closure criteria.
 2. Add incident templates for unsafe execution, credential compromise, AI provider breach/outage, queue corruption, data exposure, ransomware/backup failure, and privacy request failure.
 3. Run quarterly tabletop exercises and at least one technical exercise for worker compromise or database recovery.
 4. Require post-incident review within five business days with root cause, blast radius, timeline, corrective actions, regression test, and risk-register update.

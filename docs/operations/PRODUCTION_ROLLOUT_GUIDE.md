@@ -7,7 +7,7 @@
 
 Atom should be deployed as a stateless control plane plus an isolated execution plane. The control plane authenticates requests, derives tenant context, validates structured test specifications, applies policy, records audit evidence, submits idempotent durable jobs, and exposes replayable run events. The execution plane runs only an immutable, scanned worker image and must not share the API process filesystem, credentials, or unrestricted network access.
 
-The recommended production topology is shown in [`ATOM_DEPLOYMENT_ARCHITECTURE.mmd`](./ATOM_DEPLOYMENT_ARCHITECTURE.mmd). The deployment must treat PostgreSQL, Redis, and object storage as independent durable services with backups, monitoring, and tested restoration procedures.
+The recommended production topology is the separated control-plane and execution-plane model described above. The deployment must treat PostgreSQL, Redis, and object storage as independent durable services with backups, monitoring, and tested restoration procedures.
 
 ## 2. Required production services
 

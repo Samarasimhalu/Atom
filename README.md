@@ -1,5 +1,17 @@
 # Atom
 
+<p align="center">
+  <img src="assets/atom-logo.png" alt="Atom logo" width="180" height="180">
+</p>
+
+<p align="center">
+  <a href="https://github.com/itismohan/Atom/actions/workflows/ci.yml?query=branch%3Amain"><img src="https://github.com/itismohan/Atom/actions/workflows/ci.yml/badge.svg?branch=main" alt="Continuous integration status"></a>
+  <img src="https://img.shields.io/badge/Playwright_worker-1.62.1-2EAD33?logo=playwright&logoColor=white" alt="Playwright worker version 1.62.1">
+  <img src="https://img.shields.io/badge/identity-OIDC%20%2B%20RBAC-4051B5" alt="OIDC and role-based access control">
+  <img src="https://img.shields.io/badge/worker-CVE%20scanned-0E8A16" alt="Worker image CVE scanned">
+  <img src="https://img.shields.io/badge/tenant-isolated-6F42C1" alt="Tenant-isolated architecture">
+</p>
+
 **Atom** is an AI-assisted Playwright testing platform designed for controlled test generation, approval-gated execution, and tenant-aware artifact handling. It combines a React interface with an Express API, a governed AI gateway, and an isolated Playwright worker image.
 
 > **Security posture:** Atom treats generated test code as untrusted input. Test execution is disabled by default and is permitted only when a prebuilt isolated worker image is configured explicitly.
@@ -18,7 +30,7 @@
 - [CI/CD security gates](#cicd-security-gates)
 - [Production deployment](#production-deployment)
 - [Troubleshooting](#troubleshooting)
-- [Documentation](#documentation)
+- [Documentation index](#documentation-index)
 
 ## What Atom provides
 
@@ -407,18 +419,32 @@ The worker image scan uses [Trivy](https://github.com/aquasecurity/trivy), which
 | SBOM attestation returns `Resource not accessible by integration` | The workflow needs `attestations: write`, `artifact-metadata: write`, and `id-token: write` permissions. |
 | Docker build returns exit code 100 during `apt-get upgrade` | Do not add a distribution-wide upgrade to the worker Dockerfile. Refresh the pinned base image instead and let Trivy enforce current CVE policy. |
 
+## Documentation index
+
+The complete documentation library is organized under [`docs/`](docs/README.md). The following table links to every maintained Markdown document in that directory.
+
+| Area | Document | Purpose |
+|---|---|---|
+| Documentation | [`docs/README.md`](docs/README.md) | Categorized documentation landing page. |
+| Architecture | [`docs/architecture/ATOM_ENTERPRISE_ARCHITECTURE_REVIEW.md`](docs/architecture/ATOM_ENTERPRISE_ARCHITECTURE_REVIEW.md) | Historical enterprise architecture assessment and identified control gaps. |
+| Architecture | [`docs/architecture/ENTERPRISE_FOUNDATION.md`](docs/architecture/ENTERPRISE_FOUNDATION.md) | Overview of the enterprise run lifecycle, governance, local infrastructure, and operational endpoints. |
+| Security | [`docs/security/SECURITY.md`](docs/security/SECURITY.md) | Security overview covering isolation, AI governance, access, and recovery. |
+| Security | [`docs/security/ATOM_SECURITY_WHITEPAPER.md`](docs/security/ATOM_SECURITY_WHITEPAPER.md) | Customer-facing security architecture whitepaper. |
+| Compliance | [`docs/compliance/POLICIES.md`](docs/compliance/POLICIES.md) | Security and compliance policy set. |
+| Compliance | [`docs/compliance/SECURITY_OPERATIONS_TEMPLATES.md`](docs/compliance/SECURITY_OPERATIONS_TEMPLATES.md) | Templates for vulnerability exceptions, vendor management, and incident exercises. |
+| Compliance | [`docs/compliance/SOC2_READINESS_AUDIT.md`](docs/compliance/SOC2_READINESS_AUDIT.md) | Engineering SOC 2 readiness assessment and limitations. |
+| Compliance | [`docs/compliance/SOC2_P0_P1_REMEDIATION_BACKLOG.md`](docs/compliance/SOC2_P0_P1_REMEDIATION_BACKLOG.md) | P0/P1 compliance remediation work plan and evidence expectations. |
+| Compliance | [`docs/compliance/SOC2_SECURITY_VALIDATION_REPORT.md`](docs/compliance/SOC2_SECURITY_VALIDATION_REPORT.md) | Security simulation and CI validation evidence. |
+| Compliance | [`docs/compliance/SOC2_CI_SECURITY_REGRESSION_TEST_SUMMARY.md`](docs/compliance/SOC2_CI_SECURITY_REGRESSION_TEST_SUMMARY.md) | Pull-request security regression-gate summary. |
+| Operations | [`docs/operations/PRODUCTION_ROLLOUT_GUIDE.md`](docs/operations/PRODUCTION_ROLLOUT_GUIDE.md) | Production deployment, rollout, rollback, and operational readiness guide. |
+| Operations | [`docs/operations/DR_PLAN.md`](docs/operations/DR_PLAN.md) | Disaster recovery activation, recovery, and evidence plan. |
+| Operations | [`docs/operations/OBSERVABILITY.md`](docs/operations/OBSERVABILITY.md) | Production observability contract and signal expectations. |
+| Runbooks | [`docs/runbooks/INCIDENT_RUNBOOKS.md`](docs/runbooks/INCIDENT_RUNBOOKS.md) | Incident response procedures for security, execution, queue, AI, and recovery events. |
+| Legal | [`docs/legal/ATOM_ENTERPRISE_SLA_DRAFT.md`](docs/legal/ATOM_ENTERPRISE_SLA_DRAFT.md) | Enterprise SLA working draft for legal review. |
+
 ## Production deployment
 
-Review and complete the operational materials before a production launch:
-
-| Document | Purpose |
-|---|---|
-| [`PRODUCTION_ROLLOUT_GUIDE.md`](PRODUCTION_ROLLOUT_GUIDE.md) | Deployment phases, operational readiness, rollback, monitoring, and launch procedure. |
-| [`ATOM_SECURITY_WHITEPAPER.md`](ATOM_SECURITY_WHITEPAPER.md) | Customer-facing summary of architecture and security controls. |
-| [`ATOM_ENTERPRISE_SLA_DRAFT.md`](ATOM_ENTERPRISE_SLA_DRAFT.md) | Enterprise service-level commitments and support terms. |
-| [`SOC2_P0_P1_REMEDIATION_BACKLOG.md`](SOC2_P0_P1_REMEDIATION_BACKLOG.md) | Remaining compliance hardening tasks and owners. |
-| [`SOC2_SECURITY_VALIDATION_REPORT.md`](SOC2_SECURITY_VALIDATION_REPORT.md) | Completed validation evidence, findings, and limitations. |
-| [`SOC2_CI_SECURITY_REGRESSION_TEST_SUMMARY.md`](SOC2_CI_SECURITY_REGRESSION_TEST_SUMMARY.md) | Mapping of CI gates to control objectives and failure conditions. |
+Begin with the [production rollout guide](docs/operations/PRODUCTION_ROLLOUT_GUIDE.md), then complete the associated security, compliance, resilience, and legal materials before launch.
 
 ## Troubleshooting
 
@@ -453,7 +479,7 @@ Use a feature branch, include tests for behavior changes, and run the local vali
 
 ## License
 
-This project is licensed under the MIT License. See [`LICENSE`](LICENSE) when present in the repository.
+This project is distributed under the MIT License; include the applicable license text with every source distribution.
 
 ---
 

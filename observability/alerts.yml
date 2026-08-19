@@ -6,40 +6,40 @@ alerts:
     signal: rate(api_authentication_failed_total[5m]) > 5
     severity: high
     owner: iam-platform
-    runbook: runbooks/INCIDENT_RUNBOOKS.md#credential-or-authentication-incident
+    runbook: docs/runbooks/INCIDENT_RUNBOOKS.md#credential-or-authentication-incident
   - id: ATOM-AUDIT-001
     name: audit-write-failure
     signal: rate(audit_write_failures_total[5m]) > 0
     severity: critical
     owner: security-operations
-    runbook: runbooks/INCIDENT_RUNBOOKS.md#execution-compromise
+    runbook: docs/runbooks/INCIDENT_RUNBOOKS.md#audit-log-integrity-failure
   - id: ATOM-QUEUE-001
     name: queue-age-breach
     signal: atom_queue_oldest_job_age_seconds > 300
     severity: high
     owner: platform-sre
-    runbook: runbooks/INCIDENT_RUNBOOKS.md#queue-backlog-or-worker-starvation
+    runbook: docs/runbooks/INCIDENT_RUNBOOKS.md#queue-backlog-or-worker-starvation
   - id: ATOM-WORKER-001
     name: worker-start-failure
     signal: rate(atom_worker_start_failures_total[10m]) / rate(atom_worker_starts_total[10m]) > 0.02
     severity: high
     owner: platform-sre
-    runbook: runbooks/INCIDENT_RUNBOOKS.md#execution-compromise-or-unsafe-worker
+    runbook: docs/runbooks/INCIDENT_RUNBOOKS.md#execution-compromise-or-unsafe-worker
   - id: ATOM-BACKUP-001
     name: backup-age-breach
     signal: time() - atom_last_successful_backup_timestamp > 86400
     severity: critical
     owner: platform-sre
-    runbook: docs/DR_PLAN.md
+    runbook: docs/operations/DR_PLAN.md
   - id: ATOM-ARTIFACT-001
     name: artifact-storage-error
     signal: rate(atom_object_storage_errors_total[5m]) > 0
     severity: high
     owner: platform-sre
-    runbook: runbooks/INCIDENT_RUNBOOKS.md#database-or-object-storage-recovery
+    runbook: docs/runbooks/INCIDENT_RUNBOOKS.md#database-or-object-storage-recovery
   - id: ATOM-AI-001
     name: ai-budget-or-provider-failure
     signal: rate(atom_ai_provider_errors_total[5m]) > 0 or atom_ai_budget_remaining < 0.1
     severity: medium
     owner: ai-governance
-    runbook: runbooks/INCIDENT_RUNBOOKS.md#ai-provider-incident
+    runbook: docs/runbooks/INCIDENT_RUNBOOKS.md#ai-provider-incident

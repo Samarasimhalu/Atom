@@ -43,7 +43,7 @@ The assessment separates **design evidence** from **operating evidence**. Source
 | `src/backend/runService.js` and `runQueue.js` | State machine, idempotency, queue dispatch, cancellation, replayable events | Redis/BullMQ production behavior and failure recovery are not demonstrated |
 | `workers/playwright/Dockerfile` and executor | Non-root worker image, read-only root, no network, limits, runtime-install denial | Image digest, registry policy, vulnerability results, egress allowlist, and production runtime evidence are absent |
 | `.github/workflows/ci.yml` | Tests, audit, SBOM, provenance, dependency review, image scan intent | Workflow execution, branch protection, artifact retention, failure triage, and exception process are not evidenced |
-| `SECURITY.md`, rollout guide, runbooks | Customer communication and operational intent | Documentation is not proof of implemented or operating controls |
+| `docs/security/SECURITY.md`, rollout guide, runbooks | Customer communication and operational intent | Documentation is not proof of implemented or operating controls |
 | Tests and evaluation harness | Unit/integration coverage for selected boundaries and deterministic evaluation | Coverage is narrow; no production integration, restore, IdP, queue failover, alert, or security-incident exercise |
 
 ## Trust Services Criteria mapping
@@ -58,7 +58,7 @@ The following mapping uses the five AICPA Trust Services Criteria categories. Se
 
 ### CC2 — Communication and information
 
-**Assessment: Partially ready — Medium risk.** `SECURITY.md`, `ENTERPRISE_FOUNDATION.md`, incident runbooks, customer security documentation, structured audit events, and correlation IDs provide a strong communication baseline. However, the repository does not evidence a formal control catalog, versioned internal policies, security exception register, customer notification procedure, or management reporting cadence.
+**Assessment: Partially ready — Medium risk.** `docs/security/SECURITY.md`, `docs/architecture/ENTERPRISE_FOUNDATION.md`, incident runbooks, customer security documentation, structured audit events, and correlation IDs provide a strong communication baseline. However, the repository does not evidence a formal control catalog, versioned internal policies, security exception register, customer notification procedure, or management reporting cadence.
 
 **Required remediation:** Create a controlled policy repository, control catalog, evidence index, exception workflow, customer security-notification procedure, and quarterly management security report.
 
