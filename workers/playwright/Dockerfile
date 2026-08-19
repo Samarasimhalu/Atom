@@ -8,13 +8,10 @@ ENV NODE_ENV=production \
     npm_config_fund=false \
     PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
-# Upgrade inherited OS packages while building the immutable worker artifact.
-# The worker never installs customer-controlled packages during a test run.
+# The base image is pinned by digest and the worker never installs customer-controlled
+# packages at run time. Image freshness is enforced by the Trivy CVE gate in CI.
 USER root
-RUN apt-get update \
-    && apt-get upgrade -y \
-    && rm -rf /var/lib/apt/lists/* \
-    && useradd --create-home --uid 10001 atom-worker \
+RUN useradd --create-home --uid 10001 atom-worker \
     && mkdir -p /opt/atom-worker /work /results \
     && chown -R atom-worker:atom-worker /opt/atom-worker /work /results
 
