@@ -97,6 +97,8 @@ jobs:
         with:
           image-ref: atom-playwright-worker:${{ github.sha }}
           format: table
+          scanners: vuln
+          vuln-type: os,library
           exit-code: '1'
           ignore-unfixed: true
           severity: CRITICAL,HIGH

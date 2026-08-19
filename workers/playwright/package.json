@@ -1,0 +1,12 @@
+{
+  "name": "atom-playwright-worker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pinned runtime dependencies for Atom's isolated Playwright worker image.",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@playwright/test": "1.62.1"
+  }
+}
