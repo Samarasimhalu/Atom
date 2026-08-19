@@ -128,8 +128,8 @@ jobs:
           file: workers/playwright/Dockerfile
           load: true
           tags: atom-playwright-worker:pr-${{ github.sha }}
-          provenance: true
-          sbom: true
+          provenance: false
+          sbom: false
 
       - name: Trivy image scan
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0

@@ -88,10 +88,10 @@ jobs:
         with:
           context: .
           file: workers/playwright/Dockerfile
-          push: false
+          load: true
           tags: atom-playwright-worker:${{ github.sha }}
-          provenance: true
-          sbom: true
+          provenance: false
+          sbom: false
       - name: Scan worker image
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
