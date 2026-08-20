@@ -12,8 +12,22 @@ class RunService {
   }
 
   async emit(run, type, payload = {}) {
-    const event = await this.store.appendEvent(run.id, run.tenant_id || run.tenantId, type, { runId: run.id, sessionId: run.session_id || run.sessionId, ...payload });
-    this.streaming.sendToChannel(`run-${run.id}`, { ...event.payload, type, sequence: event.sequence });
+    const tenantId = run.tenant_id || run.tenantId;
+    const event = await this.store.appendEvent(run.id, tenantId, type, { runId: run.id, sessionId: run.session_id || run.sessionId, ...payload });
+    // The focused run channel remains authorized through subscribe-run. It may
+    // carry the bounded lifecycle payload required by an authorized run detail.
+    const runChannel = typeof this.streaming.runChannel === 'function' ? this.streaming.runChannel(run.id) : `run-${run.id}`;
+    const tenantChannel = typeof this.streaming.tenantChannel === 'function' ? this.streaming.tenantChannel(tenantId) : `tenant-${tenantId}`;
+    this.streaming.sendToChannel(runChannel, { ...event.payload, type, sequence: event.sequence });
+    // Tenant-wide dashboards receive only an invalidation signal. Never place
+    // result data, session IDs, executor output, artifacts, or secrets here.
+    this.streaming.sendToChannel(tenantChannel, {
+      type: 'dashboard.run-state-changed',
+      runId: run.id,
+      state: type.replace(/^run\./, ''),
+      sequence: event.sequence,
+      occurredAt: event.created_at || new Date().toISOString()
+    });
     return event;
   }
 
@@ -54,7 +68,7 @@ class RunService {
     run = await this.store.transitionRun(run.id, payload.tenantId, 'running'); await this.emit(run, 'run.started');
     try {
       const runStreaming = {
-        broadcast: message => this.streaming.sendToChannel(`run-${run.id}`, message)
+        broadcast: message => this.streaming.sendToChannel(typeof this.streaming.runChannel === 'function' ? this.streaming.runChannel(run.id) : `run-${run.id}`, message)
       };
       const result = await this.executor.executeTest(payload.testData, payload.sessionId, runStreaming);
       if (this.cancelled.has(run.id)) return this.cancel(run.id, payload.tenantId, 'cancelled');

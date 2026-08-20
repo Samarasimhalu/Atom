@@ -68,7 +68,7 @@ class StreamingService {
 
   subscribeTenant(connectionId) {
     const connection = this.connections.get(connectionId);
-    if (!connection?.tenantId) return false;
+    if (!connection?.tenantId || !hasPermission(connection.roles, 'dashboard:read')) return false;
     return this.subscribeChannel(connectionId, this.tenantChannel(connection.tenantId));
   }
 

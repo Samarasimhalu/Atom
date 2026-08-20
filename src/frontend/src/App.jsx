@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button.jsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
 import { Textarea } from '@/components/ui/textarea.jsx';
@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import './App.css';
 import EnterpriseDashboard from './components/EnterpriseDashboard.jsx';
+import { useAtomRunStream } from './hooks/useAtomRunStream';
 
 function App() {
   const [prompt, setPrompt] = useState('');
@@ -37,108 +38,59 @@ function App() {
   const [executionLogs, setExecutionLogs] = useState([]);
   const [testResults, setTestResults] = useState(null);
   const [executionError, setExecutionError] = useState(null);
-  const [wsConnected, setWsConnected] = useState(false);
+  const [focusedRunId, setFocusedRunId] = useState(null);
+  const [liveTransitions, setLiveTransitions] = useState([]);
   const [activeTab, setActiveTab] = useState('code');
   const [dashboardRefresh, setDashboardRefresh] = useState(0);
   const [executionEvent, setExecutionEvent] = useState(null);
-  const wsRef = useRef(null);
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
   const wsUrl = import.meta.env.VITE_WS_URL || apiBaseUrl.replace(/^http/, 'ws');
-  const requestHeaders = {
+  const requestHeaders = useMemo(() => ({
     'Content-Type': 'application/json',
+    ...(import.meta.env.VITE_AUTH_TOKEN ? { Authorization: `Bearer ${import.meta.env.VITE_AUTH_TOKEN}` } : {}),
     ...(import.meta.env.VITE_DEV_USER ? { 'X-Dev-User': import.meta.env.VITE_DEV_USER } : {}),
     ...(import.meta.env.VITE_DEV_TENANT_ID ? { 'X-Tenant-Id': import.meta.env.VITE_DEV_TENANT_ID } : {})
-  };
-
-  // WebSocket connection
-  useEffect(() => {
-    const connectWebSocket = () => {
-      const ws = new WebSocket(wsUrl);
-      
-      ws.onopen = () => {
-        console.log('WebSocket connected');
-        setWsConnected(true);
-      };
-
-      ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        handleWebSocketMessage(data);
-      };
-
-      ws.onclose = () => {
-        console.log('WebSocket disconnected');
-        setWsConnected(false);
-        // Reconnect after 3 seconds
-        setTimeout(connectWebSocket, 3000);
-      };
-
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-      };
-
-      wsRef.current = ws;
-    };
-
-    connectWebSocket();
-
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
-  }, [wsUrl]);
-
-  const handleWebSocketMessage = (data) => {
-    if (data.type?.startsWith('run.')) {
-      const state = data.type.slice(4);
-      const event = { type: data.type, payload: { ...data, state, duration: data.result?.duration } };
-      setExecutionEvent(event);
-      setDashboardRefresh(value => value + 1);
-      if (state === 'started') { setIsExecuting(true); setExecutionLogs([]); setTestResults(null); }
-      if (['passed', 'failed', 'cancelled'].includes(state)) { setIsExecuting(false); setTestResults(data.result || { status: state, duration: data.result?.duration }); setActiveTab('results'); }
-      return;
-    }
-    switch (data.type) {
-      case 'generation-started':
-        setIsGenerating(true);
-        break;
-      case 'generation-completed':
-        setIsGenerating(false);
-        setCurrentTest(data.result);
-        break;
-      case 'generation-error':
-        setIsGenerating(false);
-        console.error('Generation error:', data.error);
-        break;
-      case 'execution-started':
-        setIsExecuting(true);
-        setExecutionLogs([]);
-        setTestResults(null);
-        break;
-      case 'test-output':
-      case 'test-error':
-      case 'dependency-output':
-        setExecutionLogs(prev => [...prev, {
-          type: data.type,
-          content: data.data,
-          timestamp: data.timestamp
-        }]);
-        break;
-      case 'execution-completed':
-        setIsExecuting(false);
-        setTestResults(data.result);
-        break;
-      case 'execution-error':
-        setIsExecuting(false);
-        console.error('Execution error:', data.error);
-        break;
-    }
-  };
+  }), []);
+  const loadRun = useCallback(async runId => {
+    const response = await fetch(`${apiBaseUrl}/api/runs/${encodeURIComponent(runId)}`, { headers: requestHeaders, credentials: 'include' });
+    if (!response.ok) throw new Error('run_refresh_failed');
+    const run = await response.json();
+    if (['passed', 'failed', 'cancelled'].includes(run.state)) setTestResults(run.result || { status: run.state });
+    return run;
+  }, [apiBaseUrl, requestHeaders]);
+  const replayRunEvents = useCallback(async (runId, after) => {
+    const response = await fetch(`${apiBaseUrl}/api/runs/${encodeURIComponent(runId)}/events?after=${after}`, { headers: requestHeaders, credentials: 'include' });
+    if (!response.ok) throw new Error('run_event_replay_failed');
+    const body = await response.json();
+    return body.events || body;
+  }, [apiBaseUrl, requestHeaders]);
+  const handleRunTransition = useCallback(event => {
+    const dashboardEvent = { type: event.type, payload: event };
+    setExecutionEvent(dashboardEvent);
+    setLiveTransitions(current => [event, ...current.filter(item => !(item.runId === event.runId && item.sequence === event.sequence))].slice(0, 6));
+    if (event.state === 'running') { setIsExecuting(true); setExecutionLogs([]); setTestResults(null); }
+    if (['passed', 'failed', 'cancelled'].includes(event.state)) { setIsExecuting(false); setActiveTab('results'); }
+  }, []);
+  const stream = useAtomRunStream({
+    enabled: import.meta.env.VITE_ENABLE_WEBSOCKETS === 'true',
+    wsUrl,
+    tenantId: import.meta.env.VITE_DEV_TENANT_ID || import.meta.env.VITE_TENANT_ID || 'authenticated-tenant',
+    authMode: import.meta.env.VITE_WEBSOCKET_AUTH_MODE || 'ticket',
+    ticketUrl: `${apiBaseUrl}/api/realtime/websocket-ticket`,
+    ticketHeaders: requestHeaders,
+    focusedRunIds: focusedRunId ? [focusedRunId] : [],
+    onDashboardInvalidated: () => setDashboardRefresh(value => value + 1),
+    onRunTransition: handleRunTransition,
+    replayRunEvents,
+    loadRun,
+    onError: error => console.warn('Atom live stream unavailable; HTTP refresh remains active.', error.message)
+  });
 
   const generateTest = async () => {
     if (!prompt.trim()) return;
 
     try {
+      setIsGenerating(true);
       const response = await fetch(`${apiBaseUrl}/api/generate/test`, {
         method: 'POST',
         headers: requestHeaders,
@@ -153,9 +105,12 @@ function App() {
         throw new Error('Failed to generate test');
       }
 
-      // Test generation is handled via WebSocket
+      const generatedTest = await response.json();
+      setCurrentTest(generatedTest);
+      setIsGenerating(false);
     } catch (error) {
       console.error('Error generating test:', error);
+      setIsGenerating(false);
     }
   };
 
@@ -180,7 +135,9 @@ function App() {
         throw new Error(failure.error || 'Failed to execute test');
       }
       const submission = await response.json();
-      setExecutionEvent({ type: 'execution-submitted', payload: { ...submission.run, runId: submission.run?.id, state: submission.status } });
+      const runId = submission.run?.id || null;
+      setFocusedRunId(runId);
+      setExecutionEvent({ type: 'execution-submitted', payload: { ...submission.run, runId, state: submission.status } });
       setDashboardRefresh(value => value + 1);
       setIsExecuting(true);
 
@@ -224,9 +181,9 @@ function App() {
             </div>
             
             <div className="flex items-center space-x-4">
-              <Badge variant={wsConnected ? "default" : "destructive"} className="flex items-center space-x-1">
-                <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-                <span>{wsConnected ? 'Connected' : 'Disconnected'}</span>
+              <Badge variant={stream.connected ? "default" : "secondary"} className="flex items-center space-x-1">
+                <div className={`w-2 h-2 rounded-full ${stream.connected ? 'bg-green-500' : stream.status === 'disabled' ? 'bg-slate-400' : 'bg-amber-500'}`} />
+                <span>{stream.status === 'disabled' ? 'Live off' : stream.connected ? 'Live' : 'Reconnecting'}</span>
               </Badge>
               
               <div className="flex items-center space-x-2 text-sm text-muted-foreground">
@@ -239,7 +196,15 @@ function App() {
       </header>
 
       <div className="container mx-auto px-6 py-8">
-        <EnterpriseDashboard refreshSignal={dashboardRefresh} executionEvent={executionEvent} />
+        <EnterpriseDashboard
+          refreshSignal={dashboardRefresh}
+          executionEvent={executionEvent}
+          focusedRunId={focusedRunId}
+          streamStatus={stream.status}
+          liveTransitions={liveTransitions}
+          onReconnect={stream.reconnectNow}
+          onRunSelected={setFocusedRunId}
+        />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Panel - Chat Interface */}
           <div className="lg:col-span-1">

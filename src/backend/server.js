@@ -22,6 +22,7 @@ const EvaluationHarness = require('./evaluationHarness');
 const DataLifecycleService = require('./dataLifecycle');
 const { normalizeGeneratedTest } = require('./testSpecification');
 const { OidcVerifier, mapGroupsToRoles } = require('./identityProvider');
+const { WebSocketTicketStore } = require('./websocketTickets');
 const { verifyPayload } = require('./signedWebhook');
 const {
   createLogger,
@@ -52,8 +53,14 @@ const app = express();
 const server = http.createServer(app);
 
 // Initialize WebSocket server
-const wss = new WebSocket.Server({ server, maxPayload: config.websocket.maxPayloadBytes });
+const wss = new WebSocket.Server({
+  server,
+  maxPayload: config.websocket.maxPayloadBytes,
+  // Never echo a credential-bearing subprotocol back to the browser.
+  handleProtocols: protocols => protocols.has('atom-v1') ? 'atom-v1' : false
+});
 const websocketOidcVerifier = config.auth.mode === 'oidc' ? new OidcVerifier(config) : null;
+const websocketTickets = new WebSocketTicketStore();
 
 // Security and request middleware. Authentication is required for all API routes
 // except health; development mode only accepts the explicit local identity headers.
@@ -141,6 +148,22 @@ app.use('/api', authenticate(config), requireTenant, createRateLimiter(config.ra
 const requireLegacyTestApi = (req, res, next) => config.features.legacyTestApi
   ? next()
   : res.status(404).json({ error: 'endpoint_not_found', correlationId: req.correlationId });
+
+// A browser cannot attach an Authorization header during the native WebSocket
+// upgrade. This endpoint issues an opaque, short-lived, single-use ticket after
+// the normal HTTP authentication and dashboard permission checks have succeeded.
+app.post('/api/realtime/websocket-ticket', requirePermission('dashboard:read'), (req, res) => {
+  if (!config.features.websockets) return res.status(404).json({ error: 'endpoint_not_found', correlationId: req.correlationId });
+  const origin = req.get('origin') || null;
+  if (origin && !config.auth.allowedOrigins.includes(origin)) return res.status(403).json({ error: 'origin_not_allowed', correlationId: req.correlationId });
+  const issued = websocketTickets.issue({
+    tenantId: req.tenantId,
+    userId: req.user.id,
+    roles: req.user.roles || [],
+    origin
+  });
+  res.status(201).json({ ...issued, protocol: 'atom-v1', correlationId: req.correlationId });
+});
 
 // Health check is intentionally public and contains no tenant data.
 
@@ -404,10 +427,13 @@ wss.on('connection', async (ws, req) => {
       return ws.close(1008, 'query_string_credentials_prohibited');
     }
     const bearer = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : null;
-    let claims = null;
-    if (config.auth.mode === 'oidc') claims = mapGroupsToRoles(await websocketOidcVerifier.verify(bearer), config.auth.oidc);
-    else if (config.auth.mode === 'development') claims = { sub: req.headers['x-dev-user'] || 'local-developer', tenant_id: req.headers['x-tenant-id'] || 'local-tenant', roles: ['developer'] };
-    else if (config.auth.mode !== 'saml') claims = verifyHs256Jwt(bearer, config.auth.jwtSecret);
+    const requestedProtocols = String(req.headers['sec-websocket-protocol'] || '')
+      .split(',').map(value => value.trim()).filter(Boolean);
+    const ticket = requestedProtocols.find(value => value !== 'atom-v1') || null;
+    let claims = ticket ? websocketTickets.consume(ticket, { origin }) : null;
+    if (!claims && config.auth.mode === 'oidc') claims = mapGroupsToRoles(await websocketOidcVerifier.verify(bearer), config.auth.oidc);
+    else if (!claims && config.auth.mode === 'development') claims = { sub: req.headers['x-dev-user'] || 'local-developer', tenant_id: req.headers['x-tenant-id'] || 'local-tenant', roles: ['developer'] };
+    else if (!claims && config.auth.mode !== 'saml') claims = verifyHs256Jwt(bearer, config.auth.jwtSecret);
     if (!claims?.sub || !claims?.tenant_id || (config.auth.mode === 'oidc' && !claims.roles?.length)) throw new Error('authentication_required');
 
     ws.tenantId = String(claims.tenant_id);
@@ -415,8 +441,8 @@ wss.on('connection', async (ws, req) => {
     const connectionId = `${ws.userId}:${Date.now()}:${crypto.randomUUID()}`;
     ws.connectionId = connectionId;
     streamingService.addConnection(ws, connectionId, { tenantId: ws.tenantId, userId: ws.userId, roles: claims.roles || [] });
-    if (!streamingService.subscribeTenant(connectionId)) throw new Error('tenant_subscription_failed');
-    logger.info('websocket.connected', { userId: ws.userId, tenantId: ws.tenantId, connectionId });
+    const dashboardSubscribed = streamingService.subscribeTenant(connectionId);
+    logger.info('websocket.connected', { userId: ws.userId, tenantId: ws.tenantId, connectionId, dashboardSubscribed });
 
     ws.on('message', message => {
       try {
@@ -427,7 +453,7 @@ wss.on('connection', async (ws, req) => {
     });
     ws.on('close', () => { logger.info('websocket.closed', { userId: ws.userId, tenantId: ws.tenantId }); streamingService.removeConnection(connectionId); });
     ws.on('error', error => logger.error('websocket.error', { userId: ws.userId, tenantId: ws.tenantId, error: error.message }));
-    ws.send(JSON.stringify({ type: 'connection-established', tenantId: ws.tenantId, timestamp: new Date().toISOString() }));
+    ws.send(JSON.stringify({ type: 'connection-established', tenantId: ws.tenantId, dashboardSubscribed, timestamp: new Date().toISOString() }));
   } catch (error) {
     logger.warn('websocket.authentication.failed', { correlationId: req.headers['x-correlation-id'], error: error.message });
     ws.close(1008, 'authentication_required');
@@ -501,5 +527,5 @@ if (require.main === module) {
   });
 }
 
-module.exports = { app, server, wss, streamingService, store };
+module.exports = { app, server, wss, streamingService, store, websocketTickets };
 
