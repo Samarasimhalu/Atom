@@ -36,8 +36,11 @@ function App() {
   const [currentTest, setCurrentTest] = useState(null);
   const [executionLogs, setExecutionLogs] = useState([]);
   const [testResults, setTestResults] = useState(null);
+  const [executionError, setExecutionError] = useState(null);
   const [wsConnected, setWsConnected] = useState(false);
   const [activeTab, setActiveTab] = useState('code');
+  const [dashboardRefresh, setDashboardRefresh] = useState(0);
+  const [executionEvent, setExecutionEvent] = useState(null);
   const wsRef = useRef(null);
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
   const wsUrl = import.meta.env.VITE_WS_URL || apiBaseUrl.replace(/^http/, 'ws');
@@ -86,6 +89,15 @@ function App() {
   }, [wsUrl]);
 
   const handleWebSocketMessage = (data) => {
+    if (data.type?.startsWith('run.')) {
+      const state = data.type.slice(4);
+      const event = { type: data.type, payload: { ...data, state, duration: data.result?.duration } };
+      setExecutionEvent(event);
+      setDashboardRefresh(value => value + 1);
+      if (state === 'started') { setIsExecuting(true); setExecutionLogs([]); setTestResults(null); }
+      if (['passed', 'failed', 'cancelled'].includes(state)) { setIsExecuting(false); setTestResults(data.result || { status: state, duration: data.result?.duration }); setActiveTab('results'); }
+      return;
+    }
     switch (data.type) {
       case 'generation-started':
         setIsGenerating(true);
@@ -153,9 +165,10 @@ function App() {
     try {
       const sessionId = `session-${Date.now()}`;
       
+      setExecutionError(null);
       const response = await fetch(`${apiBaseUrl}/api/execute/test`, {
         method: 'POST',
-        headers: requestHeaders,
+        headers: { ...requestHeaders, 'Idempotency-Key': `ui-${crypto.randomUUID()}` },
         body: JSON.stringify({
           testData: currentTest,
           sessionId
@@ -163,12 +176,19 @@ function App() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to execute test');
+        const failure = await response.json().catch(() => ({}));
+        throw new Error(failure.error || 'Failed to execute test');
       }
+      const submission = await response.json();
+      setExecutionEvent({ type: 'execution-submitted', payload: { ...submission.run, runId: submission.run?.id, state: submission.status } });
+      setDashboardRefresh(value => value + 1);
+      setIsExecuting(true);
 
-      // Test execution is handled via WebSocket
+      // Lifecycle events continue through the tenant-authorized run stream when WebSockets are enabled.
     } catch (error) {
       console.error('Error executing test:', error);
+      setIsExecuting(false);
+      setExecutionError(error.message || 'The test could not be submitted.');
     }
   };
 
@@ -219,7 +239,7 @@ function App() {
       </header>
 
       <div className="container mx-auto px-6 py-8">
-        <EnterpriseDashboard />
+        <EnterpriseDashboard refreshSignal={dashboardRefresh} executionEvent={executionEvent} />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Panel - Chat Interface */}
           <div className="lg:col-span-1">
@@ -235,6 +255,7 @@ function App() {
               </CardHeader>
               
               <CardContent className="space-y-4">
+                {executionError && <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs leading-5 text-rose-700 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-200">{executionError}</div>}
                 {/* Example Prompts */}
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground">Quick Examples:</p>
