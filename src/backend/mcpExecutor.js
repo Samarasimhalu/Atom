@@ -99,7 +99,7 @@ class MCPExecutor {
 
     // Create Playwright config
     const configFile = path.join(executionDir, 'playwright.config.ts');
-    const config = this.generatePlaywrightConfig(testData.mcpConfig, sessionId);
+    const config = this.generatePlaywrightConfig(testData.mcpConfig);
     await fs.writeFile(configFile, config);
 
     // Create MCP config file
@@ -112,8 +112,8 @@ class MCPExecutor {
     return executionDir;
   }
 
-  generatePlaywrightConfig(mcpConfig, sessionId) {
-    const outputDir = `/results/${sessionId}`;
+  generatePlaywrightConfig(mcpConfig) {
+    const outputDir = '/results';
     
     return `import { defineConfig, devices } from '@playwright/test';
 
@@ -168,8 +168,11 @@ export default defineConfig({
   }
 
   async runTest(testData, sessionId, executionDir, streamingService) {
+    const resultRoot = path.resolve(this.config.storage.results);
+    const runResultsDir = path.resolve(resultRoot, sessionId);
+    if (!runResultsDir.startsWith(`${resultRoot}${path.sep}`)) throw new Error('invalid_session_results_path');
+    await fs.ensureDir(runResultsDir);
     return new Promise((resolve, reject) => {
-      const resultRoot = path.resolve(this.config.storage.results);
       const args = [
         'run', '--rm',
         '--network=none',
@@ -181,7 +184,7 @@ export default defineConfig({
         '--cpus=2',
         '--tmpfs=/tmp:rw,noexec,nosuid,size=256m',
         '-v', `${path.resolve(executionDir)}:/work:rw`,
-        '-v', `${resultRoot}:/results:rw`,
+        '-v', `${runResultsDir}:/results:rw`,
         '-w', '/work',
         this.config.execution.workerImage,
         'test', '--config', 'playwright.config.ts'

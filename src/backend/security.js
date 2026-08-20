@@ -114,6 +114,7 @@ function authenticate(config) {
       const authMode = config.auth.mode;
       const authHeader = req.get('authorization');
       const bearer = authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+      if (authMode === 'saml') return res.status(503).json({ error: 'saml_not_supported', correlationId: req.correlationId });
       let claims = authMode === 'oidc' ? await oidcVerifier.verify(bearer) : verifyHs256Jwt(bearer, config.auth.jwtSecret);
       if (authMode === 'oidc') claims = mapGroupsToRoles(claims, config.auth.oidc);
 
@@ -142,9 +143,9 @@ function requireTenant(req, res, next) {
 
 const ROLE_PERMISSIONS = {
   viewer: ['runs:read', 'artifacts:read', 'dashboard:read'],
-  developer: ['runs:read', 'runs:create', 'runs:cancel', 'artifacts:read', 'dashboard:read'],
-  approver: ['runs:read', 'runs:create', 'runs:cancel', 'runs:approve', 'artifacts:read', 'dashboard:read'],
-  admin: ['runs:read', 'runs:create', 'runs:cancel', 'runs:approve', 'artifacts:read', 'artifacts:delete', 'audit:read', 'dashboard:read', 'quota:manage', 'admin:ai', 'admin:runtime', 'admin:privacy'],
+  developer: ['runs:read', 'runs:create', 'runs:cancel', 'artifacts:read', 'dashboard:read', 'ai:generate'],
+  approver: ['runs:read', 'runs:create', 'runs:cancel', 'runs:approve', 'artifacts:read', 'dashboard:read', 'ai:generate'],
+  admin: ['runs:read', 'runs:create', 'runs:cancel', 'runs:approve', 'artifacts:read', 'artifacts:delete', 'audit:read', 'dashboard:read', 'quota:manage', 'admin:ai', 'admin:runtime', 'admin:privacy', 'ai:generate'],
   owner: ['*']
 };
 
@@ -163,15 +164,18 @@ function validateProductionConfig(config) {
   if (config.environment !== 'production') return [];
   const errors = [];
   const placeholder = value => !value || /replace-with|change-me|example\.com|localhost/.test(String(value));
-  if (!['oidc', 'saml'].includes(config.auth.mode)) errors.push('production_auth_mode_must_be_oidc_or_saml');
+  if (config.auth.mode !== 'oidc') errors.push('production_auth_mode_must_be_oidc');
   if (config.auth.mode === 'oidc' && (placeholder(config.auth.oidc.issuer) || placeholder(config.auth.oidc.audience) || placeholder(config.auth.oidc.jwksUri))) errors.push('oidc_provider_not_configured');
   if (placeholder(config.auth.jwtSecret)) errors.push('jwt_secret_not_configured');
   if (config.auth.allowedOrigins.some(origin => /localhost|127\.0\.0\.1|\*/.test(origin))) errors.push('insecure_cors_origin');
   if (config.persistence.mode !== 'postgres' || !config.persistence.databaseUrl) errors.push('postgres_persistence_required');
   if (config.queue.mode !== 'bullmq' || !config.queue.redisUrl) errors.push('durable_queue_required');
   if (config.objectStorage.mode !== 's3' || !config.objectStorage.endpoint || !config.objectStorage.bucket || !config.objectStorage.accessKeyId || !config.objectStorage.secretAccessKey) errors.push('private_object_storage_required');
-  if (!config.execution.workerImage || !/@sha256:[a-f0-9]{64}$/.test(config.execution.workerImage)) errors.push('immutable_worker_digest_required');
-  if (!config.execution.enabled) errors.push('execution_must_be_explicitly_enabled');
+  if (config.features?.legacyTestApi) errors.push('legacy_test_api_not_supported_in_production');
+  if (config.execution.enabled) {
+    if (!config.execution.workerImage || !/@sha256:[a-f0-9]{64}$/.test(config.execution.workerImage)) errors.push('immutable_worker_digest_required');
+    if (config.execution.networkMode !== 'none' && (!config.execution.egressProxyUrl || !config.policy.allowedDomains.length)) errors.push('managed_egress_proxy_and_target_allowlist_required');
+  }
   if (!config.webhooks.signingSecret) errors.push('webhook_signing_secret_required');
   return errors;
 }
@@ -183,7 +187,9 @@ function denyUnsafeExecution(config) {
       ? 'execution_disabled'
       : !config.execution.workerImage
         ? 'worker_image_not_configured'
-        : /\b(child_process|execSync|spawn|fork|eval|Function\s*\(|process\.env|fs\.)\b/.test(String(code || ''))
+        : config.execution.networkMode !== 'none' && (!config.execution.egressProxyUrl || !config.policy.allowedDomains.length)
+          ? 'managed_egress_not_configured'
+          : /\b(child_process|execSync|spawn|fork|eval|Function\s*\(|process\.env|fs\.)\b/.test(String(code || ''))
           ? 'unsafe_code_pattern'
           : null;
     if (unsafeReason) {

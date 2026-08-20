@@ -53,7 +53,10 @@ class RunService {
     if (run.cancel_requested || this.cancelled.has(run.id)) return this.cancel(run.id, payload.tenantId, 'cancelled_before_start');
     run = await this.store.transitionRun(run.id, payload.tenantId, 'running'); await this.emit(run, 'run.started');
     try {
-      const result = await this.executor.executeTest(payload.testData, payload.sessionId, this.streaming);
+      const tenantStreaming = {
+        broadcast: message => this.streaming.sendToChannel(`tenant-${payload.tenantId}`, message)
+      };
+      const result = await this.executor.executeTest(payload.testData, payload.sessionId, tenantStreaming);
       if (this.cancelled.has(run.id)) return this.cancel(run.id, payload.tenantId, 'cancelled');
       const storedArtifacts = await this.ingestArtifacts(run, result);
       result.artifacts = storedArtifacts;

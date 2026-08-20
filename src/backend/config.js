@@ -67,7 +67,8 @@ module.exports = {
   },
   policy: {
     requireApprovalForTags: (process.env.POLICY_REQUIRE_APPROVAL_TAGS || 'payment,production,destructive').split(',').map(value => value.trim()).filter(Boolean),
-    blockedDomains: (process.env.POLICY_BLOCKED_DOMAINS || 'localhost,127.0.0.1,169.254.169.254').split(',').map(value => value.trim()).filter(Boolean),
+    allowedDomains: (process.env.POLICY_ALLOWED_DOMAINS || '').split(',').map(value => value.trim().toLowerCase()).filter(Boolean),
+    blockedDomains: (process.env.POLICY_BLOCKED_DOMAINS || 'localhost,127.0.0.1,169.254.169.254').split(',').map(value => value.trim().toLowerCase()).filter(Boolean),
     maxTimeoutMs: Number(process.env.POLICY_MAX_TIMEOUT_MS || 300000)
   },
   webhooks: {
@@ -91,11 +92,22 @@ module.exports = {
     enabled: process.env.EXECUTION_ENABLED === 'true',
     workerImage: process.env.WORKER_IMAGE || '',
     workerMode: process.env.WORKER_MODE || 'isolated-image',
+    networkMode: process.env.WORKER_NETWORK_MODE || 'none',
+    egressProxyUrl: process.env.WORKER_EGRESS_PROXY_URL || '',
     headless: true,
     viewport: { width: 1920, height: 1080 },
     retries: 2,
     workers: 4,
-    hardTimeoutMs: Number(process.env.EXECUTION_HARD_TIMEOUT_MS || 300000)
+    hardTimeoutMs: Number(process.env.EXECUTION_HARD_TIMEOUT_MS || 300000),
+    maxArtifactBytes: Number(process.env.MAX_ARTIFACT_BYTES || 25 * 1024 * 1024),
+    maxArtifactFiles: Number(process.env.MAX_ARTIFACT_FILES || 100)
+  },
+  websocket: {
+    maxPayloadBytes: Number(process.env.WEBSOCKET_MAX_PAYLOAD_BYTES || 64 * 1024)
+  },
+  features: {
+    legacyTestApi: process.env.ENABLE_LEGACY_TEST_API === 'true',
+    websockets: process.env.ENABLE_WEBSOCKETS === 'true'
   },
   storage: {
     tests: process.env.TEST_STORAGE_PATH || './data/tests',

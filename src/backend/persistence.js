@@ -32,6 +32,14 @@ CREATE TABLE IF NOT EXISTS atom_audit_events (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS atom_audit_tenant_created_idx ON atom_audit_events(tenant_id, created_at DESC);
+CREATE TABLE IF NOT EXISTS atom_approvals (
+  id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, requester_id TEXT NOT NULL,
+  request_digest TEXT NOT NULL, status TEXT NOT NULL, policy JSONB NOT NULL DEFAULT '{}'::jsonb,
+  decided_by TEXT, comment TEXT, decided_at TIMESTAMPTZ, consumed_at TIMESTAMPTZ, consumed_by TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), expires_at TIMESTAMPTZ NOT NULL,
+  UNIQUE (tenant_id, requester_id, request_digest)
+);
+CREATE INDEX IF NOT EXISTS atom_approvals_tenant_created_idx ON atom_approvals(tenant_id, created_at DESC);
 CREATE TABLE IF NOT EXISTS atom_artifacts (
   id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, run_id TEXT NOT NULL, object_key TEXT NOT NULL,
   content_type TEXT NOT NULL, size_bytes BIGINT NOT NULL DEFAULT 0, retention_until TIMESTAMPTZ,
@@ -50,7 +58,7 @@ class Persistence {
     this.pool = config.persistence.databaseUrl ? new Pool({ connectionString: config.persistence.databaseUrl, max: config.persistence.poolMax, statement_timeout: config.persistence.statementTimeoutMs, ssl: config.environment === 'production' ? { rejectUnauthorized: true } : undefined }) : null;
     if (config.environment === 'production' && config.persistence.mode !== 'local' && !this.pool) throw new Error('postgres_persistence_required');
     this.filePath = path.join(config.storage.results, 'enterprise-store.json');
-    this.memory = { runs: new Map(), events: new Map(), audit: [], artifacts: new Map(), quotas: new Map(), idempotency: new Map() };
+    this.memory = { runs: new Map(), events: new Map(), audit: [], approvals: new Map(), approvalIdempotency: new Map(), artifacts: new Map(), quotas: new Map(), idempotency: new Map() };
     this.ready = this.initialize();
   }
 
@@ -67,6 +75,7 @@ class Persistence {
         for (const run of data.runs || []) this.memory.runs.set(run.id, run);
         for (const [id, events] of Object.entries(data.events || {})) this.memory.events.set(id, events);
         this.memory.audit = data.audit || [];
+        for (const approval of data.approvals || []) { this.memory.approvals.set(approval.id, approval); this.memory.approvalIdempotency.set(`${approval.tenantId}:${approval.requesterId}:${approval.requestDigest}`, approval.id); }
         for (const artifact of data.artifacts || []) this.memory.artifacts.set(artifact.id, artifact);
       } catch (error) { this.logger.warn('persistence.local.load_failed', { error: error.message }); }
     }
@@ -78,7 +87,7 @@ class Persistence {
     if (this.pool) return;
     await fs.writeJson(this.filePath, {
       runs: [...this.memory.runs.values()], events: Object.fromEntries(this.memory.events), audit: this.memory.audit,
-      artifacts: [...this.memory.artifacts.values()]
+      approvals: [...this.memory.approvals.values()], artifacts: [...this.memory.artifacts.values()]
     }, { spaces: 2 });
   }
 
@@ -165,6 +174,74 @@ class Persistence {
     return this.memory.audit.filter(event => event.tenantId === tenantId).slice(-limit).reverse();
   }
 
+  approvalView(row) {
+    if (!row) return null;
+    return { id: row.id, tenantId: row.tenant_id ?? row.tenantId, requesterId: row.requester_id ?? row.requesterId, requestDigest: row.request_digest ?? row.requestDigest, status: row.status, policy: row.policy || {}, decidedBy: row.decided_by ?? row.decidedBy, comment: row.comment || '', decidedAt: row.decided_at ?? row.decidedAt, consumedAt: row.consumed_at ?? row.consumedAt, consumedBy: row.consumed_by ?? row.consumedBy, createdAt: row.created_at ?? row.createdAt, expiresAt: row.expires_at ?? row.expiresAt };
+  }
+
+  async createApproval(input) {
+    await this.ready;
+    const expiresAt = input.expiresAt || new Date(Date.now() + 86400000).toISOString();
+    if (this.pool) {
+      const inserted = await this.pool.query(`INSERT INTO atom_approvals (id,tenant_id,requester_id,request_digest,status,policy,expires_at) VALUES ($1,$2,$3,$4,'pending',$5,$6) ON CONFLICT (tenant_id,requester_id,request_digest) DO NOTHING RETURNING *`, [input.id || uuidv4(), input.tenantId, input.requesterId, input.requestDigest, input.policy || {}, expiresAt]);
+      if (inserted.rows[0]) return { approval: this.approvalView(inserted.rows[0]), created: true };
+      const existing = await this.pool.query('SELECT * FROM atom_approvals WHERE tenant_id=$1 AND requester_id=$2 AND request_digest=$3', [input.tenantId, input.requesterId, input.requestDigest]);
+      return { approval: this.approvalView(existing.rows[0]), created: false };
+    }
+    const key = `${input.tenantId}:${input.requesterId}:${input.requestDigest}`;
+    const existing = this.memory.approvalIdempotency.get(key);
+    if (existing) return { approval: this.memory.approvals.get(existing), created: false };
+    const approval = { id: input.id || uuidv4(), tenantId: input.tenantId, requesterId: input.requesterId, requestDigest: input.requestDigest, status: 'pending', policy: input.policy || {}, createdAt: new Date().toISOString(), expiresAt };
+    this.memory.approvals.set(approval.id, approval); this.memory.approvalIdempotency.set(key, approval.id); await this.flush(); return { approval, created: true };
+  }
+
+  async getApproval(id, tenantId) {
+    await this.ready;
+    if (this.pool) { const result = await this.pool.query('SELECT * FROM atom_approvals WHERE id=$1 AND tenant_id=$2', [id, tenantId]); return this.approvalView(result.rows[0]); }
+    const approval = this.memory.approvals.get(id); return approval?.tenantId === tenantId ? approval : null;
+  }
+
+  async listApprovals(tenantId) {
+    await this.ready;
+    if (this.pool) { const result = await this.pool.query('SELECT * FROM atom_approvals WHERE tenant_id=$1 ORDER BY created_at DESC', [tenantId]); return result.rows.map(row => this.approvalView(row)); }
+    return [...this.memory.approvals.values()].filter(approval => approval.tenantId === tenantId);
+  }
+
+  async decideApproval({ id, tenantId, actorId, decision, comment = '' }) {
+    if (!['approved', 'rejected'].includes(decision)) throw new Error('approval_decision_invalid');
+    const current = await this.getApproval(id, tenantId);
+    if (!current) return null;
+    if (current.status !== 'pending') throw new Error('approval_not_pending');
+    if (current.requesterId === actorId) throw new Error('approval_self_decision_denied');
+    if (new Date(current.expiresAt) < new Date()) { await this.expireApproval(id, tenantId); throw new Error('approval_expired'); }
+    if (this.pool) {
+      const result = await this.pool.query(`UPDATE atom_approvals SET status=$4,decided_by=$3,comment=$5,decided_at=NOW() WHERE id=$1 AND tenant_id=$2 AND status='pending' AND requester_id<>$3 AND expires_at>=NOW() RETURNING *`, [id, tenantId, actorId, decision, comment]);
+      if (!result.rows[0]) throw new Error('approval_not_pending');
+      return this.approvalView(result.rows[0]);
+    }
+    const approval = this.memory.approvals.get(id); approval.status = decision; approval.decidedBy = actorId; approval.comment = comment; approval.decidedAt = new Date().toISOString(); await this.flush(); return approval;
+  }
+
+  async consumeApproval({ id, tenantId, requesterId, requestDigest }) {
+    const current = await this.getApproval(id, tenantId);
+    if (!current) return null;
+    if (current.status !== 'approved') throw new Error('approval_not_approved');
+    if (new Date(current.expiresAt) < new Date()) { await this.expireApproval(id, tenantId); throw new Error('approval_expired'); }
+    if (current.requesterId !== requesterId) throw new Error('approval_requester_mismatch');
+    if (current.requestDigest !== requestDigest) throw new Error('approval_request_mismatch');
+    if (this.pool) {
+      const result = await this.pool.query(`UPDATE atom_approvals SET status='consumed',consumed_at=NOW(),consumed_by=$3 WHERE id=$1 AND tenant_id=$2 AND requester_id=$3 AND request_digest=$4 AND status='approved' AND expires_at>=NOW() RETURNING *`, [id, tenantId, requesterId, requestDigest]);
+      if (!result.rows[0]) throw new Error('approval_not_approved');
+      return this.approvalView(result.rows[0]);
+    }
+    const approval = this.memory.approvals.get(id); approval.status = 'consumed'; approval.consumedAt = new Date().toISOString(); approval.consumedBy = requesterId; await this.flush(); return approval;
+  }
+
+  async expireApproval(id, tenantId) {
+    if (this.pool) { await this.pool.query(`UPDATE atom_approvals SET status='expired' WHERE id=$1 AND tenant_id=$2 AND status IN ('pending','approved')`, [id, tenantId]); return; }
+    const approval = this.memory.approvals.get(id); if (approval?.tenantId === tenantId) { approval.status = 'expired'; await this.flush(); }
+  }
+
   async createArtifact(input) {
     await this.ready; const artifact = { id: input.id || uuidv4(), ...input, created_at: new Date().toISOString() };
     if (this.pool) { const result = await this.pool.query('INSERT INTO atom_artifacts (id,tenant_id,run_id,object_key,content_type,size_bytes,retention_until) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *', [artifact.id, artifact.tenantId, artifact.runId, artifact.objectKey, artifact.contentType, artifact.sizeBytes || 0, artifact.retentionUntil || null]); return result.rows[0]; }
@@ -185,6 +262,7 @@ class Persistence {
         await client.query('BEGIN');
         const result = await client.query('DELETE FROM atom_runs WHERE tenant_id=$1', [tenantId]);
         await client.query('DELETE FROM atom_audit_events WHERE tenant_id=$1', [tenantId]);
+        await client.query('DELETE FROM atom_approvals WHERE tenant_id=$1', [tenantId]);
         await client.query('DELETE FROM atom_quota_usage WHERE tenant_id=$1', [tenantId]);
         await client.query('COMMIT');
         return { runsDeleted: result.rowCount };
@@ -193,6 +271,8 @@ class Persistence {
     const runsDeleted = [...this.memory.runs.values()].filter(run => run.tenantId === tenantId).length;
     for (const [id, run] of this.memory.runs) if (run.tenantId === tenantId) { this.memory.runs.delete(id); this.memory.events.delete(id); }
     this.memory.audit = this.memory.audit.filter(event => event.tenantId !== tenantId);
+    for (const [id, approval] of this.memory.approvals) if (approval.tenantId === tenantId) this.memory.approvals.delete(id);
+    for (const [key, approvalId] of this.memory.approvalIdempotency) if (!this.memory.approvals.has(approvalId)) this.memory.approvalIdempotency.delete(key);
     for (const [key, quota] of this.memory.quotas) if (quota.tenantId === tenantId) this.memory.quotas.delete(key);
     await this.flush();
     return { runsDeleted };

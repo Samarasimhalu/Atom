@@ -21,6 +21,7 @@ const ApprovalWorkflow = require('./approvalWorkflow');
 const EvaluationHarness = require('./evaluationHarness');
 const DataLifecycleService = require('./dataLifecycle');
 const { normalizeGeneratedTest } = require('./testSpecification');
+const { OidcVerifier, mapGroupsToRoles } = require('./identityProvider');
 const { verifyPayload } = require('./signedWebhook');
 const {
   createLogger,
@@ -51,7 +52,8 @@ const app = express();
 const server = http.createServer(app);
 
 // Initialize WebSocket server
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocket.Server({ server, maxPayload: config.websocket.maxPayloadBytes });
+const websocketOidcVerifier = config.auth.mode === 'oidc' ? new OidcVerifier(config) : null;
 
 // Security and request middleware. Authentication is required for all API routes
 // except health; development mode only accepts the explicit local identity headers.
@@ -132,11 +134,14 @@ app.get('/api/health', (req, res) => {
 
 // Authentication, tenant context, and bounded API request rates.
 app.use('/api', authenticate(config), requireTenant, createRateLimiter(config.rateLimit));
+const requireLegacyTestApi = (req, res, next) => config.features.legacyTestApi
+  ? next()
+  : res.status(404).json({ error: 'endpoint_not_found', correlationId: req.correlationId });
 
 // Health check is intentionally public and contains no tenant data.
 
 // AI Test Generation Endpoints
-app.post('/api/generate/test', createRateLimiter({ windowMs: config.rateLimit.windowMs, max: config.rateLimit.generationMax }), validationMiddleware(validateGenerationRequest), async (req, res) => {
+app.post('/api/generate/test', requirePermission('ai:generate'), createRateLimiter({ windowMs: config.rateLimit.windowMs, max: config.rateLimit.generationMax }), validationMiddleware(validateGenerationRequest), async (req, res) => {
   try {
     const { prompt, testType, options } = req.validated;
 
@@ -182,15 +187,17 @@ app.post('/api/generate/test', createRateLimiter({ windowMs: config.rateLimit.wi
 app.post('/api/execute/test', requirePermission('runs:create'), validationMiddleware(validateExecutionRequest), denyUnsafeExecution(config), async (req, res) => {
   try {
     const { testData, sessionId } = req.validated;
-    const specification = normalizeGeneratedTest(testData);
-    const policy = policyEngine.evaluate(specification, { tenantId: req.tenantId, userId: req.user.id });
-    if (!policy.allowed) return res.status(403).json({ error: 'policy_denied', reasons: policy.reasons, correlationId: req.correlationId });
-    if (policy.approvalRequired) {
-      const approval = req.get('x-approval-id') ? await approvalWorkflow.get(req.get('x-approval-id'), req.tenantId) : null;
-      if (!approval || approval.status !== 'approved') return res.status(409).json({ error: 'approval_required', correlationId: req.correlationId });
-    }
     const idempotencyKey = req.get('idempotency-key') || req.get('x-idempotency-key');
     if (!idempotencyKey || idempotencyKey.length > 200) return res.status(400).json({ error: 'idempotency_key_required', correlationId: req.correlationId });
+    const specification = normalizeGeneratedTest(testData);
+    const policy = policyEngine.evaluate(specification, { tenantId: req.tenantId, userId: req.user.id });
+    if (config.execution.networkMode !== 'none' && !specification.target.url) return res.status(403).json({ error: 'policy_denied', reasons: ['target_url_required_for_egress'], correlationId: req.correlationId });
+    if (!policy.allowed) return res.status(403).json({ error: 'policy_denied', reasons: policy.reasons, correlationId: req.correlationId });
+    if (policy.approvalRequired) {
+      const approvalId = req.get('x-approval-id');
+      if (!approvalId) return res.status(409).json({ error: 'approval_required', correlationId: req.correlationId });
+      await approvalWorkflow.consume(approvalId, { tenantId: req.tenantId, requesterId: req.user.id, specification, sessionId, idempotencyKey });
+    }
     const submission = await runService.submit({ tenantId: req.tenantId, userId: req.user.id, projectId: req.get('x-project-id') || 'default', testData, sessionId, idempotencyKey, correlationId: req.correlationId });
     res.status(submission.replayed ? 200 : 202).json({ status: submission.run.state, run: submission.run, replayed: submission.replayed, sessionId: submission.run.session_id, correlationId: req.correlationId });
   } catch (error) {
@@ -265,10 +272,15 @@ app.get('/api/dashboard', requirePermission('dashboard:read'), async (req, res) 
   res.json(await store.getDashboard(req.tenantId));
 });
 
-app.post('/api/approvals', requirePermission('runs:approve'), async (req, res) => {
-  const run = await store.getRun(req.body.runId, req.tenantId);
-  if (!run) return res.status(404).json({ error: 'run_not_found', correlationId: req.correlationId });
-  const approval = await approvalWorkflow.request({ tenantId: req.tenantId, runId: run.id, requesterId: req.user.id, policy: req.body.policy || {} });
+app.post('/api/approvals', requirePermission('runs:create'), validationMiddleware(validateExecutionRequest), async (req, res) => {
+  const { testData, sessionId } = req.validated;
+  const idempotencyKey = req.get('idempotency-key') || req.get('x-idempotency-key');
+  if (!idempotencyKey || idempotencyKey.length > 200) return res.status(400).json({ error: 'idempotency_key_required', correlationId: req.correlationId });
+  const specification = normalizeGeneratedTest(testData);
+  const policy = policyEngine.evaluate(specification, { tenantId: req.tenantId, userId: req.user.id });
+  if (!policy.approvalRequired) return res.status(400).json({ error: 'approval_not_required', correlationId: req.correlationId });
+  if (!policy.allowed) return res.status(403).json({ error: 'policy_denied', reasons: policy.reasons, correlationId: req.correlationId });
+  const approval = await approvalWorkflow.request({ tenantId: req.tenantId, requesterId: req.user.id, specification, sessionId, idempotencyKey, policy });
   res.status(201).json(approval);
 });
 
@@ -283,7 +295,8 @@ app.post('/api/approvals/:id/decision', requirePermission('runs:approve'), async
 });
 
 app.post('/api/evaluations/run', requirePermission('admin:ai'), async (req, res) => {
-  const dataset = req.body.dataset || await evaluationHarness.loadDataset(req.body.datasetPath);
+  if (req.body.datasetPath) return res.status(400).json({ error: 'dataset_path_not_supported', correlationId: req.correlationId });
+  const dataset = req.body.dataset || await evaluationHarness.loadDataset();
   const evaluation = await evaluationHarness.evaluate(dataset);
   await store.recordAudit({ tenantId: req.tenantId, actorId: req.user.id, action: 'ai.evaluation_completed', resourceType: 'evaluation', metadata: evaluation });
   res.status(evaluation.passed ? 200 : 422).json(evaluation);
@@ -296,7 +309,7 @@ app.post('/api/webhooks/verify', requirePermission('admin:ai'), (req, res) => {
 });
 
 // Test Management Endpoints
-app.get('/api/tests', async (req, res) => {
+app.get('/api/tests', requireLegacyTestApi, requirePermission('admin:runtime'), async (req, res) => {
   try {
     const tests = await testManager.getAllTests();
     res.json(tests);
@@ -306,7 +319,7 @@ app.get('/api/tests', async (req, res) => {
   }
 });
 
-app.get('/api/tests/:id', async (req, res) => {
+app.get('/api/tests/:id', requireLegacyTestApi, requirePermission('admin:runtime'), async (req, res) => {
   try {
     const test = await testManager.getTest(req.params.id);
     if (!test) {
@@ -319,7 +332,7 @@ app.get('/api/tests/:id', async (req, res) => {
   }
 });
 
-app.post('/api/tests', validationMiddleware(validateSavedTest), async (req, res) => {
+app.post('/api/tests', requireLegacyTestApi, requirePermission('admin:runtime'), validationMiddleware(validateSavedTest), async (req, res) => {
   try {
     const test = await testManager.saveTest({ ...req.validated, tenantId: req.tenantId, ownerId: req.user.id });
     res.json(test);
@@ -329,7 +342,7 @@ app.post('/api/tests', validationMiddleware(validateSavedTest), async (req, res)
   }
 });
 
-app.delete('/api/tests/:id', async (req, res) => {
+app.delete('/api/tests/:id', requireLegacyTestApi, requirePermission('admin:runtime'), async (req, res) => {
   try {
     await testManager.deleteTest(req.params.id);
     res.json({ message: 'Test deleted successfully' });
@@ -340,7 +353,7 @@ app.delete('/api/tests/:id', async (req, res) => {
 });
 
 // Test Results Endpoints
-app.get('/api/results', async (req, res) => {
+app.get('/api/results', requireLegacyTestApi, requirePermission('admin:runtime'), async (req, res) => {
   try {
     const results = await testManager.getAllResults();
     res.json(results);
@@ -350,7 +363,7 @@ app.get('/api/results', async (req, res) => {
   }
 });
 
-app.get('/api/results/:sessionId', async (req, res) => {
+app.get('/api/results/:sessionId', requireLegacyTestApi, requirePermission('admin:runtime'), async (req, res) => {
   try {
     const result = await testManager.getResult(req.params.sessionId);
     if (!result) {
@@ -364,7 +377,7 @@ app.get('/api/results/:sessionId', async (req, res) => {
 });
 
 // Analytics and Insights Endpoints
-app.get('/api/analytics/dashboard', requirePermission('dashboard:read'), async (req, res) => {
+app.get('/api/analytics/dashboard', requireLegacyTestApi, requirePermission('admin:runtime'), async (req, res) => {
   try {
     const analytics = await testManager.getDashboardAnalytics();
     res.json({ ...analytics, runs: await store.getDashboard(req.tenantId) });
@@ -374,57 +387,38 @@ app.get('/api/analytics/dashboard', requirePermission('dashboard:read'), async (
   }
 });
 
-// WebSocket connection handling
-wss.on('connection', (ws, req) => {
-  const requestUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
-  const bearer = req.headers.authorization?.startsWith('Bearer ')
-    ? req.headers.authorization.slice(7)
-    : requestUrl.searchParams.get('access_token');
-  const claims = verifyHs256Jwt(bearer, config.auth.jwtSecret);
-  const devClaims = config.auth.mode === 'development'
-    ? { sub: req.headers['x-dev-user'] || 'local-developer', tenant_id: req.headers['x-tenant-id'] || 'local-tenant' }
-    : null;
-  const identity = claims || devClaims;
-  if (!identity?.sub || !identity?.tenant_id) {
-    logger.warn('websocket.authentication.failed', { correlationId: req.headers['x-correlation-id'] });
+// WebSockets are disabled by default. When enabled they use the same identity
+// provider as HTTP, never accept query-string credentials, and subscribe only to
+// the authenticated tenant's event channel.
+wss.on('connection', async (ws, req) => {
+  if (!config.features.websockets) return ws.close(1013, 'websocket_disabled');
+  try {
+    const bearer = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : null;
+    let claims = null;
+    if (config.auth.mode === 'oidc') claims = mapGroupsToRoles(await websocketOidcVerifier.verify(bearer), config.auth.oidc);
+    else if (config.auth.mode === 'development') claims = { sub: req.headers['x-dev-user'] || 'local-developer', tenant_id: req.headers['x-tenant-id'] || 'local-tenant', roles: ['developer'] };
+    else if (config.auth.mode !== 'saml') claims = verifyHs256Jwt(bearer, config.auth.jwtSecret);
+    if (!claims?.sub || !claims?.tenant_id || (config.auth.mode === 'oidc' && !claims.roles?.length)) throw new Error('authentication_required');
+
+    ws.tenantId = String(claims.tenant_id);
+    ws.userId = String(claims.sub);
+    const connectionId = `${ws.userId}:${Date.now()}:${crypto.randomUUID()}`;
+    ws.connectionId = connectionId;
+    streamingService.addConnection(ws, connectionId, { tenantId: ws.tenantId, userId: ws.userId, roles: claims.roles || [] });
+    streamingService.subscribe(connectionId, `tenant-${ws.tenantId}`);
+    logger.info('websocket.connected', { userId: ws.userId, tenantId: ws.tenantId, connectionId });
+
+    ws.on('message', message => {
+      try { streamingService.handleMessage(ws, JSON.parse(String(message))); }
+      catch (_) { ws.send(JSON.stringify({ type: 'error', message: 'invalid_message_format' })); }
+    });
+    ws.on('close', () => { logger.info('websocket.closed', { userId: ws.userId, tenantId: ws.tenantId }); streamingService.removeConnection(connectionId); });
+    ws.on('error', error => logger.error('websocket.error', { userId: ws.userId, tenantId: ws.tenantId, error: error.message }));
+    ws.send(JSON.stringify({ type: 'connection-established', tenantId: ws.tenantId, timestamp: new Date().toISOString() }));
+  } catch (error) {
+    logger.warn('websocket.authentication.failed', { correlationId: req.headers['x-correlation-id'], error: error.message });
     ws.close(1008, 'authentication_required');
-    return;
   }
-  ws.tenantId = String(identity.tenant_id);
-  ws.userId = String(identity.sub);
-  const connectionId = `${ws.userId}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
-  ws.connectionId = connectionId;
-  streamingService.addConnection(ws, connectionId);
-  logger.info('websocket.connected', { userId: ws.userId, tenantId: ws.tenantId, connectionId });
-  
-  ws.on('message', (message) => {
-    try {
-      const data = JSON.parse(message);
-      streamingService.handleMessage(ws, { ...data, connectionId: data.connectionId || connectionId });
-    } catch (error) {
-      console.error('WebSocket message error:', error);
-      ws.send(JSON.stringify({
-        type: 'error',
-        message: 'Invalid message format'
-      }));
-    }
-  });
-
-  ws.on('close', () => {
-    logger.info('websocket.closed', { userId: ws.userId, tenantId: ws.tenantId });
-    streamingService.removeConnection(connectionId);
-  });
-
-  ws.on('error', (error) => {
-    logger.error('websocket.error', { userId: ws.userId, tenantId: ws.tenantId, error: error.message });
-  });
-
-  // Send welcome message
-  ws.send(JSON.stringify({
-    type: 'connection-established',
-    message: 'Connected to SAINT Backend',
-    timestamp: new Date().toISOString()
-  }));
 });
 
 // Error handling middleware. Do not expose raw internal messages to clients.

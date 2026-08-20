@@ -1,0 +1,41 @@
+#!/usr/bin/env node
+const fs = require('node:fs');
+const path = require('node:path');
+
+const root = path.resolve(__dirname, '..');
+const read = relativePath => fs.readFileSync(path.join(root, relativePath), 'utf8');
+const findings = [];
+
+function requireSource(relativePath, pattern, control) {
+  if (!pattern.test(read(relativePath))) findings.push({ control, file: relativePath, status: 'missing' });
+}
+
+function safeTemplate() {
+  return `# Atom release-safe baseline. Replace OIDC and infrastructure placeholders before deployment.\nNODE_ENV=production\nAUTH_MODE=oidc\nOIDC_ISSUER=https://identity.example.com/\nOIDC_AUDIENCE=atom-api\nOIDC_JWKS_URI=https://identity.example.com/.well-known/jwks.json\nOIDC_ROLE_MAPPING_JSON={\"atom-developers\":\"developer\",\"atom-approvers\":\"approver\",\"atom-admins\":\"admin\"}\nALLOWED_ORIGINS=https://app.example.com\nPERSISTENCE_MODE=postgres\nQUEUE_MODE=bullmq\nOBJECT_STORAGE_MODE=s3\n# Keep execution disabled until the managed egress proxy and registered target allowlist are deployed.\nEXECUTION_ENABLED=false\nWORKER_NETWORK_MODE=none\nENABLE_LEGACY_TEST_API=false\nENABLE_WEBSOCKETS=false\nPOLICY_ALLOWED_DOMAINS=\n`;
+}
+
+const writeIndex = process.argv.indexOf('--write-template');
+if (writeIndex !== -1) {
+  const destination = process.argv[writeIndex + 1];
+  if (!destination) throw new Error('usage: node scripts/remediate-p0-release.js --write-template <path>');
+  const resolved = path.resolve(destination);
+  if (fs.existsSync(resolved)) throw new Error(`refusing_to_overwrite_existing_file:${resolved}`);
+  fs.writeFileSync(resolved, safeTemplate(), { mode: 0o600 });
+  console.log(JSON.stringify({ status: 'template_written', path: resolved }, null, 2));
+}
+
+requireSource('src/backend/server.js', /requireLegacyTestApi/, 'P0-1 legacy API is disabled by default');
+requireSource('src/backend/server.js', /approvalWorkflow\.consume\(/, 'P0-3 approval consumption is bound at execution');
+requireSource('src/backend/server.js', /query-string credentials/, 'P0-2 WebSocket query tokens are prohibited');
+requireSource('src/backend/streamingService.js', /allowedChannel\(connection, channel\)/, 'P0-2 WebSocket channels are tenant-authorized');
+requireSource('src/backend/approvalWorkflow.js', /requestDigest/, 'P0-3 approvals bind a canonical request digest');
+requireSource('src/backend/persistence.js', /status='consumed'/, 'P0-3 approvals are atomically marked single use');
+requireSource('src/backend/policyEngine.js', /target_private_address_blocked/, 'P0-6 private targets are denied');
+requireSource('src/backend/policyEngine.js', /target_domain_not_allowlisted/, 'P0-6 allowlist policy is enforced');
+requireSource('src/backend/mcpExecutor.js', /runResultsDir/, 'P0-4 worker results mount is per run');
+requireSource('src/backend/security.js', /production_auth_mode_must_be_oidc/, 'P0-5 unsupported production authentication is denied');
+requireSource('src/backend/security.js', /managed_egress_not_configured/, 'P0-4 execution fails closed without managed egress');
+
+const status = findings.length ? 'failed' : 'passed';
+console.log(JSON.stringify({ status, controlsChecked: 11, findings }, null, 2));
+if (findings.length) process.exitCode = 1;
