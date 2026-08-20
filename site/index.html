@@ -21,6 +21,8 @@
       <nav class="nav-links" aria-label="Primary navigation">
         <a href="#capabilities">Capabilities</a>
         <a href="#controls">Controls</a>
+        <a href="#api-workflow">API workflow</a>
+        <a href="#simulator">Simulator</a>
         <a href="#operations">Operations</a>
         <a href="#start">Get started</a>
       </nav>
@@ -87,6 +89,83 @@
       </div>
     </section>
 
+    <section id="api-workflow" class="section api-workflow-section">
+      <div class="shell">
+        <div class="section-heading api-heading">
+          <p class="eyebrow">API testing and orchestration</p>
+          <h2>Chain API tests with controlled data flow, not ad-hoc scripts.</h2>
+          <p>ATOM accepts a versioned <code>api-test-plan/v1</code> contract. Each plan is declarative: it defines bounded requests, assertions, safe response extraction, and later placeholder resolution without allowing arbitrary code execution.</p>
+        </div>
+        <div class="api-doc-grid">
+          <aside class="api-rail" aria-label="API orchestration flow">
+            <p class="rail-label">Execution model</p>
+            <ol>
+              <li><span>01</span><strong>Validate</strong><small>Schema, path, method, and JSON-path checks</small></li>
+              <li><span>02</span><strong>Authorize</strong><small>Tenant, policy, approval, and egress gates</small></li>
+              <li><span>03</span><strong>Chain</strong><small>Extract a value and resolve only later references</small></li>
+              <li><span>04</span><strong>Reconcile</strong><small>Persist evidence and safely update operators</small></li>
+            </ol>
+          </aside>
+          <div class="api-doc-content">
+            <div class="doc-callout"><span class="callout-mark">⊕</span><p><strong>Forward-only chaining.</strong> A step can capture a named value from a response and reference it in a later request with <code>{{chain.variable}}</code>. Duplicate variables, unresolved placeholders, unsafe JSON paths, and forward references are rejected before execution.</p></div>
+            <div class="api-plan-example">
+              <div class="code-topline"><span>api-test-plan/v1</span><span>Declarative example</span></div>
+              <pre><code>{
+  "environment": "staging",
+  "steps": [
+    {
+      "id": "create-order",
+      "request": { "method": "POST", "path": "/v1/orders" },
+      "assertions": [{ "type": "status", "equals": 201 }],
+      "extract": [{ "name": "orderId", "path": "$.id", "classification": "internal" }]
+    },
+    {
+      "id": "get-order",
+      "request": { "method": "GET", "path": "/v1/orders/{{chain.orderId}}" },
+      "assertions": [{ "type": "json_path_equals", "path": "$.state", "equals": "created" }]
+    }
+  ]
+}</code></pre>
+            </div>
+          </div>
+        </div>
+        <div class="api-reference" role="region" aria-label="API plan reference">
+          <article><p class="reference-kicker">Contract</p><h3>Constrain the request surface.</h3><p>Plans require a name, environment, bounded unique steps, allowlisted HTTP methods, relative paths, JSON-only bodies, and normalized headers. The test specification validates the API plan before it becomes executable.</p></article>
+          <article><p class="reference-kicker">Assertions</p><h3>Make response expectations explicit.</h3><p>Use status checks, JSON-path existence or equality checks, and header equality checks. A failed assertion ends the dependent chain so later requests cannot run against an invalid state.</p></article>
+          <article><p class="reference-kicker">Extraction</p><h3>Pass values safely between steps.</h3><p>Extraction rules accept safe body JSON paths and record only presence and classification in step results. Secret-classified values are not surfaced in live or result payloads.</p></article>
+          <article><p class="reference-kicker">Orchestration</p><h3>Keep run state durable and observable.</h3><p>Authorized submission, idempotency, policy gates, isolated execution, and replayable lifecycle events preserve an accountable path from request through evidence.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="simulator" class="section simulator-section">
+      <div class="shell simulator-layout" data-test-runner>
+        <div class="simulator-copy">
+          <p class="eyebrow">Interactive sandbox</p>
+          <h2>See a governed API chain move through the mesh.</h2>
+          <p>This browser-only simulation follows a synthetic order workflow. It does not send requests to a live service, retain data, or expose secret values.</p>
+          <div class="runner-actions">
+            <button class="button button-primary" type="button" data-runner-start>Run simulation</button>
+            <button class="runner-reset" type="button" data-runner-reset>Reset</button>
+          </div>
+          <p class="runner-status" data-runner-state data-tone="idle">Ready to simulate</p>
+          <p class="sr-only" data-runner-announcement aria-live="polite"></p>
+        </div>
+        <div class="runner-console" aria-label="API test-runner simulation">
+          <div class="console-heading"><div><span class="console-dot"></span><strong>ATOM Run Console</strong></div><span>Simulated</span></div>
+          <ol class="runner-phases" aria-label="Orchestration stages">
+            <li data-runner-phase data-state="active"><span>1</span>Validate</li><li data-runner-phase data-state="pending"><span>2</span>Govern</li><li data-runner-phase data-state="pending"><span>3</span>Execute</li><li data-runner-phase data-state="pending"><span>4</span>Reconcile</li>
+          </ol>
+          <div class="runner-steps">
+            <article data-runner-step data-state="queued"><div><span class="step-order">01</span><strong>Create order</strong><code>POST /v1/orders</code></div><span data-step-result>Awaiting execution</span></article>
+            <article data-runner-step data-state="queued"><div><span class="step-order">02</span><strong>Retrieve order</strong><code>GET /v1/orders/{{chain.orderId}}</code></div><span data-step-result>Awaiting execution</span></article>
+            <article data-runner-step data-state="queued"><div><span class="step-order">03</span><strong>Verify receipt</strong><code>GET /v1/orders/{{chain.orderId}}/receipt</code></div><span data-step-result>Awaiting execution</span></article>
+          </div>
+          <div class="runner-log" data-runner-log aria-label="Simulation events"></div>
+        </div>
+      </div>
+    </section>
+
     <section id="controls" class="section section-dark">
       <div class="shell controls-layout">
         <div class="controls-copy">
@@ -148,5 +227,6 @@ npm run dev</code></pre>
       <div class="footer-links"><a href="https://github.com/itismohan/Atom">GitHub</a><a href="https://github.com/itismohan/Atom/tree/main/docs">Documentation</a><a href="https://github.com/itismohan/Atom/actions">Build status</a></div>
     </div>
   </footer>
+  <script src="simulation.js"></script>
 </body>
 </html>
