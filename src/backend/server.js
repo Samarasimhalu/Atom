@@ -132,7 +132,7 @@ app.get('/api/readyz', async (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'healthy',
-    service: 'SAINT Backend',
+    service: 'ATOM Backend',
     version: '1.0.0',
     timestamp: new Date().toISOString(),
     config: {

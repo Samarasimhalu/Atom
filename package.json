@@ -1,7 +1,7 @@
 {
-  "name": "saint-app",
+  "name": "atom-app",
   "version": "1.0.0",
-  "description": "SAINT: Smart AI for Integrated Next-gen Testing - Enterprise-level AI testing assistant",
+  "description": "ATOM: Automated Testing and Orchestration Mesh — Enterprise AI testing assistant",
   "main": "src/main/main.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
@@ -32,7 +32,7 @@
     "automation",
     "enterprise"
   ],
-  "author": "SAINT Team",
+  "author": "ATOM Team",
   "license": "Apache-2.0",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1113.0",

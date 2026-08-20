@@ -19,8 +19,6 @@ import {
   CheckCircle, 
   XCircle, 
   Clock,
-  Sparkles,
-  Brain,
   Cpu,
   Globe,
   Shield,
@@ -29,6 +27,7 @@ import {
 import './App.css';
 import EnterpriseDashboard from './components/EnterpriseDashboard.jsx';
 import { useAtomRunStream } from './hooks/useAtomRunStream';
+import atomLogo from './assets/atom-logo.png';
 
 function App() {
   const [prompt, setPrompt] = useState('');
@@ -164,19 +163,14 @@ function App() {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="relative">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
-                  <Brain className="w-6 h-6 text-white" />
-                </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                  <Sparkles className="w-2 h-2 text-white" />
-                </div>
+              <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950">
+                <img src={atomLogo} alt="Atom logo" className="h-full w-full object-cover" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  SAINT
+                <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
+                  ATOM
                 </h1>
-                <p className="text-sm text-muted-foreground">Smart AI for Integrated Next-gen Testing</p>
+                <p className="text-sm text-muted-foreground">Automated Testing and Orchestration Mesh</p>
               </div>
             </div>
             
@@ -532,7 +526,7 @@ function App() {
             </div>
           </div>
           <p className="mt-4">
-            SAINT v1.0.0 - Smart AI for Integrated Next-gen Testing
+            ATOM v1.0.0 - Automated Testing and Orchestration Mesh
           </p>
         </footer>
       </div>

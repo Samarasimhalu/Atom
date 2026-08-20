@@ -42,7 +42,7 @@ class AITestGenerator {
         options,
         metadata: {
           generated: timestamp,
-          generator: 'SAINT AI',
+          generator: 'ATOM AI',
           version: '1.0.0'
         }
       };
@@ -100,7 +100,7 @@ class AITestGenerator {
   }
 
   getSystemPrompt(testType) {
-    const basePrompt = `You are SAINT, an expert AI testing assistant. Generate comprehensive, production-ready test code based on user prompts.
+    const basePrompt = `You are ATOM, an expert AI testing assistant for Automated Testing and Orchestration Mesh. Generate comprehensive, production-ready test code based on user prompts.
 
 Rules:
 1. Use modern testing frameworks and best practices
@@ -395,7 +395,7 @@ test.describe('Mixed UI and API Tests', () => {
   }
 
   generateSummary(prompt, testType) {
-    return `This ${testType} test was generated based on the prompt: "${prompt}". It includes basic test structure with proper assertions and error handling using the SAINT fallback generator. The test follows enterprise-grade testing practices and includes screenshot capture for verification.`;
+    return `This ${testType} test was generated based on the prompt: "${prompt}". It includes basic test structure with proper assertions and error handling using the ATOM fallback generator. The test follows enterprise-grade testing practices and includes screenshot capture for verification.`;
   }
 }
 
