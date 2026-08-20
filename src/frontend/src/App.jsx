@@ -42,6 +42,9 @@ function App() {
   const [activeTab, setActiveTab] = useState('code');
   const [dashboardRefresh, setDashboardRefresh] = useState(0);
   const [executionEvent, setExecutionEvent] = useState(null);
+  const [testType, setTestType] = useState('ui');
+  const [mobilePlatform, setMobilePlatform] = useState('android');
+  const [mobileDeviceName, setMobileDeviceName] = useState('');
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
   const wsUrl = import.meta.env.VITE_WS_URL || apiBaseUrl.replace(/^http/, 'ws');
   const requestHeaders = useMemo(() => ({
@@ -95,8 +98,10 @@ function App() {
         headers: requestHeaders,
         body: JSON.stringify({
           prompt: prompt.trim(),
-          testType: 'ui',
-          options: {}
+          testType,
+          options: testType === 'mobile'
+            ? { mobile: { platform: mobilePlatform, ...(mobileDeviceName.trim() ? { deviceName: mobileDeviceName.trim() } : {}) } }
+            : {}
         }),
       });
 
@@ -237,8 +242,52 @@ function App() {
 
                 {/* Input Area */}
                 <div className="space-y-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <label className="space-y-1.5 text-xs font-medium text-slate-700 dark:text-slate-200">
+                      <span>Test type</span>
+                      <select
+                        value={testType}
+                        onChange={event => setTestType(event.target.value)}
+                        className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-900"
+                      >
+                        <option value="ui">UI / browser</option>
+                        <option value="api">API</option>
+                        <option value="visual">Visual</option>
+                        <option value="mixed">Mixed</option>
+                        <option value="mobile">Native mobile</option>
+                      </select>
+                    </label>
+                    {testType === 'mobile' && (
+                      <label className="space-y-1.5 text-xs font-medium text-slate-700 dark:text-slate-200">
+                        <span>Native platform</span>
+                        <select
+                          value={mobilePlatform}
+                          onChange={event => setMobilePlatform(event.target.value)}
+                          className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-900"
+                        >
+                          <option value="android">Android · UiAutomator2</option>
+                          <option value="ios">iOS · XCUITest</option>
+                        </select>
+                      </label>
+                    )}
+                  </div>
+                  {testType === 'mobile' && (
+                    <div className="space-y-2 rounded-lg border border-violet-200 bg-violet-50/70 p-3 text-xs leading-5 text-violet-900 dark:border-violet-900/50 dark:bg-violet-950/30 dark:text-violet-100">
+                      <label className="block space-y-1.5 font-medium">
+                        <span>Managed device name <span className="font-normal text-violet-700 dark:text-violet-200">(optional)</span></span>
+                        <input
+                          value={mobileDeviceName}
+                          maxLength={120}
+                          onChange={event => setMobileDeviceName(event.target.value)}
+                          placeholder={mobilePlatform === 'ios' ? 'e.g., iPhone 16' : 'e.g., Pixel 8'}
+                          className="h-9 w-full rounded-md border border-violet-200 bg-white px-3 text-sm text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 dark:border-violet-800 dark:bg-slate-900 dark:text-slate-100"
+                        />
+                      </label>
+                      <p>Native runs use ATOM’s managed, immutable Appium worker and are admitted only when the platform device broker is configured.</p>
+                    </div>
+                  )}
                   <Textarea
-                    placeholder="Describe the test you want to create..."
+                    placeholder={testType === 'mobile' ? `Describe the ${mobilePlatform === 'ios' ? 'iOS' : 'Android'} workflow to automate...` : 'Describe the test you want to create...'}
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     className="min-h-[120px] resize-none border-2 focus:border-blue-500 transition-colors"

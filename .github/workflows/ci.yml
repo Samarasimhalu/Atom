@@ -106,3 +106,27 @@ jobs:
           exit-code: '1'
           ignore-unfixed: true
           severity: CRITICAL,HIGH
+
+  appium-worker-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Appium worker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: workers/appium/Dockerfile
+          load: true
+          tags: atom-appium-worker:${{ github.sha }}
+          provenance: false
+          sbom: false
+      - name: Scan Appium worker image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: atom-appium-worker:${{ github.sha }}
+          format: table
+          scanners: vuln
+          vuln-type: os,library
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH

@@ -7,12 +7,13 @@
 <p align="center">
   <a href="https://github.com/itismohan/Atom/actions/workflows/ci.yml?query=branch%3Amain"><img src="https://github.com/itismohan/Atom/actions/workflows/ci.yml/badge.svg?branch=main" alt="Continuous integration status"></a>
   <img src="https://img.shields.io/badge/Playwright_worker-1.62.1-2EAD33?logo=playwright&logoColor=white" alt="Playwright worker version 1.62.1">
+  <img src="https://img.shields.io/badge/native_mobile-iOS%20%2B%20Android-7D3C98" alt="Native iOS and Android automation">
   <img src="https://img.shields.io/badge/identity-OIDC%20%2B%20RBAC-4051B5" alt="OIDC and role-based access control">
   <img src="https://img.shields.io/badge/worker-CVE%20scanned-0E8A16" alt="Worker image CVE scanned">
   <img src="https://img.shields.io/badge/tenant-isolated-6F42C1" alt="Tenant-isolated architecture">
 </p>
 
-**Atom** is an AI-assisted Playwright testing platform designed for controlled test generation, approval-gated execution, and tenant-aware artifact handling. It combines a React interface with an Express API, a governed AI gateway, and an isolated Playwright worker image.
+**Atom** is an AI-assisted testing platform designed for controlled test generation, approval-gated execution, and tenant-aware artifact handling. It combines a React interface with an Express API, a governed AI gateway, an isolated Playwright worker image, and a dedicated immutable Appium worker for managed native iOS and Android testing.
 
 > **Security posture:** Atom treats generated test code as untrusted input. Test execution is disabled by default and is permitted only when a prebuilt isolated worker image is configured explicitly.
 
@@ -25,6 +26,7 @@
 - [Command-line reference](#command-line-reference)
 - [Chat prompts and slash-command note](#chat-prompts-and-slash-command-note)
 - [API CLI examples](#api-cli-examples)
+- [Mobile automation with Appium](#mobile-automation-with-appium)
 - [Running isolated Playwright workers](#running-isolated-playwright-workers)
 - [Configuration](#configuration)
 - [CI/CD security gates](#cicd-security-gates)
@@ -34,17 +36,66 @@
 
 ## What Atom provides
 
-Atom turns a structured natural-language request into a Playwright test specification and, when explicitly enabled, submits the test to an isolated worker for execution. The platform is appropriate for UI, API, visual, and mixed test definitions.
+Atom turns a structured natural-language request into a governed test specification and, when explicitly enabled, submits it to an isolated worker for execution. The platform supports UI, API, visual, mixed, and managed native mobile test definitions.
 
 | Capability | Description |
 |---|---|
 | **AI test generation** | Generates and normalizes Playwright test specifications through an allowlisted AI gateway with input redaction, budgets, evaluation, and audit events. |
 | **Controlled execution** | Runs are disabled unless `EXECUTION_ENABLED=true` and an isolated immutable worker image is configured. Unsafe code patterns are denied before submission. |
+| **Native mobile automation** | Generates and, when separately configured, executes native iOS/XCUITest and Android/UiAutomator2 workflows through a dedicated immutable Appium worker and managed device brokers. |
 | **Tenant isolation** | Every authenticated request has a tenant context. Runs, audit events, approvals, quotas, and artifacts are queried within that tenant boundary. |
 | **Identity and RBAC** | Supports development identity headers, HS256 JWTs, and an OIDC/SAML foundation. Built-in roles include `viewer`, `developer`, `approver`, `admin`, and `owner`. |
 | **Durable operations** | Supports PostgreSQL persistence, Redis/BullMQ queues, S3-compatible artifact storage, idempotency keys, run cancellation, and replayable run events. |
 | **Governance** | Applies a policy engine, approval workflow, signed-webhook support, retention controls, access-review evidence, and an AI evaluation harness. |
 | **Assurance** | Includes SOC 2 readiness materials, release verification, SBOM/provenance controls, dependency checks, secret scanning, image scanning, and a non-destructive security smoke simulation. |
+
+## Mobile automation with Appium
+
+ATOM generates TypeScript tests that use WebdriverIO's injected `browser` session with stable accessibility-id locators. Native execution is **fail-closed**: it is rejected unless the Appium worker is explicitly enabled, its image reference is SHA-256 digest-pinned, the private Docker network is configured, and the relevant HTTPS managed device broker is present. Generated scripts cannot create their own remote session, read environment variables, or embed device-broker credentials.
+
+| Platform | Automation driver | Worker-owned control plane | Generated script contract |
+|---|---|---|---|
+| iOS | `XCUITest` | HTTPS iOS device broker on the Appium-private network | Uses `@wdio/globals` and accessibility-id locators such as `~primary-action`. |
+| Android | `UiAutomator2` | HTTPS Android device broker on the Appium-private network | Uses `@wdio/globals` and accessibility-id locators such as `~primary-action`. |
+
+### Generate a native mobile test
+
+```bash
+curl -sS -X POST "${ATOM_API}/api/generate/test" \
+  "${ATOM_HEADERS[@]}" \
+  --data '{
+    "prompt": "Validate checkout completion and show the confirmation state.",
+    "testType": "mobile",
+    "options": {
+      "mobile": { "platform": "ios", "deviceName": "iPhone 16" },
+      "timeout": 90000
+    }
+  }' | jq
+```
+
+Use `"android"` and an approved Android device name for Android generation. The same tenant-scoped approval, idempotency, policy, quota, retention, event, and artifact-authorization controls apply when the generated mobile test is submitted for execution.
+
+### Configure the immutable Appium worker
+
+Build the Appium image from the repository root; it contains locked Appium and WebdriverIO dependencies and never installs customer-controlled packages during a run.
+
+```bash
+docker build \
+  --file workers/appium/Dockerfile \
+  --tag atom-appium-worker:local \
+  .
+```
+
+| Variable | Required for native execution | Purpose |
+|---|---:|---|
+| `APPIUM_EXECUTION_ENABLED` | Yes | Must be exactly `true` to enable native execution admission. |
+| `APPIUM_WORKER_IMAGE` | Yes | Immutable Appium worker image. Production requires `@sha256:<64-hex-digest>`. |
+| `APPIUM_NETWORK_NAME` | Yes | Private Docker network joining the worker to approved managed device brokers only. |
+| `APPIUM_ANDROID_DEVICE_BROKER_URL` | Android | Credential-free HTTPS endpoint for the managed Android broker. |
+| `APPIUM_IOS_DEVICE_BROKER_URL` | iOS | Credential-free HTTPS endpoint for the managed iOS broker. |
+| `APPIUM_MAX_CONCURRENT_TESTS` | No | Bounded Appium-worker concurrency; defaults to `1`. |
+
+The worker container runs non-root with a read-only filesystem, `cap-drop=ALL`, `no-new-privileges`, CPU/memory/PID limits, isolated temporary filesystems, and no USB device mounts or privileged mode. The server, rather than the generated test, selects the platform-specific broker and injects its URL only into the worker process. The worker accepts HTTPS endpoints without credentials, queries, or fragments, writes JUnit evidence to `/results/results.xml`, and exposes no public Appium listener.
 
 ## Architecture and security controls
 
@@ -74,6 +125,7 @@ React frontend  ----->  Express API
                             |
                             v
       Immutable, non-root Playwright worker image
+      Immutable, non-root Appium worker image -> managed device broker
 ```
 
 The worker is intentionally separate from the API process. It uses a digest-pinned Playwright Noble base image, installs a dedicated locked Playwright runtime at image-build time, and invokes the preinstalled `playwright` executable. It does **not** install customer-controlled dependencies at test runtime. The worker image is continuously checked by the CI vulnerability gate. See the official [Playwright Docker guidance](https://playwright.dev/docs/docker) for the upstream runtime model.
@@ -85,7 +137,7 @@ The worker is intentionally separate from the API process. It uses a digest-pinn
 | Node.js | 20 LTS or 22 LTS | Backend tooling and root project dependencies. |
 | npm | Bundled with Node.js | Root dependency management. |
 | pnpm | Current stable via Corepack | Frontend dependency management; the frontend uses `pnpm-lock.yaml`. |
-| Docker with Buildx | Current stable | Required only to build or run isolated Playwright workers and local infrastructure. |
+| Docker with Buildx | Current stable | Required only to build or run isolated Playwright/Appium workers and local infrastructure. |
 | PostgreSQL, Redis, S3-compatible storage | Production only | Required for the durable production profile. Docker Compose can provide local services. |
 
 ## Quick start
@@ -248,7 +300,7 @@ curl -sS -X POST "${ATOM_API}/api/generate/test" \
   }' | jq
 ```
 
-The generation request accepts `ui`, `api`, `visual`, or `mixed` for `testType`. Browser values are `chromium`, `firefox`, and `webkit`. Request validation restricts timeouts, viewport sizes, retry counts, workers, and artifact modes.
+The generation request accepts `ui`, `api`, `visual`, `mixed`, or `mobile` for `testType`. A `mobile` request must include `options.mobile.platform` as `ios` or `android`; `options.mobile.deviceName` is optional. Browser values for web tests are `chromium`, `firefox`, and `webkit`. Request validation restricts timeouts, viewport sizes, retry counts, workers, and artifact modes.
 
 ### Submit an execution
 
@@ -392,6 +444,14 @@ export S3_SSE='AES256'
 export EXECUTION_ENABLED=true
 export WORKER_MODE=isolated-image
 export WORKER_IMAGE='registry.example.com/atom/playwright@sha256:replace-with-64-hex-digest'
+
+# Native mobile execution is independently admitted and requires its own immutable worker.
+export APPIUM_EXECUTION_ENABLED=true
+export APPIUM_WORKER_IMAGE='registry.example.com/atom/appium@sha256:replace-with-64-hex-digest'
+export APPIUM_NETWORK_NAME='atom-appium-private'
+export APPIUM_ANDROID_DEVICE_BROKER_URL='https://android-broker.example/automation'
+export APPIUM_IOS_DEVICE_BROKER_URL='https://ios-broker.example/automation'
+export APPIUM_MAX_CONCURRENT_TESTS=1
 export WEBHOOK_SIGNING_SECRET='replace-with-a-long-random-secret'
 ```
 
@@ -403,7 +463,7 @@ Two GitHub Actions workflows enforce the core checks:
 
 | Workflow | Main gates |
 |---|---|
-| `.github/workflows/ci.yml` | Root dependency install, backend syntax checks, unit/integration tests, frontend lint/build/audit, worker image build, Trivy CVE scan, SBOM and provenance controls. |
+| `.github/workflows/ci.yml` | Root dependency install, backend syntax checks, unit/integration tests, frontend lint/build/audit, Playwright and Appium worker image builds, Trivy CVE scans, SBOM and provenance controls. |
 | `.github/workflows/pr-soc2-security.yml` | SOC 2 regression tests, AI evaluation, non-destructive security simulation, dependency audits, secret scanning, worker image hardening checks, and vulnerability scanning. |
 
 The worker image scan uses [Trivy](https://github.com/aquasecurity/trivy), which evaluates operating-system and library CVEs. It is intentionally scoped to vulnerability scanning because repository secret scanning is handled separately. The CI gate fails on fixed `HIGH` or `CRITICAL` findings.

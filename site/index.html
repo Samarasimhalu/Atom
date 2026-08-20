@@ -88,20 +88,20 @@
           <div class="card-icon amber">◌</div><p class="card-kicker">Mixed test definitions</p><h3>Coordinate application journeys.</h3><p>Combine API assertions and browser verification into one governed run model rather than stitching disconnected tools together.</p>
         </article>
         <article class="capability-card mobile-card">
-          <div class="card-icon rose">▣</div><p class="card-kicker">Native mobile generation</p><h3>Generate iOS and Android Appium scripts.</h3><p>Create platform-specific WebdriverIO/Appium TypeScript artifacts for XCUITest and UiAutomator2 with accessible locator guidance.</p>
+          <div class="card-icon rose">▣</div><p class="card-kicker">Native mobile automation</p><h3>Generate and run managed iOS and Android workflows.</h3><p>Create platform-specific WebdriverIO TypeScript for XCUITest and UiAutomator2, then execute through ATOM’s configured immutable Appium worker.</p>
         </article>
       </div>
     </section>
 
     <section id="mobile-automation" class="section mobile-section">
       <div class="shell mobile-layout">
-        <div class="mobile-copy"><p class="eyebrow">Native mobile automation</p><h2>Generate iOS and Android automation scripts with an explicit execution boundary.</h2><p>ATOM supports a <code>mobile</code> generation type that requires a declared platform. It emits Appium-compatible TypeScript with stable accessibility-id locators, session lifecycle handling, and platform-specific driver configuration.</p><div class="mobile-platforms"><article><span>iOS</span><strong>XCUITest</strong><small>Simulator or managed device profile</small></article><article><span>Android</span><strong>UiAutomator2</strong><small>Emulator or managed device profile</small></article></div></div>
-        <div class="mobile-contract"><div class="contract-heading"><span>mobile / generation-only</span><span>Appium</span></div><pre><code>options: {
+        <div class="mobile-copy"><p class="eyebrow">Native mobile automation</p><h2>Generate and run iOS and Android automation through a managed execution boundary.</h2><p>ATOM supports a <code>mobile</code> generation type that requires a declared platform. It emits managed WebdriverIO TypeScript with stable accessibility-id locators; native execution uses a separate immutable Appium worker and the approved platform device broker.</p><div class="mobile-platforms"><article><span>iOS</span><strong>XCUITest</strong><small>Managed simulator or device profile</small></article><article><span>Android</span><strong>UiAutomator2</strong><small>Managed emulator or device profile</small></article></div></div>
+        <div class="mobile-contract"><div class="contract-heading"><span>mobile / managed execution</span><span>Appium</span></div><pre><code>options: {
   mobile: {
     platform: "ios" | "android",
     deviceName: "managed profile"
   }
-}</code></pre><div class="mobile-boundary"><span>⊘</span><p><strong>Fail closed by design.</strong> Generated mobile scripts cannot run in ATOM’s Playwright worker. Native execution remains blocked until a dedicated, immutable Appium worker and managed-device controls are configured.</p></div></div>
+}</code></pre><div class="mobile-boundary"><span>✓</span><p><strong>Fail closed by design.</strong> Native execution is available only when a SHA-256-pinned Appium worker, private worker network, and credential-free HTTPS device broker are configured for the selected platform. Otherwise ATOM rejects the run.</p></div></div>
       </div>
     </section>
 

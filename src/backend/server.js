@@ -10,6 +10,8 @@ const config = require('./config');
 // Import core modules
 const AITestGenerator = require('./aiTestGenerator');
 const MCPExecutor = require('./mcpExecutor');
+const AppiumExecutor = require('./appiumExecutor');
+const ExecutionRouter = require('./executionRouter');
 const TestManager = require('./testManager');
 const StreamingService = require('./streamingService');
 const { Persistence } = require('./persistence');
@@ -88,6 +90,8 @@ Object.values(config.storage).forEach(dir => {
 // Initialize core services
 const aiGenerator = new AITestGenerator(config);
 const mcpExecutor = new MCPExecutor(config);
+const appiumExecutor = new AppiumExecutor(config);
+const executionRouter = new ExecutionRouter({ playwrightExecutor: mcpExecutor, appiumExecutor });
 const testManager = new TestManager(config);
 const store = new Persistence(config, logger);
 const streamingService = new StreamingService(wss, {
@@ -101,7 +105,7 @@ const policyEngine = new PolicyEngine(config);
 const approvalWorkflow = new ApprovalWorkflow(config, store, logger);
 const evaluationHarness = new EvaluationHarness(config, aiGenerator, policyEngine, logger);
 const dataLifecycle = new DataLifecycleService({ store, objectStorage, config, logger });
-const runService = new RunService({ store, queue: runQueue, executor: mcpExecutor, streaming: streamingService, objectStorage, config, logger, policyEngine });
+const runService = new RunService({ store, queue: runQueue, executor: executionRouter, streaming: streamingService, objectStorage, config, logger, policyEngine });
 let retentionTimer;
 if (require.main === module) {
   retentionTimer = setInterval(async () => {

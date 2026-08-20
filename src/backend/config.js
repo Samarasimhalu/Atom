@@ -105,7 +105,16 @@ module.exports = {
     workers: 4,
     hardTimeoutMs: Number(process.env.EXECUTION_HARD_TIMEOUT_MS || 300000),
     maxArtifactBytes: Number(process.env.MAX_ARTIFACT_BYTES || 25 * 1024 * 1024),
-    maxArtifactFiles: Number(process.env.MAX_ARTIFACT_FILES || 100)
+    maxArtifactFiles: Number(process.env.MAX_ARTIFACT_FILES || 100),
+    appium: {
+      enabled: process.env.APPIUM_EXECUTION_ENABLED === 'true',
+      workerImage: process.env.APPIUM_WORKER_IMAGE || '',
+      workerMode: process.env.APPIUM_WORKER_MODE || 'isolated-appium-image',
+      networkName: process.env.APPIUM_NETWORK_NAME || process.env.APPIUM_WORKER_NETWORK_NAME || '',
+      androidDeviceBrokerUrl: process.env.APPIUM_ANDROID_DEVICE_BROKER_URL || '',
+      iosDeviceBrokerUrl: process.env.APPIUM_IOS_DEVICE_BROKER_URL || '',
+      maxConcurrentTests: Number(process.env.APPIUM_MAX_CONCURRENT_TESTS || 1)
+    }
   },
   websocket: {
     maxPayloadBytes: Number(process.env.WEBSOCKET_MAX_PAYLOAD_BYTES || 64 * 1024),

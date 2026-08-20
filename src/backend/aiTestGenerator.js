@@ -44,7 +44,7 @@ class AITestGenerator {
           generated: timestamp,
           generator: 'ATOM AI',
           version: '1.0.0',
-          ...(testType === 'mobile' ? { executionSupport: 'generation_only' } : {})
+          ...(testType === 'mobile' ? { executionSupport: 'requires_configured_appium_worker' } : {})
         }
       };
 
@@ -158,11 +158,11 @@ For Mixed tests:
         return `${basePrompt}
 
 For native mobile tests:
-- Generate TypeScript using WebdriverIO and Appium only; do not use Playwright
+- Generate TypeScript using the managed WebdriverIO browser global from @wdio/globals; do not use Playwright or create sessions with remote()
 - Target the requested iOS/XCUITest or Android/UiAutomator2 platform
-- Use environment-variable references for the Appium host and device profile; never embed credentials, tokens, or application binaries
-- Include setup, cleanup, stable accessibility-id locators, and meaningful assertions
-- Treat this as a generation-only artifact: native execution requires a separately hardened Appium worker image`;
+- Never read environment variables, embed credentials, tokens, device-broker URLs, or application binaries; ATOM's dedicated immutable Appium worker supplies the session
+- Use stable accessibility-id locators, meaningful assertions, and bounded screenshots under /results
+- Native execution is available only through ATOM's separately configured hardened Appium worker and managed device broker`;
 
       default:
         return basePrompt;
@@ -188,7 +188,7 @@ Include:
 
     if (testType === 'mobile') {
       const platform = options.mobile?.platform || 'android';
-      userPrompt += `\n- Native platform: ${platform}\n- Generate an Appium script for ${platform === 'ios' ? 'XCUITest' : 'UiAutomator2'}\n- Native execution is generation-only until a dedicated hardened Appium worker is configured`;
+      userPrompt += `\n- Native platform: ${platform}\n- Generate a managed WebdriverIO script for ${platform === 'ios' ? 'XCUITest' : 'UiAutomator2'}\n- Use the injected browser session only; do not create remote sessions or read environment variables\n- Native execution requires ATOM's configured immutable Appium worker and managed device broker`;
     } else if (options.mobile) {
       userPrompt += `\n- Mobile-optimized web testing`;
     }
@@ -225,7 +225,7 @@ Include:
           automationName: options.mobile?.platform === 'ios' ? 'XCUITest' : 'UiAutomator2',
           ...(options.mobile?.deviceName ? { deviceName: options.mobile.deviceName } : {})
         },
-        executionSupport: 'generation_only'
+        executionSupport: 'requires_configured_appium_worker'
       } : {}),
       metadata: {
         generated: new Date().toISOString(),
@@ -420,43 +420,27 @@ test.describe('Mixed UI and API Tests', () => {
   getMobileTemplate(prompt, mobile = {}) {
     const platform = mobile?.platform === 'ios' ? 'ios' : 'android';
     const automationName = platform === 'ios' ? 'XCUITest' : 'UiAutomator2';
-    const deviceName = mobile?.deviceName || (platform === 'ios' ? 'iPhone Simulator' : 'Android Emulator');
+    const defaultDeviceName = platform === 'ios' ? 'iPhone Simulator' : 'Android Emulator';
+    const deviceName = mobile?.deviceName || defaultDeviceName;
     const testTitle = String(prompt || 'mobile workflow').replace(/\s+/g, ' ').replace(/'/g, "\\'").slice(0, 120);
-    return `import { remote } from 'webdriverio';
+    return `import { browser } from '@wdio/globals';
 
-// ATOM generated native mobile script. Execute only in a dedicated hardened Appium worker.
+// ATOM generated ${platform === 'ios' ? 'iOS' : 'Android'} mobile script. Driver: ${automationName}; requested device profile: ${deviceName}; default profile: ${defaultDeviceName}. The immutable Appium worker owns the managed session.
 describe('${platform.toUpperCase()} mobile workflow', () => {
-  let driver;
-
-  before(async () => {
-    driver = await remote({
-      protocol: 'http',
-      hostname: process.env.ATOM_APPIUM_HOST || '127.0.0.1',
-      port: Number(process.env.ATOM_APPIUM_PORT || 4723),
-      path: '/',
-      capabilities: {
-        platformName: '${platform === 'ios' ? 'iOS' : 'Android'}',
-        'appium:automationName': '${automationName}',
-        'appium:deviceName': '${deviceName}',
-        'appium:newCommandTimeout': 120
-      }
-    });
-  });
-
-  after(async () => { await driver?.deleteSession(); });
-
   it('validates ${testTitle}', async () => {
-    const primaryAction = await driver.$('~primary-action');
+    const primaryAction = await browser.$('~primary-action');
     await primaryAction.waitForDisplayed();
     await primaryAction.click();
-    if (!await (await driver.$('~success-state')).isDisplayed()) throw new Error('Expected success-state to be visible');
+    const successState = await browser.$('~success-state');
+    if (!await successState.isDisplayed()) throw new Error('Expected success-state to be visible');
+    await browser.saveScreenshot('/results/${platform}-workflow.png');
   });
 });`;
   }
 
   generateSummary(prompt, testType, options = {}) {
     if (testType === 'mobile') {
-      return `This ${options.mobile?.platform || 'android'} native mobile automation script was generated with an Appium driver contract and stable accessibility-id locator guidance. It is generation-only until ATOM is configured with a dedicated hardened Appium worker.`;
+      return `This ${options.mobile?.platform || 'android'} native mobile automation script uses ATOM's managed WebdriverIO session contract, ${options.mobile?.platform === 'ios' ? 'XCUITest' : 'UiAutomator2'}, and stable accessibility-id locator guidance. It can execute after the dedicated immutable Appium worker and the corresponding managed device broker are configured.`;
     }
     return `This ${testType} test was generated based on the prompt: "${prompt}". It includes basic test structure with proper assertions and error handling using the ATOM fallback generator. The test follows enterprise-grade testing practices and includes screenshot capture for verification.`;
   }

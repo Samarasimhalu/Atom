@@ -177,9 +177,22 @@ function validateProductionConfig(config) {
   if (!config.objectStorage.publicAccessBlocked || !config.objectStorage.versioningEnabled || !config.objectStorage.lifecyclePolicyId) errors.push('object_storage_security_baseline_required');
   if (!config.objectStorage.kmsKeyId) errors.push('object_storage_kms_key_required');
   if (config.features?.legacyTestApi) errors.push('legacy_test_api_not_supported_in_production');
+  const appium = config.execution.appium || {};
   if (config.execution.enabled) {
-    if (!config.execution.workerImage || !/@sha256:[a-f0-9]{64}$/.test(config.execution.workerImage)) errors.push('immutable_worker_digest_required');
+    if ((!config.execution.workerImage || !/@sha256:[a-f0-9]{64}$/.test(config.execution.workerImage)) && !appium.enabled) errors.push('immutable_worker_digest_required');
     if (config.execution.networkMode !== 'none' && (!config.execution.egressProxyUrl || !config.policy.allowedDomains.length)) errors.push('managed_egress_proxy_and_target_allowlist_required');
+  }
+  if (appium.enabled) {
+    const validBrokerUrl = value => {
+      try { const parsed = new URL(value); return parsed.protocol === 'https:' && !parsed.username && !parsed.password && !parsed.search && !parsed.hash; }
+      catch { return false; }
+    };
+    if (!config.execution.enabled) errors.push('appium_execution_requires_execution_enabled');
+    if (appium.workerMode !== 'isolated-appium-image') errors.push('appium_worker_mode_must_be_isolated_image');
+    if (!appium.workerImage || !/@sha256:[a-f0-9]{64}$/.test(appium.workerImage)) errors.push('immutable_appium_worker_digest_required');
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,62}$/.test(String(appium.networkName || ''))) errors.push('appium_worker_network_not_configured');
+    if (!validBrokerUrl(appium.androidDeviceBrokerUrl) || !validBrokerUrl(appium.iosDeviceBrokerUrl)) errors.push('managed_mobile_device_brokers_required');
+    if (!Number.isInteger(appium.maxConcurrentTests) || appium.maxConcurrentTests < 1 || appium.maxConcurrentTests > 10) errors.push('invalid_appium_worker_concurrency');
   }
   if (!config.webhooks.signingSecret) errors.push('webhook_signing_secret_required');
   return errors;
@@ -194,12 +207,26 @@ function denyUnsafeExecution(config) {
       && Boolean(config.execution.egressProxyUrl)
       && Array.isArray(config.policy.allowedDomains)
       && config.policy.allowedDomains.length > 0;
+    const appium = config.execution.appium || {};
+    const mobilePlatform = req.body?.testData?.mcpConfig?.mobile?.platform || req.body?.testData?.options?.mobile?.platform;
+    const validMobileBroker = value => {
+      try { const parsed = new URL(value); return parsed.protocol === 'https:' && !parsed.username && !parsed.password && !parsed.search && !parsed.hash; }
+      catch { return false; }
+    };
+    const mobileExecutionReason = testType !== 'mobile' ? null
+      : !appium.enabled ? 'mobile_execution_disabled'
+      : appium.workerMode !== 'isolated-appium-image' || !/@sha256:[a-f0-9]{64}$/.test(String(appium.workerImage || '')) ? 'appium_worker_not_immutable_or_configured'
+      : !['ios', 'android'].includes(mobilePlatform) ? 'mobile_platform_not_configured'
+      : !/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,62}$/.test(String(appium.networkName || '')) ? 'appium_worker_network_not_configured'
+      : !validMobileBroker(mobilePlatform === 'ios' ? appium.iosDeviceBrokerUrl : appium.androidDeviceBrokerUrl) ? 'managed_mobile_device_broker_not_configured'
+      : /\bremote\s*\(|\bprocess\.env\b|\bchild_process\b|\bexecSync\b|\bspawn\b|\bfork\b|\beval\b|\bFunction\s*\(|\bfs\./.test(String(code || '')) ? 'mobile_script_must_use_managed_session'
+      : null;
     const unsafeReason = !config.execution.enabled
       ? 'execution_disabled'
-      : !config.execution.workerImage
+      : testType !== 'mobile' && !config.execution.workerImage
         ? 'worker_image_not_configured'
-        : testType === 'mobile'
-          ? 'mobile_execution_not_supported_by_worker'
+        : mobileExecutionReason
+          ? mobileExecutionReason
           : apiPlan && !managedEgressConfigured
           ? 'api_execution_requires_managed_egress'
           : config.execution.networkMode !== 'none' && !managedEgressConfigured
