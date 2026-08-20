@@ -6,6 +6,11 @@
   "engines": {
     "node": ">=22"
   },
+  "overrides": {
+    "@puppeteer/browsers": "3.2.1",
+    "deepmerge-ts": "8.0.0",
+    "serialize-javascript": "7.1.0"
+  },
   "dependencies": {
     "@wdio/cli": "9.31.1",
     "@wdio/globals": "9.31.1",
