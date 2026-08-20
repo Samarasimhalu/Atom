@@ -1,5 +1,6 @@
-const ALLOWED_TEST_TYPES = new Set(['ui', 'api', 'visual', 'mixed']);
+const ALLOWED_TEST_TYPES = new Set(['ui', 'api', 'visual', 'mixed', 'mobile']);
 const ALLOWED_BROWSERS = new Set(['chromium', 'firefox', 'webkit']);
+const ALLOWED_MOBILE_PLATFORMS = new Set(['ios', 'android']);
 const ALLOWED_ARTIFACT_MODES = new Set(['off', 'on', 'only-on-failure', 'retain-on-failure', 'on-first-retry']);
 
 function fail(message, field) {
@@ -28,6 +29,18 @@ function validateOptions(options = {}) {
   for (const key of ['screenshot', 'video', 'trace']) {
     if (options[key] !== undefined && !ALLOWED_ARTIFACT_MODES.has(options[key])) throw fail(`Unsupported ${key} mode`, `options.${key}`);
   }
+  if (options.mobile !== undefined) {
+    assertPlainObject(options.mobile, 'options.mobile');
+    const platform = String(options.mobile.platform || '').toLowerCase();
+    if (!ALLOWED_MOBILE_PLATFORMS.has(platform)) throw fail('Mobile platform must be ios or android', 'options.mobile.platform');
+    if (options.mobile.deviceName !== undefined && (typeof options.mobile.deviceName !== 'string' || options.mobile.deviceName.length < 1 || options.mobile.deviceName.length > 120)) {
+      throw fail('Mobile device name must be between 1 and 120 characters', 'options.mobile.deviceName');
+    }
+    options.mobile = {
+      platform,
+      ...(options.mobile.deviceName ? { deviceName: options.mobile.deviceName.trim() } : {})
+    };
+  }
   return options;
 }
 
@@ -36,7 +49,9 @@ function validateGenerationRequest(body) {
   if (typeof body.prompt !== 'string' || body.prompt.trim().length < 3 || body.prompt.length > 12000) throw fail('Prompt must be between 3 and 12000 characters', 'prompt');
   const testType = body.testType || 'ui';
   if (!ALLOWED_TEST_TYPES.has(testType)) throw fail('Unsupported test type', 'testType');
-  return { prompt: body.prompt.trim(), testType, options: validateOptions(body.options || {}) };
+  const options = validateOptions(body.options || {});
+  if (testType === 'mobile' && !options.mobile) throw fail('Mobile generation requires options.mobile.platform', 'options.mobile.platform');
+  return { prompt: body.prompt.trim(), testType, options };
 }
 
 function validateTestData(testData) {

@@ -25,8 +25,8 @@ class AITestGenerator {
         summary = result.summary;
       } catch (error) {
         console.log('OpenAI API failed, using fallback generator:', error.message);
-        testCode = this.fallbackGenerator.generateTest(prompt, testType);
-        summary = this.fallbackGenerator.generateSummary(prompt, testType);
+        testCode = this.fallbackGenerator.generateTest(prompt, testType, options);
+        summary = this.fallbackGenerator.generateSummary(prompt, testType, options);
       }
 
       // Generate MCP configuration
@@ -43,7 +43,8 @@ class AITestGenerator {
         metadata: {
           generated: timestamp,
           generator: 'ATOM AI',
-          version: '1.0.0'
+          version: '1.0.0',
+          ...(testType === 'mobile' ? { executionSupport: 'generation_only' } : {})
         }
       };
 
@@ -72,7 +73,7 @@ class AITestGenerator {
       correlationId: context.correlationId
     });
 
-    const code = this.cleanCode(response.choices[0].message.content);
+    const code = this.cleanCode(response.choices[0].message.content, testType);
     
     // Generate summary
     const summaryResponse = await this.gateway.chatCompletion({
@@ -153,6 +154,16 @@ For Mixed tests:
 - Include end-to-end workflow testing
 - Add cross-browser compatibility checks`;
 
+      case 'mobile':
+        return `${basePrompt}
+
+For native mobile tests:
+- Generate TypeScript using WebdriverIO and Appium only; do not use Playwright
+- Target the requested iOS/XCUITest or Android/UiAutomator2 platform
+- Use environment-variable references for the Appium host and device profile; never embed credentials, tokens, or application binaries
+- Include setup, cleanup, stable accessibility-id locators, and meaningful assertions
+- Treat this as a generation-only artifact: native execution requires a separately hardened Appium worker image`;
+
       default:
         return basePrompt;
     }
@@ -175,8 +186,11 @@ Include:
       userPrompt += `\\n- Viewport: ${options.viewport.width}x${options.viewport.height}`;
     }
 
-    if (options.mobile) {
-      userPrompt += `\\n- Mobile-optimized testing`;
+    if (testType === 'mobile') {
+      const platform = options.mobile?.platform || 'android';
+      userPrompt += `\n- Native platform: ${platform}\n- Generate an Appium script for ${platform === 'ios' ? 'XCUITest' : 'UiAutomator2'}\n- Native execution is generation-only until a dedicated hardened Appium worker is configured`;
+    } else if (options.mobile) {
+      userPrompt += `\n- Mobile-optimized web testing`;
     }
 
     if (options.accessibility) {
@@ -205,6 +219,14 @@ Include:
       viewport: options.viewport || this.config.execution.viewport,
       workers: options.workers || this.config.execution.workers,
       tags,
+      ...(testType === 'mobile' ? {
+        mobile: {
+          platform: options.mobile?.platform || 'android',
+          automationName: options.mobile?.platform === 'ios' ? 'XCUITest' : 'UiAutomator2',
+          ...(options.mobile?.deviceName ? { deviceName: options.mobile.deviceName } : {})
+        },
+        executionSupport: 'generation_only'
+      } : {}),
       metadata: {
         generated: new Date().toISOString(),
         prompt: prompt.substring(0, 200),
@@ -268,27 +290,28 @@ Include:
     return 'chromium'; // Default
   }
 
-  cleanCode(code) {
-    // Remove markdown code blocks if present
-    let cleaned = code.replace(/```typescript\\n?/g, '').replace(/```javascript\\n?/g, '').replace(/```\\n?/g, '');
-    
-    // Ensure proper imports are present
+  cleanCode(code, testType = 'ui') {
+    // Remove markdown code blocks if present.
+    let cleaned = code.replace(/```typescript\n?/g, '').replace(/```javascript\n?/g, '').replace(/```\n?/g, '');
+    if (testType === 'mobile') return cleaned.trim();
+
+    // Ensure proper Playwright imports are present for executable web test types.
     if (!cleaned.includes("import { test, expect }") && !cleaned.includes("const { test, expect }")) {
-      cleaned = "import { test, expect } from '@playwright/test';\\n\\n" + cleaned;
+      cleaned = "import { test, expect } from '@playwright/test';\n\n" + cleaned;
     }
-    
     return cleaned.trim();
   }
 }
 
 // Fallback generator for when OpenAI API is unavailable
 class FallbackTestGenerator {
-  generateTest(prompt, testType) {
+  generateTest(prompt, testType, options = {}) {
     const templates = {
       ui: this.getUITemplate(prompt),
       api: this.getAPITemplate(prompt),
       visual: this.getVisualTemplate(prompt),
-      mixed: this.getMixedTemplate(prompt)
+      mixed: this.getMixedTemplate(prompt),
+      mobile: this.getMobileTemplate(prompt, options.mobile)
     };
 
     return templates[testType] || templates.ui;
@@ -394,7 +417,47 @@ test.describe('Mixed UI and API Tests', () => {
 });`;
   }
 
-  generateSummary(prompt, testType) {
+  getMobileTemplate(prompt, mobile = {}) {
+    const platform = mobile?.platform === 'ios' ? 'ios' : 'android';
+    const automationName = platform === 'ios' ? 'XCUITest' : 'UiAutomator2';
+    const deviceName = mobile?.deviceName || (platform === 'ios' ? 'iPhone Simulator' : 'Android Emulator');
+    const testTitle = String(prompt || 'mobile workflow').replace(/\s+/g, ' ').replace(/'/g, "\\'").slice(0, 120);
+    return `import { remote } from 'webdriverio';
+
+// ATOM generated native mobile script. Execute only in a dedicated hardened Appium worker.
+describe('${platform.toUpperCase()} mobile workflow', () => {
+  let driver;
+
+  before(async () => {
+    driver = await remote({
+      protocol: 'http',
+      hostname: process.env.ATOM_APPIUM_HOST || '127.0.0.1',
+      port: Number(process.env.ATOM_APPIUM_PORT || 4723),
+      path: '/',
+      capabilities: {
+        platformName: '${platform === 'ios' ? 'iOS' : 'Android'}',
+        'appium:automationName': '${automationName}',
+        'appium:deviceName': '${deviceName}',
+        'appium:newCommandTimeout': 120
+      }
+    });
+  });
+
+  after(async () => { await driver?.deleteSession(); });
+
+  it('validates ${testTitle}', async () => {
+    const primaryAction = await driver.$('~primary-action');
+    await primaryAction.waitForDisplayed();
+    await primaryAction.click();
+    if (!await (await driver.$('~success-state')).isDisplayed()) throw new Error('Expected success-state to be visible');
+  });
+});`;
+  }
+
+  generateSummary(prompt, testType, options = {}) {
+    if (testType === 'mobile') {
+      return `This ${options.mobile?.platform || 'android'} native mobile automation script was generated with an Appium driver contract and stable accessibility-id locator guidance. It is generation-only until ATOM is configured with a dedicated hardened Appium worker.`;
+    }
     return `This ${testType} test was generated based on the prompt: "${prompt}". It includes basic test structure with proper assertions and error handling using the ATOM fallback generator. The test follows enterprise-grade testing practices and includes screenshot capture for verification.`;
   }
 }

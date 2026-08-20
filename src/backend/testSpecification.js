@@ -1,5 +1,5 @@
 const { validateApiTestPlan } = require('./apiTestPlan');
-const TEST_TYPES = new Set(['ui', 'api', 'visual', 'mixed']);
+const TEST_TYPES = new Set(['ui', 'api', 'visual', 'mixed', 'mobile']);
 const BROWSERS = new Set(['chromium', 'firefox', 'webkit']);
 const SPECIFICATION_VERSION = '1.0';
 const SUPPORTED_SPECIFICATION_VERSIONS = new Set([SPECIFICATION_VERSION]);

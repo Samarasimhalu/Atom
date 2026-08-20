@@ -188,6 +188,7 @@ function validateProductionConfig(config) {
 function denyUnsafeExecution(config) {
   return (req, res, next) => {
     const code = req.body?.testData?.code;
+    const testType = req.body?.testData?.testType || req.body?.testData?.mcpConfig?.type;
     const apiPlan = req.body?.testData?.apiPlan || req.body?.testData?.apiTestPlan;
     const managedEgressConfigured = config.execution.networkMode !== 'none'
       && Boolean(config.execution.egressProxyUrl)
@@ -197,7 +198,9 @@ function denyUnsafeExecution(config) {
       ? 'execution_disabled'
       : !config.execution.workerImage
         ? 'worker_image_not_configured'
-        : apiPlan && !managedEgressConfigured
+        : testType === 'mobile'
+          ? 'mobile_execution_not_supported_by_worker'
+          : apiPlan && !managedEgressConfigured
           ? 'api_execution_requires_managed_egress'
           : config.execution.networkMode !== 'none' && !managedEgressConfigured
             ? 'managed_egress_not_configured'
