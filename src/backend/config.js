@@ -41,7 +41,8 @@ module.exports = {
     mode: process.env.PERSISTENCE_MODE || (environment === 'production' ? 'postgres' : 'local'),
     databaseUrl: process.env.DATABASE_URL || '',
     poolMax: Number(process.env.DATABASE_POOL_MAX || 10),
-    statementTimeoutMs: Number(process.env.DATABASE_STATEMENT_TIMEOUT_MS || 30000)
+    statementTimeoutMs: Number(process.env.DATABASE_STATEMENT_TIMEOUT_MS || 30000),
+    tlsRequired: process.env.DATABASE_TLS_REQUIRED !== 'false'
   },
   queue: {
     mode: process.env.QUEUE_MODE || (environment === 'production' ? 'bullmq' : 'local'),
@@ -59,6 +60,10 @@ module.exports = {
     secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || '',
     forcePathStyle: process.env.S3_FORCE_PATH_STYLE === 'true',
     sse: process.env.S3_SSE || 'AES256',
+    kmsKeyId: process.env.S3_KMS_KEY_ID || '',
+    publicAccessBlocked: process.env.S3_PUBLIC_ACCESS_BLOCKED === 'true',
+    versioningEnabled: process.env.S3_VERSIONING_ENABLED === 'true',
+    lifecyclePolicyId: process.env.S3_LIFECYCLE_POLICY_ID || '',
     localPath: process.env.OBJECT_STORAGE_PATH || './data/object-storage'
   },
   quotas: {

@@ -169,8 +169,13 @@ function validateProductionConfig(config) {
   if (placeholder(config.auth.jwtSecret)) errors.push('jwt_secret_not_configured');
   if (config.auth.allowedOrigins.some(origin => /localhost|127\.0\.0\.1|\*/.test(origin))) errors.push('insecure_cors_origin');
   if (config.persistence.mode !== 'postgres' || !config.persistence.databaseUrl) errors.push('postgres_persistence_required');
+  if (!config.persistence.tlsRequired) errors.push('database_tls_required');
   if (config.queue.mode !== 'bullmq' || !config.queue.redisUrl) errors.push('durable_queue_required');
+  if (!String(config.queue.redisUrl || '').startsWith('rediss://')) errors.push('redis_tls_required');
   if (config.objectStorage.mode !== 's3' || !config.objectStorage.endpoint || !config.objectStorage.bucket || !config.objectStorage.accessKeyId || !config.objectStorage.secretAccessKey) errors.push('private_object_storage_required');
+  if (!String(config.objectStorage.endpoint || '').startsWith('https://')) errors.push('object_storage_tls_required');
+  if (!config.objectStorage.publicAccessBlocked || !config.objectStorage.versioningEnabled || !config.objectStorage.lifecyclePolicyId) errors.push('object_storage_security_baseline_required');
+  if (!config.objectStorage.kmsKeyId) errors.push('object_storage_kms_key_required');
   if (config.features?.legacyTestApi) errors.push('legacy_test_api_not_supported_in_production');
   if (config.execution.enabled) {
     if (!config.execution.workerImage || !/@sha256:[a-f0-9]{64}$/.test(config.execution.workerImage)) errors.push('immutable_worker_digest_required');
@@ -183,15 +188,22 @@ function validateProductionConfig(config) {
 function denyUnsafeExecution(config) {
   return (req, res, next) => {
     const code = req.body?.testData?.code;
+    const apiPlan = req.body?.testData?.apiPlan || req.body?.testData?.apiTestPlan;
+    const managedEgressConfigured = config.execution.networkMode !== 'none'
+      && Boolean(config.execution.egressProxyUrl)
+      && Array.isArray(config.policy.allowedDomains)
+      && config.policy.allowedDomains.length > 0;
     const unsafeReason = !config.execution.enabled
       ? 'execution_disabled'
       : !config.execution.workerImage
         ? 'worker_image_not_configured'
-        : config.execution.networkMode !== 'none' && (!config.execution.egressProxyUrl || !config.policy.allowedDomains.length)
-          ? 'managed_egress_not_configured'
-          : /\b(child_process|execSync|spawn|fork|eval|Function\s*\(|process\.env|fs\.)\b/.test(String(code || ''))
-          ? 'unsafe_code_pattern'
-          : null;
+        : apiPlan && !managedEgressConfigured
+          ? 'api_execution_requires_managed_egress'
+          : config.execution.networkMode !== 'none' && !managedEgressConfigured
+            ? 'managed_egress_not_configured'
+            : /\b(child_process|execSync|spawn|fork|eval|Function\s*\(|process\.env|fs\.)\b/.test(String(code || ''))
+              ? 'unsafe_code_pattern'
+              : null;
     if (unsafeReason) {
       return res.status(403).json({ error: 'unsafe_execution_denied', reason: unsafeReason, correlationId: req.correlationId });
     }

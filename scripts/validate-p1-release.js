@@ -9,6 +9,9 @@ const requiredFiles = [
   'docs/compliance/SECURITY_EXCEPTION.md',
   'docs/compliance/VENDOR_REGISTER_TEMPLATE.yml',
   'docs/compliance/DATA_INVENTORY_TEMPLATE.md',
+  'docs/compliance/CONTROL_CATALOG.yml',
+  'docs/compliance/RISK_REGISTER.yml',
+  'docs/compliance/P0_P1_IMPLEMENTATION_BOUNDARY.md',
   'docs/security/remote-egress-release-gate.md'
 ];
 
@@ -24,5 +27,5 @@ requireSource('scripts/verify-release.js', /releaseApprover/, 'P1-07 release att
 requireSource('.github/workflows/ci.yml', /security:p1:guard/, 'P1 release guard executes in CI');
 
 const status = findings.length ? 'failed' : 'passed';
-console.log(JSON.stringify({ status, controlsChecked: 10, findings }, null, 2));
+console.log(JSON.stringify({ status, controlsChecked: 13, findings }, null, 2));
 if (findings.length) process.exitCode = 1;

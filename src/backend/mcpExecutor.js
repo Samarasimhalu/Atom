@@ -318,82 +318,39 @@ export default defineConfig({
   }
 
   async processArtifacts(resultsDir, sessionId) {
-    const artifacts = {
-      screenshots: [],
-      videos: [],
-      traces: [],
-      reports: []
+    const artifacts = { screenshots: [], videos: [], traces: [], reports: [], omitted: [] };
+    const maxFiles = Math.max(0, Number(this.config.execution.maxArtifactFiles || 0));
+    const maxBytes = Math.max(0, Number(this.config.execution.maxArtifactBytes || 0));
+    let copiedFiles = 0;
+    let copiedBytes = 0;
+    const copyCandidate = async (kind, file, destinationDir, urlPrefix) => {
+      const stat = await fs.stat(file);
+      if (!stat.isFile()) return;
+      if ((maxFiles && copiedFiles >= maxFiles) || (maxBytes && copiedBytes + stat.size > maxBytes)) {
+        artifacts.omitted.push({ kind, filename: path.basename(file), reason: maxFiles && copiedFiles >= maxFiles ? 'artifact_file_limit_exceeded' : 'artifact_byte_limit_exceeded' });
+        return;
+      }
+      const filename = `${sessionId}-${path.basename(file)}`;
+      const targetPath = path.join(destinationDir, filename);
+      await fs.ensureDir(destinationDir);
+      await fs.copy(file, targetPath);
+      copiedFiles += 1;
+      copiedBytes += stat.size;
+      artifacts[kind].push({ filename, path: targetPath, url: `${urlPrefix}/${filename}`, size: stat.size, timestamp: new Date().toISOString() });
     };
-
     try {
-      // Process screenshots
-      const screenshotFiles = await this.findFiles(resultsDir, ['.png', '.jpg']);
-      for (const file of screenshotFiles) {
-        const filename = `${sessionId}-${path.basename(file)}`;
-        const targetPath = path.join(this.config.storage.screenshots, filename);
-        await fs.copy(file, targetPath);
-        
-        artifacts.screenshots.push({
-          filename,
-          path: targetPath,
-          url: `/screenshots/${filename}`,
-          size: (await fs.stat(targetPath)).size,
-          timestamp: new Date().toISOString()
-        });
+      for (const file of await this.findFiles(resultsDir, ['.png', '.jpg', '.jpeg'])) await copyCandidate('screenshots', file, this.config.storage.screenshots, '/screenshots');
+      for (const file of await this.findFiles(resultsDir, ['.webm', '.mp4'])) await copyCandidate('videos', file, this.config.storage.videos, '/videos');
+      for (const file of await this.findFiles(resultsDir, ['.zip'])) {
+        if (path.basename(file).includes('trace')) await copyCandidate('traces', file, this.config.storage.traces, '/traces');
       }
-
-      // Process videos
-      const videoFiles = await this.findFiles(resultsDir, ['.webm', '.mp4']);
-      for (const file of videoFiles) {
-        const filename = `${sessionId}-${path.basename(file)}`;
-        const targetPath = path.join(this.config.storage.videos, filename);
-        await fs.copy(file, targetPath);
-        
-        artifacts.videos.push({
-          filename,
-          path: targetPath,
-          url: `/videos/${filename}`,
-          size: (await fs.stat(targetPath)).size,
-          timestamp: new Date().toISOString()
-        });
-      }
-
-      // Process traces
-      const traceFiles = await this.findFiles(resultsDir, ['.zip']);
-      for (const file of traceFiles) {
-        if (path.basename(file).includes('trace')) {
-          const filename = `${sessionId}-${path.basename(file)}`;
-          const targetPath = path.join(this.config.storage.traces, filename);
-          await fs.copy(file, targetPath);
-          
-          artifacts.traces.push({
-            filename,
-            path: targetPath,
-            url: `/traces/${filename}`,
-            size: (await fs.stat(targetPath)).size,
-            timestamp: new Date().toISOString()
-          });
-        }
-      }
-
-      // Process HTML reports
       const htmlReportDir = path.join(resultsDir, 'html-report');
-      if (await fs.pathExists(htmlReportDir)) {
-        const reportTargetDir = path.join(this.config.storage.results, `${sessionId}-html-report`);
-        await fs.copy(htmlReportDir, reportTargetDir);
-        
-        artifacts.reports.push({
-          type: 'html',
-          path: reportTargetDir,
-          url: `/results/${sessionId}-html-report/index.html`,
-          timestamp: new Date().toISOString()
-        });
-      }
-
+      if (await fs.pathExists(htmlReportDir)) artifacts.omitted.push({ kind: 'reports', filename: 'html-report', reason: 'html_report_requires_bounded_packaging' });
     } catch (error) {
       console.error('Error processing artifacts:', error);
+      artifacts.omitted.push({ kind: 'collection', reason: 'artifact_collection_failed' });
     }
-
+    artifacts.collection = { copiedFiles, copiedBytes, maxFiles, maxBytes };
     return artifacts;
   }
 

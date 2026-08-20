@@ -1,0 +1,76 @@
+version: 1
+system: atom
+review_cycle: quarterly
+controls:
+  - id: ATOM-CC6-IDENTITY
+    criterion: CC6.1
+    objective: Production access is authenticated through OIDC and authorized with tenant-scoped roles.
+    owner_role: Platform Engineering and IAM
+    frequency: continuous
+    evidence: [production_configuration_attestation, oidc_claim_tests, access_review_export]
+    reviewer_role: Security and Compliance
+    retention: seven_years
+    exception_process: docs/compliance/SECURITY_EXCEPTION.md
+  - id: ATOM-CC6-TENANCY
+    criterion: CC6.1
+    objective: Tenant boundaries protect runs, approvals, events, artifacts, quotas, and audit records.
+    owner_role: Product Engineering
+    frequency: continuous
+    evidence: [tenant_isolation_regression, websocket_authorization_regression, artifact_authorization_tests]
+    reviewer_role: Security Engineering
+    retention: seven_years
+    exception_process: docs/compliance/SECURITY_EXCEPTION.md
+  - id: ATOM-CC7-EXECUTION
+    criterion: CC7.1
+    objective: AI-generated and API test execution is constrained by policy, approval, isolated workers, and a fail-closed egress boundary.
+    owner_role: Platform Engineering
+    frequency: continuous
+    evidence: [p0_release_guard, worker_image_digest, policy_and_approval_audit, remote_egress_gate]
+    reviewer_role: Security Engineering
+    retention: seven_years
+    exception_process: docs/compliance/SECURITY_EXCEPTION.md
+  - id: ATOM-CC7-VULNERABILITY
+    criterion: CC7.1
+    objective: Source, dependencies, worker images, secrets, and release artifacts are scanned and exceptions are time-bounded.
+    owner_role: DevSecOps
+    frequency: per_commit_and_weekly
+    evidence: [ci_scan_artifacts, sbom, security_exception_register, vulnerability_review]
+    reviewer_role: Security and Compliance
+    retention: seven_years
+    exception_process: docs/compliance/SECURITY_EXCEPTION.md
+  - id: ATOM-CC8-CHANGE
+    criterion: CC8.1
+    objective: Security-sensitive changes are reviewed, tested, attributable, and linked to immutable build evidence.
+    owner_role: DevSecOps
+    frequency: per_change
+    evidence: [pull_request_review, required_check_results, release_attestation, migration_checksum]
+    reviewer_role: Platform Engineering
+    retention: seven_years
+    exception_process: docs/compliance/SECURITY_EXCEPTION.md
+  - id: ATOM-CC9-RECOVERY
+    criterion: CC9.1
+    objective: Production data and artifacts can be restored in an isolated environment within approved recovery objectives.
+    owner_role: Platform Engineering and SRE
+    frequency: daily_backup_quarterly_restore
+    evidence: [backup_inventory, restore_smoke_report, dr_exercise_record]
+    reviewer_role: Security and Compliance
+    retention: seven_years
+    exception_process: docs/compliance/SECURITY_EXCEPTION.md
+  - id: ATOM-PI-TEST-INTEGRITY
+    criterion: Processing Integrity
+    objective: Test specifications, chained API plans, approvals, state transitions, and evidence are versioned and evaluated before release.
+    owner_role: Product Engineering and AI Governance
+    frequency: per_model_policy_or_code_change
+    evidence: [evaluation_report, api_chaining_regression, approval_binding_audit, reconciliation_report]
+    reviewer_role: AI Governance
+    retention: seven_years
+    exception_process: docs/compliance/SECURITY_EXCEPTION.md
+  - id: ATOM-P-PRIVACY
+    criterion: Privacy
+    objective: Customer data is classified, retained, deleted, exported, and protected according to approved policy.
+    owner_role: Privacy and Legal
+    frequency: continuous_and_quarterly_review
+    evidence: [data_inventory, deletion_export_record, retention_job_report, vendor_register]
+    reviewer_role: Security and Compliance
+    retention: seven_years
+    exception_process: docs/compliance/SECURITY_EXCEPTION.md

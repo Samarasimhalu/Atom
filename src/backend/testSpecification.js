@@ -1,3 +1,4 @@
+const { validateApiTestPlan } = require('./apiTestPlan');
 const TEST_TYPES = new Set(['ui', 'api', 'visual', 'mixed']);
 const BROWSERS = new Set(['chromium', 'firefox', 'webkit']);
 const SPECIFICATION_VERSION = '1.0';
@@ -17,6 +18,7 @@ function validateTestSpecification(input) {
     assertions: Array.isArray(input.assertions) ? input.assertions : [],
     timeoutMs: Number(input.timeoutMs || input.mcpConfig?.timeout || 30000),
     retries: Number(input.retries ?? input.mcpConfig?.retries ?? 0),
+    apiPlan: input.apiPlan || input.apiTestPlan || null,
     code: String(input.code || '')
   };
   const errors = [];
@@ -27,8 +29,16 @@ function validateTestSpecification(input) {
   if (!BROWSERS.has(spec.browser)) errors.push('browser_invalid');
   if (spec.timeoutMs < 1000 || spec.timeoutMs > 900000) errors.push('timeout_out_of_range');
   if (spec.retries < 0 || spec.retries > 5) errors.push('retries_out_of_range');
-  if (!spec.steps.length && !spec.code) errors.push('steps_or_code_required');
-  if (!spec.assertions.length && !spec.code) errors.push('assertions_required');
+  let validatedApiPlan = null;
+  if (spec.type === 'api' && spec.apiPlan) {
+    const apiPlanValidation = validateApiTestPlan(spec.apiPlan);
+    if (!apiPlanValidation.valid) errors.push(...apiPlanValidation.errors.map(error => `api_plan:${error}`));
+    else validatedApiPlan = apiPlanValidation.plan;
+  }
+  spec.apiPlan = validatedApiPlan;
+  const hasExecutableApiPlan = spec.type === 'api' && Boolean(validatedApiPlan);
+  if (!spec.steps.length && !spec.code && !hasExecutableApiPlan) errors.push('steps_or_code_required');
+  if (!spec.assertions.length && !spec.code && !hasExecutableApiPlan) errors.push('assertions_required');
   if (spec.target.url && !/^https?:\/\//i.test(spec.target.url)) errors.push('target_url_invalid');
   return { valid: errors.length === 0, errors, spec };
 }

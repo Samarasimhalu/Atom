@@ -6,9 +6,9 @@ function productionConfig(overrides = {}) {
   return {
     environment: 'production',
     auth: { mode: 'oidc', jwtSecret: 'long-managed-secret', allowedOrigins: ['https://atom.example.org'], oidc: { issuer: 'https://idp.example.org', audience: 'atom-api', jwksUri: 'https://idp.example.org/.well-known/jwks.json' } },
-    persistence: { mode: 'postgres', databaseUrl: 'postgres://db/atom' },
+    persistence: { mode: 'postgres', databaseUrl: 'postgres://db/atom', tlsRequired: true },
     queue: { mode: 'bullmq', redisUrl: 'rediss://redis/atom' },
-    objectStorage: { mode: 's3', endpoint: 'https://s3.example.org', bucket: 'atom', accessKeyId: 'access', secretAccessKey: 'secret' },
+    objectStorage: { mode: 's3', endpoint: 'https://s3.example.org', bucket: 'atom', accessKeyId: 'access', secretAccessKey: 'secret', publicAccessBlocked: true, versioningEnabled: true, lifecyclePolicyId: 'atom-retention', kmsKeyId: 'arn:aws:kms:us-east-1:123456789012:key/example' },
     execution: { workerImage: 'registry.example.org/atom-worker@sha256:' + 'a'.repeat(64), enabled: true, networkMode: 'none', egressProxyUrl: '' },
     webhooks: { signingSecret: 'secret' },
     ...overrides
@@ -21,6 +21,10 @@ test('production configuration fails closed for insecure defaults', () => {
   assert.ok(errors.includes('postgres_persistence_required'));
   assert.ok(errors.includes('durable_queue_required'));
   assert.ok(errors.includes('private_object_storage_required'));
+  assert.ok(errors.includes('database_tls_required'));
+  assert.ok(errors.includes('redis_tls_required'));
+  assert.ok(errors.includes('object_storage_security_baseline_required'));
+  assert.ok(errors.includes('object_storage_kms_key_required'));
   assert.ok(!errors.includes('immutable_worker_digest_required'), 'disabled execution is a safe deployment mode');
 });
 

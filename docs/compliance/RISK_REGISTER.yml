@@ -1,0 +1,76 @@
+version: 1
+system: atom
+review_cycle: quarterly
+risks:
+  - id: ATOM-R-001
+    title: Insecure production identity or tenant boundary
+    category: security
+    treatment: mitigate
+    control_ids: [ATOM-CC6-IDENTITY, ATOM-CC6-TENANCY]
+    owner_role: Platform Engineering and IAM
+    status: technical_controls_implemented_operating_evidence_required
+    evidence: [oidc_configuration, claim_validation_tests, access_review_export]
+    dependency: IdP MFA, group mapping, lifecycle process
+  - id: ATOM-R-002
+    title: Unapproved AI or API execution reaches an unsafe target
+    category: security
+    treatment: mitigate
+    control_ids: [ATOM-CC7-EXECUTION, ATOM-PI-TEST-INTEGRITY]
+    owner_role: Platform Engineering
+    status: fail_closed_pending_managed_egress_boundary
+    evidence: [policy_regression, approval_audit, remote_egress_release_gate]
+    dependency: proxy-only egress, DNS and redirect enforcement, secret broker
+  - id: ATOM-R-003
+    title: Worker compromise or artifact exhaustion exposes tenant data
+    category: security_and_availability
+    treatment: mitigate
+    control_ids: [ATOM-CC7-EXECUTION, ATOM-CC9-RECOVERY]
+    owner_role: Platform Engineering
+    status: partially_implemented
+    evidence: [immutable_worker_digest, artifact_quota_tests, worker_scan]
+    dependency: runtime image admission, sandbox policy, managed object storage
+  - id: ATOM-R-004
+    title: Data loss or prolonged outage affects run and evidence availability
+    category: availability
+    treatment: mitigate
+    control_ids: [ATOM-CC9-RECOVERY]
+    owner_role: Platform Engineering and SRE
+    status: technical_smoke_available_operating_exercise_required
+    evidence: [backup_restore_smoke, restore_exercise, rto_rpo_record]
+    dependency: managed backup service, isolated restore account, on-call owners
+  - id: ATOM-R-005
+    title: Vulnerabilities or supply-chain changes remain unremediated
+    category: security
+    treatment: mitigate
+    control_ids: [ATOM-CC7-VULNERABILITY, ATOM-CC8-CHANGE]
+    owner_role: DevSecOps
+    status: ci_controls_implemented_operating_ticketing_required
+    evidence: [sbom, image_scan, secret_scan, exception_register]
+    dependency: issue automation, scheduled running-image scan, remediation owners
+  - id: ATOM-R-006
+    title: AI provider or subprocessor handling conflicts with customer commitments
+    category: confidentiality_and_privacy
+    treatment: mitigate
+    control_ids: [ATOM-P-PRIVACY, ATOM-PI-TEST-INTEGRITY]
+    owner_role: Privacy and Legal
+    status: templates_available_contract_review_required
+    evidence: [vendor_register, data_inventory, approved_model_allowlist]
+    dependency: executed DPA, provider review, customer subprocessor notice
+  - id: ATOM-R-007
+    title: Chained API data is reused outside its approved execution context
+    category: processing_integrity
+    treatment: mitigate
+    control_ids: [ATOM-PI-TEST-INTEGRITY, ATOM-CC7-EXECUTION]
+    owner_role: Product Engineering
+    status: technical_controls_implemented_remote_execution_gated
+    evidence: [api_chaining_regression, plan_digest, policy_audit]
+    dependency: environment registry, secret broker, managed egress proxy
+  - id: ATOM-R-008
+    title: Observability gaps delay detection or response
+    category: availability_and_security
+    treatment: mitigate
+    control_ids: [ATOM-CC7-EXECUTION, ATOM-CC9-RECOVERY]
+    owner_role: SRE and Security Operations
+    status: documentation_and_local_signals_available_central_operations_required
+    evidence: [observability_design, alert_catalog, synthetic_exercise]
+    dependency: SIEM, metrics backend, pager/on-call, ticket integration

@@ -37,9 +37,14 @@ requireSource('src/backend/persistence.js', /status='consumed'/, 'P0-3 approvals
 requireSource('src/backend/policyEngine.js', /target_private_address_blocked/, 'P0-6 private targets are denied');
 requireSource('src/backend/policyEngine.js', /target_domain_not_allowlisted/, 'P0-6 allowlist policy is enforced');
 requireSource('src/backend/mcpExecutor.js', /runResultsDir/, 'P0-4 worker results mount is per run');
+requireSource('src/backend/mcpExecutor.js', /maxArtifactFiles/, 'P0-4 worker artifact file limits are enforced');
+requireSource('src/backend/mcpExecutor.js', /maxArtifactBytes/, 'P0-4 worker artifact byte limits are enforced');
 requireSource('src/backend/security.js', /production_auth_mode_must_be_oidc/, 'P0-5 unsupported production authentication is denied');
 requireSource('src/backend/security.js', /managed_egress_not_configured/, 'P0-4 execution fails closed without managed egress');
+requireSource('src/backend/security.js', /api_execution_requires_managed_egress/, 'P0-4 chained API execution fails closed without managed egress');
+requireSource('src/backend/apiTestPlan.js', /api_chain_forward_reference/, 'P0-4 chained API values require a preceding successful extraction');
+requireSource('src/backend/apiTestPlan.js', /api_json_path_forbidden_property/, 'P0-4 chained API extraction rejects unsafe properties');
 
 const status = findings.length ? 'failed' : 'passed';
-console.log(JSON.stringify({ status, controlsChecked: 15, findings }, null, 2));
+console.log(JSON.stringify({ status, controlsChecked: 20, findings }, null, 2));
 if (findings.length) process.exitCode = 1;
