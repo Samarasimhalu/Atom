@@ -1,0 +1,28 @@
+version: 1
+review_frequency: annual
+material_change_review_required: true
+records:
+  - vendor_id: V-000
+    name: provider-name
+    service: ai-provider-or-database-or-object-storage-or-identity-or-monitoring
+    criticality: critical
+    data_categories:
+      - customer-content
+      - artifacts
+      - identity-claims
+    regions:
+      - region-or-processing-location
+    access: read-write-or-no-access
+    data_use_restrictions: no-training-or-contract-reference
+    retention_terms: contract-or-policy-reference
+    encryption_terms: at-rest-and-in-transit-reference
+    contract_reference: contract-or-dpa-id
+    dpa_status: executed-or-exception-id
+    assurance_evidence: soc-report-or-security-review-reference
+    subprocessor_reference: public-list-or-contract-reference
+    incident_notice_terms: contract-section-or-hours
+    continuity_and_exit_plan: failover-export-or-migration-reference
+    owner: accountable-person-or-role
+    last_reviewed: YYYY-MM-DD
+    next_review: YYYY-MM-DD
+    status: pending-review

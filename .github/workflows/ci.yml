@@ -52,6 +52,8 @@ jobs:
         run: npm run verify:release
       - name: Enforce P0 release-remediation invariants
         run: npm run security:p0:guard
+      - name: Enforce P1 release-control invariants
+        run: npm run security:p1:guard
       - name: Run AI evaluation harness
         run: npm run evaluate:ai
         env:

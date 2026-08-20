@@ -1,8 +1,11 @@
 const TEST_TYPES = new Set(['ui', 'api', 'visual', 'mixed']);
 const BROWSERS = new Set(['chromium', 'firefox', 'webkit']);
+const SPECIFICATION_VERSION = '1.0';
+const SUPPORTED_SPECIFICATION_VERSIONS = new Set([SPECIFICATION_VERSION]);
 
 function validateTestSpecification(input) {
   const spec = {
+    schemaVersion: String(input.schemaVersion || SPECIFICATION_VERSION),
     id: input.id,
     name: String(input.name || '').trim(),
     purpose: String(input.purpose || input.prompt || '').trim(),
@@ -17,6 +20,7 @@ function validateTestSpecification(input) {
     code: String(input.code || '')
   };
   const errors = [];
+  if (!SUPPORTED_SPECIFICATION_VERSIONS.has(spec.schemaVersion)) errors.push('schema_version_unsupported');
   if (!spec.name) errors.push('name_required');
   if (!spec.purpose) errors.push('purpose_required');
   if (!TEST_TYPES.has(spec.type)) errors.push('type_invalid');
@@ -35,4 +39,4 @@ function normalizeGeneratedTest(testData) {
   return result.spec;
 }
 
-module.exports = { validateTestSpecification, normalizeGeneratedTest, TEST_TYPES, BROWSERS };
+module.exports = { validateTestSpecification, normalizeGeneratedTest, TEST_TYPES, BROWSERS, SPECIFICATION_VERSION, SUPPORTED_SPECIFICATION_VERSIONS };
