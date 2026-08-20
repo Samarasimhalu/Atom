@@ -103,7 +103,9 @@ module.exports = {
     maxArtifactFiles: Number(process.env.MAX_ARTIFACT_FILES || 100)
   },
   websocket: {
-    maxPayloadBytes: Number(process.env.WEBSOCKET_MAX_PAYLOAD_BYTES || 64 * 1024)
+    maxPayloadBytes: Number(process.env.WEBSOCKET_MAX_PAYLOAD_BYTES || 64 * 1024),
+    maxMessagesPerMinute: Number(process.env.WEBSOCKET_MAX_MESSAGES_PER_MINUTE || 60),
+    maxRunSubscriptions: Number(process.env.WEBSOCKET_MAX_RUN_SUBSCRIPTIONS || 25)
   },
   features: {
     legacyTestApi: process.env.ENABLE_LEGACY_TEST_API === 'true',

@@ -13,7 +13,7 @@ class RunService {
 
   async emit(run, type, payload = {}) {
     const event = await this.store.appendEvent(run.id, run.tenant_id || run.tenantId, type, { runId: run.id, sessionId: run.session_id || run.sessionId, ...payload });
-    this.streaming.sendToChannel(`test-${run.session_id || run.sessionId}`, { ...event.payload, type, sequence: event.sequence });
+    this.streaming.sendToChannel(`run-${run.id}`, { ...event.payload, type, sequence: event.sequence });
     return event;
   }
 
@@ -53,10 +53,10 @@ class RunService {
     if (run.cancel_requested || this.cancelled.has(run.id)) return this.cancel(run.id, payload.tenantId, 'cancelled_before_start');
     run = await this.store.transitionRun(run.id, payload.tenantId, 'running'); await this.emit(run, 'run.started');
     try {
-      const tenantStreaming = {
-        broadcast: message => this.streaming.sendToChannel(`tenant-${payload.tenantId}`, message)
+      const runStreaming = {
+        broadcast: message => this.streaming.sendToChannel(`run-${run.id}`, message)
       };
-      const result = await this.executor.executeTest(payload.testData, payload.sessionId, tenantStreaming);
+      const result = await this.executor.executeTest(payload.testData, payload.sessionId, runStreaming);
       if (this.cancelled.has(run.id)) return this.cancel(run.id, payload.tenantId, 'cancelled');
       const storedArtifacts = await this.ingestArtifacts(run, result);
       result.artifacts = storedArtifacts;

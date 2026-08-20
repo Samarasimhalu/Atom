@@ -82,8 +82,12 @@ Object.values(config.storage).forEach(dir => {
 const aiGenerator = new AITestGenerator(config);
 const mcpExecutor = new MCPExecutor(config);
 const testManager = new TestManager(config);
-const streamingService = new StreamingService(wss);
 const store = new Persistence(config, logger);
+const streamingService = new StreamingService(wss, {
+  resolveRun: (runId, tenantId) => store.getRun(runId, tenantId),
+  maxMessagesPerMinute: config.websocket.maxMessagesPerMinute,
+  maxRunSubscriptions: config.websocket.maxRunSubscriptions
+});
 const runQueue = new RunQueue(config, logger);
 const objectStorage = new ObjectStorage(config, logger);
 const policyEngine = new PolicyEngine(config);
@@ -393,6 +397,12 @@ app.get('/api/analytics/dashboard', requireLegacyTestApi, requirePermission('adm
 wss.on('connection', async (ws, req) => {
   if (!config.features.websockets) return ws.close(1013, 'websocket_disabled');
   try {
+    const origin = req.headers.origin;
+    if (origin && !config.auth.allowedOrigins.includes(origin)) return ws.close(1008, 'origin_not_allowed');
+    const requestUrl = new URL(req.url || '/', 'http://websocket.local');
+    if (['access_token', 'token', 'authorization'].some(name => requestUrl.searchParams.has(name))) {
+      return ws.close(1008, 'query_string_credentials_prohibited');
+    }
     const bearer = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : null;
     let claims = null;
     if (config.auth.mode === 'oidc') claims = mapGroupsToRoles(await websocketOidcVerifier.verify(bearer), config.auth.oidc);
@@ -405,12 +415,15 @@ wss.on('connection', async (ws, req) => {
     const connectionId = `${ws.userId}:${Date.now()}:${crypto.randomUUID()}`;
     ws.connectionId = connectionId;
     streamingService.addConnection(ws, connectionId, { tenantId: ws.tenantId, userId: ws.userId, roles: claims.roles || [] });
-    streamingService.subscribe(connectionId, `tenant-${ws.tenantId}`);
+    if (!streamingService.subscribeTenant(connectionId)) throw new Error('tenant_subscription_failed');
     logger.info('websocket.connected', { userId: ws.userId, tenantId: ws.tenantId, connectionId });
 
     ws.on('message', message => {
-      try { streamingService.handleMessage(ws, JSON.parse(String(message))); }
-      catch (_) { ws.send(JSON.stringify({ type: 'error', message: 'invalid_message_format' })); }
+      try {
+        void streamingService.handleMessage(ws, JSON.parse(String(message))).catch(() => {
+          streamingService.sendToConnection(connectionId, { type: 'error', message: 'message_processing_failed' });
+        });
+      } catch (_) { streamingService.sendToConnection(connectionId, { type: 'error', message: 'invalid_message_format' }); }
     });
     ws.on('close', () => { logger.info('websocket.closed', { userId: ws.userId, tenantId: ws.tenantId }); streamingService.removeConnection(connectionId); });
     ws.on('error', error => logger.error('websocket.error', { userId: ws.userId, tenantId: ws.tenantId, error: error.message }));
@@ -488,5 +501,5 @@ if (require.main === module) {
   });
 }
 
-module.exports = { app, server, wss };
+module.exports = { app, server, wss, streamingService, store };
 

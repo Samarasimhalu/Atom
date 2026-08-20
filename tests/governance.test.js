@@ -59,18 +59,50 @@ test('approval workflow binds an approver decision to one requester, specificati
   await fs.rm(directory, { recursive: true, force: true });
 });
 
-test('streaming service permits only the authenticated tenant channel and ignores client-selected connection IDs', () => {
+test('streaming service allows tenant notifications automatically but authorizes each run subscription through a tenant-scoped lookup', async () => {
   const messages = [];
   const ws = { readyState: 1, on() {}, send: value => messages.push(JSON.parse(value)) };
-  const service = new StreamingService(null);
+  const runs = new Map([
+    ['run-owned-a', { id: 'run-owned-a', tenant_id: 'tenant-a' }],
+    ['run-other-b', { id: 'run-other-b', tenant_id: 'tenant-b' }]
+  ]);
+  const service = new StreamingService(null, {
+    maxMessagesPerMinute: 10,
+    resolveRun: async (runId, tenantId) => {
+      const run = runs.get(runId);
+      return run?.tenant_id === tenantId ? run : null;
+    }
+  });
   service.addConnection(ws, 'connection-a', { tenantId: 'tenant-a', userId: 'user-a', roles: ['developer'] });
-  assert.equal(service.subscribe('connection-a', 'tenant-tenant-a'), true);
-  assert.equal(service.subscribe('connection-a', 'tenant-tenant-b'), false);
   ws.connectionId = 'connection-a';
-  service.handleMessage(ws, { type: 'subscribe', payload: { channel: 'tenant-tenant-b' }, connectionId: 'connection-attacker' });
-  assert.equal(messages.at(-1).message, 'subscription_not_authorized');
+  assert.equal(service.subscribeTenant('connection-a'), true);
   service.sendToChannel('tenant-tenant-b', { type: 'secret' });
   assert.equal(messages.some(message => message.type === 'secret'), false);
+
+  await service.handleMessage(ws, { type: 'subscribe', payload: { channel: 'tenant-tenant-b' }, connectionId: 'connection-attacker' });
+  assert.equal(messages.at(-1).message, 'unsupported_message_type');
+  await service.handleMessage(ws, { type: 'subscribe-run', payload: { runId: 'run-other-b' }, connectionId: 'connection-attacker' });
+  assert.equal(messages.at(-1).message, 'subscription_not_authorized');
+  service.sendToChannel('run-run-other-b', { type: 'secret' });
+  assert.equal(messages.some(message => message.type === 'secret'), false);
+
+  await service.handleMessage(ws, { type: 'subscribe-run', payload: { runId: 'run-owned-a' } });
+  assert.equal(messages.at(-1).type, 'subscribe-run-confirmed');
+  service.sendToChannel('run-run-owned-a', { type: 'run.passed' });
+  assert.equal(messages.at(-1).type, 'run.passed');
+});
+
+test('streaming service denies run subscriptions without runs:read and throttles abusive messages per connection', async () => {
+  const messages = [];
+  const ws = { readyState: 1, on() {}, send: value => messages.push(JSON.parse(value)) };
+  const service = new StreamingService(null, { maxMessagesPerMinute: 2, resolveRun: async () => ({ id: 'run-owned-a' }) });
+  service.addConnection(ws, 'viewer-connection', { tenantId: 'tenant-a', userId: 'unprivileged', roles: [] });
+  ws.connectionId = 'viewer-connection';
+  await service.handleMessage(ws, { type: 'subscribe-run', payload: { runId: 'run-owned-a' } });
+  assert.equal(messages.at(-1).message, 'permission_denied');
+  await service.handleMessage(ws, { type: 'ping' });
+  await service.handleMessage(ws, { type: 'ping' });
+  assert.equal(messages.at(-1).message, 'rate_limit_exceeded');
 });
 
 test('signed webhooks reject tampering and stale timestamps', () => {
