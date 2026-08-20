@@ -200,7 +200,7 @@ app.post('/api/execute/test', requirePermission('runs:create'), validationMiddle
     if (policy.approvalRequired) {
       const approvalId = req.get('x-approval-id');
       if (!approvalId) return res.status(409).json({ error: 'approval_required', correlationId: req.correlationId });
-      await approvalWorkflow.consume(approvalId, { tenantId: req.tenantId, requesterId: req.user.id, specification, sessionId, idempotencyKey });
+      await approvalWorkflow.consume(approvalId, { tenantId: req.tenantId, requesterId: req.user.id, specification, sessionId, idempotencyKey, policyVersion: policy.policyVersion, intendedAction: 'execute_test' });
     }
     const submission = await runService.submit({ tenantId: req.tenantId, userId: req.user.id, projectId: req.get('x-project-id') || 'default', testData, sessionId, idempotencyKey, correlationId: req.correlationId });
     res.status(submission.replayed ? 200 : 202).json({ status: submission.run.state, run: submission.run, replayed: submission.replayed, sessionId: submission.run.session_id, correlationId: req.correlationId });
@@ -284,7 +284,7 @@ app.post('/api/approvals', requirePermission('runs:create'), validationMiddlewar
   const policy = policyEngine.evaluate(specification, { tenantId: req.tenantId, userId: req.user.id });
   if (!policy.approvalRequired) return res.status(400).json({ error: 'approval_not_required', correlationId: req.correlationId });
   if (!policy.allowed) return res.status(403).json({ error: 'policy_denied', reasons: policy.reasons, correlationId: req.correlationId });
-  const approval = await approvalWorkflow.request({ tenantId: req.tenantId, requesterId: req.user.id, specification, sessionId, idempotencyKey, policy });
+  const approval = await approvalWorkflow.request({ tenantId: req.tenantId, requesterId: req.user.id, specification, sessionId, idempotencyKey, policy, policyVersion: policy.policyVersion, intendedAction: 'execute_test' });
   res.status(201).json(approval);
 });
 

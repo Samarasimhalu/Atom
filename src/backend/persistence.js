@@ -34,11 +34,14 @@ CREATE TABLE IF NOT EXISTS atom_audit_events (
 CREATE INDEX IF NOT EXISTS atom_audit_tenant_created_idx ON atom_audit_events(tenant_id, created_at DESC);
 CREATE TABLE IF NOT EXISTS atom_approvals (
   id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, requester_id TEXT NOT NULL,
-  request_digest TEXT NOT NULL, status TEXT NOT NULL, policy JSONB NOT NULL DEFAULT '{}'::jsonb,
+  request_digest TEXT NOT NULL, policy_version TEXT NOT NULL DEFAULT 'unversioned', intended_action TEXT NOT NULL DEFAULT 'execute_test',
+  status TEXT NOT NULL, policy JSONB NOT NULL DEFAULT '{}'::jsonb,
   decided_by TEXT, comment TEXT, decided_at TIMESTAMPTZ, consumed_at TIMESTAMPTZ, consumed_by TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), expires_at TIMESTAMPTZ NOT NULL,
   UNIQUE (tenant_id, requester_id, request_digest)
 );
+ALTER TABLE atom_approvals ADD COLUMN IF NOT EXISTS policy_version TEXT NOT NULL DEFAULT 'unversioned';
+ALTER TABLE atom_approvals ADD COLUMN IF NOT EXISTS intended_action TEXT NOT NULL DEFAULT 'execute_test';
 CREATE INDEX IF NOT EXISTS atom_approvals_tenant_created_idx ON atom_approvals(tenant_id, created_at DESC);
 CREATE TABLE IF NOT EXISTS atom_artifacts (
   id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, run_id TEXT NOT NULL, object_key TEXT NOT NULL,
@@ -176,14 +179,14 @@ class Persistence {
 
   approvalView(row) {
     if (!row) return null;
-    return { id: row.id, tenantId: row.tenant_id ?? row.tenantId, requesterId: row.requester_id ?? row.requesterId, requestDigest: row.request_digest ?? row.requestDigest, status: row.status, policy: row.policy || {}, decidedBy: row.decided_by ?? row.decidedBy, comment: row.comment || '', decidedAt: row.decided_at ?? row.decidedAt, consumedAt: row.consumed_at ?? row.consumedAt, consumedBy: row.consumed_by ?? row.consumedBy, createdAt: row.created_at ?? row.createdAt, expiresAt: row.expires_at ?? row.expiresAt };
+    return { id: row.id, tenantId: row.tenant_id ?? row.tenantId, requesterId: row.requester_id ?? row.requesterId, requestDigest: row.request_digest ?? row.requestDigest, policyVersion: row.policy_version ?? row.policyVersion ?? 'unversioned', intendedAction: row.intended_action ?? row.intendedAction ?? 'execute_test', status: row.status, policy: row.policy || {}, decidedBy: row.decided_by ?? row.decidedBy, comment: row.comment || '', decidedAt: row.decided_at ?? row.decidedAt, consumedAt: row.consumed_at ?? row.consumedAt, consumedBy: row.consumed_by ?? row.consumedBy, createdAt: row.created_at ?? row.createdAt, expiresAt: row.expires_at ?? row.expiresAt };
   }
 
   async createApproval(input) {
     await this.ready;
     const expiresAt = input.expiresAt || new Date(Date.now() + 86400000).toISOString();
     if (this.pool) {
-      const inserted = await this.pool.query(`INSERT INTO atom_approvals (id,tenant_id,requester_id,request_digest,status,policy,expires_at) VALUES ($1,$2,$3,$4,'pending',$5,$6) ON CONFLICT (tenant_id,requester_id,request_digest) DO NOTHING RETURNING *`, [input.id || uuidv4(), input.tenantId, input.requesterId, input.requestDigest, input.policy || {}, expiresAt]);
+      const inserted = await this.pool.query(`INSERT INTO atom_approvals (id,tenant_id,requester_id,request_digest,policy_version,intended_action,status,policy,expires_at) VALUES ($1,$2,$3,$4,$5,$6,'pending',$7,$8) ON CONFLICT (tenant_id,requester_id,request_digest) DO NOTHING RETURNING *`, [input.id || uuidv4(), input.tenantId, input.requesterId, input.requestDigest, input.policyVersion || 'unversioned', input.intendedAction || 'execute_test', input.policy || {}, expiresAt]);
       if (inserted.rows[0]) return { approval: this.approvalView(inserted.rows[0]), created: true };
       const existing = await this.pool.query('SELECT * FROM atom_approvals WHERE tenant_id=$1 AND requester_id=$2 AND request_digest=$3', [input.tenantId, input.requesterId, input.requestDigest]);
       return { approval: this.approvalView(existing.rows[0]), created: false };
@@ -191,7 +194,7 @@ class Persistence {
     const key = `${input.tenantId}:${input.requesterId}:${input.requestDigest}`;
     const existing = this.memory.approvalIdempotency.get(key);
     if (existing) return { approval: this.memory.approvals.get(existing), created: false };
-    const approval = { id: input.id || uuidv4(), tenantId: input.tenantId, requesterId: input.requesterId, requestDigest: input.requestDigest, status: 'pending', policy: input.policy || {}, createdAt: new Date().toISOString(), expiresAt };
+    const approval = { id: input.id || uuidv4(), tenantId: input.tenantId, requesterId: input.requesterId, requestDigest: input.requestDigest, policyVersion: input.policyVersion || 'unversioned', intendedAction: input.intendedAction || 'execute_test', status: 'pending', policy: input.policy || {}, createdAt: new Date().toISOString(), expiresAt };
     this.memory.approvals.set(approval.id, approval); this.memory.approvalIdempotency.set(key, approval.id); await this.flush(); return { approval, created: true };
   }
 
@@ -222,15 +225,15 @@ class Persistence {
     const approval = this.memory.approvals.get(id); approval.status = decision; approval.decidedBy = actorId; approval.comment = comment; approval.decidedAt = new Date().toISOString(); await this.flush(); return approval;
   }
 
-  async consumeApproval({ id, tenantId, requesterId, requestDigest }) {
+  async consumeApproval({ id, tenantId, requesterId, requestDigest, policyVersion = 'unversioned', intendedAction = 'execute_test' }) {
     const current = await this.getApproval(id, tenantId);
     if (!current) return null;
     if (current.status !== 'approved') throw new Error('approval_not_approved');
     if (new Date(current.expiresAt) < new Date()) { await this.expireApproval(id, tenantId); throw new Error('approval_expired'); }
     if (current.requesterId !== requesterId) throw new Error('approval_requester_mismatch');
-    if (current.requestDigest !== requestDigest) throw new Error('approval_request_mismatch');
+    if (current.requestDigest !== requestDigest || current.policyVersion !== policyVersion || current.intendedAction !== intendedAction) throw new Error('approval_request_mismatch');
     if (this.pool) {
-      const result = await this.pool.query(`UPDATE atom_approvals SET status='consumed',consumed_at=NOW(),consumed_by=$3 WHERE id=$1 AND tenant_id=$2 AND requester_id=$3 AND request_digest=$4 AND status='approved' AND expires_at>=NOW() RETURNING *`, [id, tenantId, requesterId, requestDigest]);
+      const result = await this.pool.query(`UPDATE atom_approvals SET status='consumed',consumed_at=NOW(),consumed_by=$3 WHERE id=$1 AND tenant_id=$2 AND requester_id=$3 AND request_digest=$4 AND policy_version=$5 AND intended_action=$6 AND status='approved' AND expires_at>=NOW() RETURNING *`, [id, tenantId, requesterId, requestDigest, policyVersion, intendedAction]);
       if (!result.rows[0]) throw new Error('approval_not_approved');
       return this.approvalView(result.rows[0]);
     }

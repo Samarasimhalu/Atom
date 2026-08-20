@@ -30,6 +30,8 @@ requireSource('src/backend/server.js', /query_string_credentials_prohibited/, 'P
 requireSource('src/backend/streamingService.js', /subscribeRun\(connectionId, runId\)/, 'P0-2 run subscriptions are server-authorized');
 requireSource('src/backend/streamingService.js', /resolveRun\(runId, connection\.tenantId\)/, 'P0-2 run subscriptions use tenant-scoped lookup');
 requireSource('src/backend/runService.js', /run-\$\{run\.id\}/, 'P0-2 run events are not published to predictable session channels');
+requireSource('src/backend/approvalWorkflow.js', /policyVersion/, 'P0-3 approvals bind a policy version');
+requireSource('src/backend/approvalWorkflow.js', /approval\.consume_denied/, 'P0-3 denied and replayed approval attempts are audited');
 requireSource('src/backend/approvalWorkflow.js', /requestDigest/, 'P0-3 approvals bind a canonical request digest');
 requireSource('src/backend/persistence.js', /status='consumed'/, 'P0-3 approvals are atomically marked single use');
 requireSource('src/backend/policyEngine.js', /target_private_address_blocked/, 'P0-6 private targets are denied');
@@ -39,5 +41,5 @@ requireSource('src/backend/security.js', /production_auth_mode_must_be_oidc/, 'P
 requireSource('src/backend/security.js', /managed_egress_not_configured/, 'P0-4 execution fails closed without managed egress');
 
 const status = findings.length ? 'failed' : 'passed';
-console.log(JSON.stringify({ status, controlsChecked: 13, findings }, null, 2));
+console.log(JSON.stringify({ status, controlsChecked: 15, findings }, null, 2));
 if (findings.length) process.exitCode = 1;

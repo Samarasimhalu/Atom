@@ -9,8 +9,8 @@ function canonicalize(value) {
   return value;
 }
 
-function executionDigest({ specification, sessionId, idempotencyKey }) {
-  return crypto.createHash('sha256').update(JSON.stringify(canonicalize({ specification, sessionId, idempotencyKey }))).digest('hex');
+function executionDigest({ specification, sessionId, idempotencyKey, policyVersion = 'unversioned', intendedAction = 'execute_test' }) {
+  return crypto.createHash('sha256').update(JSON.stringify(canonicalize({ specification, sessionId, idempotencyKey, policyVersion, intendedAction }))).digest('hex');
 }
 
 class ApprovalWorkflow {
@@ -40,21 +40,19 @@ class ApprovalWorkflow {
     return next;
   }
 
-  async audit(input) {
-    if (typeof this.store?.recordAudit === 'function') await this.store.recordAudit(input);
-  }
+  async audit(input) { if (typeof this.store?.recordAudit === 'function') await this.store.recordAudit(input); }
 
-  async request({ tenantId, requesterId, specification, sessionId, idempotencyKey, policy, expiresInHours = 24 }) {
+  async request({ tenantId, requesterId, specification, sessionId, idempotencyKey, policy, policyVersion = policy?.policyVersion || 'unversioned', intendedAction = 'execute_test', expiresInHours = 24 }) {
     await this.ready;
-    const requestDigest = executionDigest({ specification, sessionId, idempotencyKey });
-    const input = { id: uuidv4(), tenantId, requesterId, requestDigest, policy, expiresAt: new Date(Date.now() + expiresInHours * 3600000).toISOString() };
+    const requestDigest = executionDigest({ specification, sessionId, idempotencyKey, policyVersion, intendedAction });
+    const input = { id: uuidv4(), tenantId, requesterId, requestDigest, policy, policyVersion, intendedAction, expiresAt: new Date(Date.now() + expiresInHours * 3600000).toISOString() };
     const created = this.durable
       ? await this.store.createApproval(input)
       : await this.withMutation(async () => {
         const approval = { ...input, status: 'pending', createdAt: new Date().toISOString() };
         this.approvals.set(approval.id, approval); await this.save(); return { approval, created: true };
       });
-    if (created.created) await this.audit({ tenantId, actorId: requesterId, action: 'approval.requested', resourceType: 'execution_request', resourceId: requestDigest, metadata: { approvalId: created.approval.id, policy } });
+    if (created.created) await this.audit({ tenantId, actorId: requesterId, action: 'approval.requested', resourceType: 'execution_request', resourceId: requestDigest, metadata: { approvalId: created.approval.id, policy, policyVersion, intendedAction } });
     return created.approval;
   }
 
@@ -75,22 +73,28 @@ class ApprovalWorkflow {
     return approval;
   }
 
-  async consume(id, { tenantId, requesterId, specification, sessionId, idempotencyKey }) {
+  async consume(id, { tenantId, requesterId, specification, sessionId, idempotencyKey, policyVersion = 'unversioned', intendedAction = 'execute_test' }) {
     await this.ready;
-    const requestDigest = executionDigest({ specification, sessionId, idempotencyKey });
-    const approval = this.durable
-      ? await this.store.consumeApproval({ id, tenantId, requesterId, requestDigest })
-      : await this.withMutation(async () => {
-        const current = this.approvals.get(id);
-        if (!current || current.tenantId !== tenantId) return null;
-        if (current.status !== 'approved') throw new Error('approval_not_approved');
-        if (new Date(current.expiresAt) < new Date()) { current.status = 'expired'; await this.save(); throw new Error('approval_expired'); }
-        if (current.requesterId !== requesterId) throw new Error('approval_requester_mismatch');
-        if (current.requestDigest !== requestDigest) throw new Error('approval_request_mismatch');
-        current.status = 'consumed'; current.consumedAt = new Date().toISOString(); current.consumedBy = requesterId; await this.save(); return current;
-      });
-    if (approval) await this.audit({ tenantId, actorId: requesterId, action: 'approval.consumed', resourceType: 'execution_request', resourceId: requestDigest, metadata: { approvalId: id } });
-    return approval;
+    const requestDigest = executionDigest({ specification, sessionId, idempotencyKey, policyVersion, intendedAction });
+    try {
+      const approval = this.durable
+        ? await this.store.consumeApproval({ id, tenantId, requesterId, requestDigest, policyVersion, intendedAction })
+        : await this.withMutation(async () => {
+          const current = this.approvals.get(id);
+          if (!current || current.tenantId !== tenantId) return null;
+          if (current.status !== 'approved') throw new Error('approval_not_approved');
+          if (new Date(current.expiresAt) < new Date()) { current.status = 'expired'; await this.save(); throw new Error('approval_expired'); }
+          if (current.requesterId !== requesterId) throw new Error('approval_requester_mismatch');
+          if (current.requestDigest !== requestDigest || current.policyVersion !== policyVersion || current.intendedAction !== intendedAction) throw new Error('approval_request_mismatch');
+          current.status = 'consumed'; current.consumedAt = new Date().toISOString(); current.consumedBy = requesterId; await this.save(); return current;
+        });
+      if (!approval) throw new Error('approval_not_found_or_not_authorized');
+      await this.audit({ tenantId, actorId: requesterId, action: 'approval.consumed', resourceType: 'execution_request', resourceId: requestDigest, metadata: { approvalId: id, policyVersion, intendedAction } });
+      return approval;
+    } catch (error) {
+      await this.audit({ tenantId, actorId: requesterId, action: 'approval.consume_denied', resourceType: 'execution_request', resourceId: requestDigest, metadata: { approvalId: id, reason: error.message, policyVersion, intendedAction } });
+      throw error;
+    }
   }
 
   async get(id, tenantId) { await this.ready; return this.durable ? this.store.getApproval(id, tenantId) : (() => { const approval = this.approvals.get(id); return approval?.tenantId === tenantId ? approval : null; })(); }
