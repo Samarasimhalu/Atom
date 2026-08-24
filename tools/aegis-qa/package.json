@@ -1,0 +1,16 @@
+{
+  "name": "aegis-qa",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local, confidence-gated self-healing Playwright test SDK",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "playwright test",
+    "test:headed": "playwright test --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.54.0",
+    "typescript": "^5.8.3"
+  }
+}
