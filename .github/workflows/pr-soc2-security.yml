@@ -152,7 +152,7 @@ jobs:
           exit-code: '1'
           # The upstream Playwright image declares these non-secret build/runtime keys.
           # Keep CIS-DI-0010 fatal for every unlisted key.
-          accept-key: PLAYWRIGHT_BROWSERS_PATH,DEBIAN_FRONTEND,TZ,DOCKER_IMAGE_NAME_TEMPLATE,NODE_VERSION,NODE_ENV,PATH,UBUNTU_MIRROR_PREFIX,LANG,LC_ALL,org.opencontainers.image.version,--omit
+          accept-key: PLAYWRIGHT_BROWSERS_PATH,DEBIAN_FRONTEND,TZ,DOCKER_IMAGE_NAME_TEMPLATE,NODE_VERSION,NODE_ENV,PATH,UBUNTU_MIRROR_PREFIX,LANG,LC_ALL,org.opencontainers.image.version,--omit,CI
 
   attest:
     name: PR evidence summary
