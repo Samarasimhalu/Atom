@@ -2,12 +2,6 @@
 
 **Draft — for legal, commercial, security, and customer review before execution**
 **Version:** 1.0
-**Effective date:** [Insert effective date]
-**Provider:** [Insert legal provider name]
-**Customer:** [Insert customer legal name]
-**Order form:** [Insert order form or subscription reference]
-
-> **Legal notice:** I am an AI, not a lawyer. This is a working commercial and legal draft, not formal legal advice. A qualified attorney should review and adapt it before signature or reliance. Bracketed items require commercial and legal decisions.
 
 ## 1. Purpose and scope
 
