@@ -242,9 +242,6 @@ jobs:
     if: ${{ always() }}
     needs: [backend-core, frontend, governance, aegis, worker-images, infrastructure]
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.pages-deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - name: Download job results
