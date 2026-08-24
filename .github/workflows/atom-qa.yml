@@ -1,0 +1,274 @@
+name: ATOM QA
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+env:
+  NODE_VERSION: '22'
+  PNPM_VERSION: '10.4.1'
+  AUTH_MODE: strict
+  NODE_ENV: test
+  EXECUTION_ENABLED: 'false'
+  EVAL_MINIMUM_SCORE: '0.85'
+
+jobs:
+  backend-core:
+    name: Backend core and security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Backend syntax and lint
+        shell: bash
+        run: set -o pipefail; npm run lint:backend 2>&1 | tee qa-backend-lint.log
+      - name: Unit and integration tests
+        shell: bash
+        run: set -o pipefail; npm test 2>&1 | tee qa-backend-tests.log
+      - name: Security smoke simulation
+        shell: bash
+        run: set -o pipefail; npm run security:pentest:smoke 2>&1 | tee qa-backend-security.log
+      - name: Upload backend results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-results
+          path: qa-backend-*.log
+          if-no-files-found: ignore
+
+  frontend:
+    name: Frontend lint and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: src/frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: src/frontend
+      - name: Frontend lint
+        shell: bash
+        run: set -o pipefail; pnpm run lint 2>&1 | tee qa-frontend-lint.log
+        working-directory: src/frontend
+      - name: Frontend build
+        shell: bash
+        run: set -o pipefail; pnpm run build 2>&1 | tee qa-frontend-build.log
+        working-directory: src/frontend
+      - name: Upload frontend results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-results
+          path: src/frontend/qa-frontend-*.log
+          if-no-files-found: ignore
+
+  governance:
+    name: Governance and release controls
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: AI evaluation
+        shell: bash
+        run: set -o pipefail; npm run evaluate:ai 2>&1 | tee qa-governance-evaluation.log
+      - name: P0 release guard
+        shell: bash
+        run: set -o pipefail; npm run security:p0:guard 2>&1 | tee qa-governance-p0.log
+      - name: P1 release guard
+        shell: bash
+        run: set -o pipefail; npm run security:p1:guard 2>&1 | tee qa-governance-p1.log
+      - name: Dependency audit
+        shell: bash
+        run: set -o pipefail; npm audit --audit-level=high --package-lock-only 2>&1 | tee qa-governance-audit.log
+      - name: Upload governance results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: governance-results
+          path: qa-governance-*.log
+          if-no-files-found: ignore
+
+  aegis:
+    name: Aegis self-healing QA
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/aegis-qa
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: tools/aegis-qa/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Run headless Aegis tests
+        run: npm test
+        env:
+          AEGIS_HEADED: 'false'
+          # Trusted repository runs may use the same provider key as Atom.
+          # Fork pull requests receive an empty value and use local fallback.
+          OPENAI_API_KEY: ${{ github.event_name == 'workflow_dispatch' && secrets.OPENAI_API_KEY || '' }}
+      - name: Upload Aegis results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: aegis-results
+          path: |
+            tools/aegis-qa/artifacts/
+            tools/aegis-qa/test-results/
+          if-no-files-found: ignore
+
+  worker-images:
+    name: Isolated worker images
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Playwright worker
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: workers/playwright/Dockerfile
+          load: true
+          tags: atom-playwright-worker:qa-${{ github.sha }}
+          provenance: false
+          sbom: false
+      - name: Build Appium worker
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: workers/appium/Dockerfile
+          load: true
+          tags: atom-appium-worker:qa-${{ github.sha }}
+          provenance: false
+          sbom: false
+      - name: Scan Playwright worker
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: atom-playwright-worker:qa-${{ github.sha }}
+          format: table
+          scanners: vuln
+          vuln-type: os,library
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+
+      - name: Scan Appium worker
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: atom-appium-worker:qa-${{ github.sha }}
+          format: table
+          scanners: vuln
+          vuln-type: os,library
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+
+  infrastructure:
+    name: Local infrastructure and readiness
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Start PostgreSQL, Redis, and MinIO
+        run: npm run infra:up
+      - name: Wait for infrastructure services
+        run: |
+          for attempt in {1..30}; do
+            postgres_ok=$(docker compose -f infra/docker-compose.yml exec -T postgres pg_isready -U atom -d atom >/dev/null 2>&1; echo $?)
+            redis_ok=$(docker compose -f infra/docker-compose.yml exec -T redis redis-cli ping 2>/dev/null | grep -c PONG || true)
+            minio_ok=$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:9000/minio/health/live || true)
+            if [ "$postgres_ok" = 0 ] && [ "$redis_ok" -ge 1 ] && [ "$minio_ok" = 200 ]; then exit 0; fi
+            sleep 2
+          done
+          docker compose -f infra/docker-compose.yml ps
+          exit 1
+      - name: Apply database migration
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: postgresql://atom:atom@127.0.0.1:5432/atom
+      - name: Verify service readiness
+        run: |
+          docker compose -f infra/docker-compose.yml ps
+          test "$(docker compose -f infra/docker-compose.yml exec -T postgres pg_isready -U atom -d atom >/dev/null 2>&1; echo $?)" = 0
+          test "$(docker compose -f infra/docker-compose.yml exec -T redis redis-cli ping)" = "PONG"
+      - name: Capture infrastructure results
+        if: ${{ always() }}
+        run: docker compose -f infra/docker-compose.yml ps > qa-infrastructure-services.log
+      - name: Upload infrastructure results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: infrastructure-results
+          path: qa-infrastructure-services.log
+          if-no-files-found: ignore
+      - name: Stop infrastructure
+        if: ${{ always() }}
+        run: npm run infra:down
+
+  report:
+    name: Consolidated HTML report
+    if: ${{ always() }}
+    needs: [backend-core, frontend, governance, aegis, worker-images, infrastructure]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download job results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-results'
+          path: qa-artifacts
+          merge-multiple: false
+      - name: Generate consolidated HTML report
+        run: node scripts/generate-qa-report.js
+        env:
+          QA_BACKEND_STATUS: ${{ needs.backend-core.result }}
+          QA_FRONTEND_STATUS: ${{ needs.frontend.result }}
+          QA_GOVERNANCE_STATUS: ${{ needs.governance.result }}
+          QA_AEGIS_STATUS: ${{ needs.aegis.result }}
+          QA_WORKERS_STATUS: ${{ needs.worker-images.result }}
+          QA_INFRASTRUCTURE_STATUS: ${{ needs.infrastructure.result }}
+          GITHUB_SERVER_URL: ${{ github.server_url }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_SHA: ${{ github.sha }}
+      - name: Upload consolidated HTML report
+        id: report-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: atom-qa-html-report
+          path: qa-report/index.html
+          if-no-files-found: error
+      - name: Publish report link
+        run: |
+          echo "## ATOM QA report" >> "$GITHUB_STEP_SUMMARY"
+          echo "[Open or download the consolidated HTML report](${{ steps.report-artifact.outputs.artifact-url }})" >> "$GITHUB_STEP_SUMMARY"

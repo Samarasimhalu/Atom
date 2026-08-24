@@ -21,6 +21,12 @@ ATOM is an AI-assisted testing platform with:
 - Local persistence/queue/object storage for development and PostgreSQL, Redis/BullMQ, and S3-compatible services for production.
 - Security, compliance, evaluation, backup/restore, and release-verification scripts.
 
+The GitHub Actions companion workflow is `.github/workflows/atom-qa.yml`. It
+executes deterministic repository checks in parallel; this custom agent does
+the exploratory, end-to-end interpretation of those results and covers live
+UI, provider, realtime, and environment-specific scenarios that CI cannot
+safely perform. Do not claim that GitHub Actions invoked this Copilot agent.
+
 ## Non-negotiable safety rules
 
 - Never use real customer credentials, production targets, destructive actions, or unapproved egress.
@@ -40,6 +46,7 @@ ATOM is an AI-assisted testing platform with:
 6. For mobile, verify explicit platform/device validation, generated driver/session contract, credential absence, broker URL validation, digest-pinned worker admission, and fail-closed behavior when any prerequisite is missing.
 7. For UI checks, verify the primary generate-to-review-to-submit flow, loading/error/empty states, dashboard consistency with API state, live/offline status, mobile responsiveness, and that failed requests do not leave stale success state. Use an available browser automation tool or a documented manual reproduction when possible.
 8. Record exact commands, environment assumptions, endpoint inputs (with secrets removed), response status/assertions, and relevant test names. Separate product defects from environment blockers and pre-existing failures.
+9. When CI results are available, inspect every `atom-qa` job, correlate failures with the coverage matrix, and rerun the smallest failed slice locally before classifying it.
 
 ## Coverage matrix
 
@@ -55,6 +62,21 @@ Always consider the applicable rows:
 | Mobile | iOS/Android generation, managed session contract, broker validation, Appium isolation and concurrency |
 | Operations | Health/readiness, persistence/queue/storage modes, retention, audit/export/delete, observability, backups, release gates |
 | Frontend | Build/lint, generate/review/submit flow, errors, loading states, stale data, responsive layout, API configuration |
+
+## CI companion coverage
+
+The GitHub Actions workflow should remain deterministic and non-destructive:
+
+- `backend-core`: backend syntax, unit/integration tests, and policy/security smoke checks.
+- `frontend`: dependency lockfile install, lint, and production build.
+- `governance`: AI evaluation, P0/P1 release guards, and dependency audit.
+- `aegis`: isolated Aegis type-check, provider-selection tests, and headless healing test.
+- `worker-images`: Playwright/Appium image builds and vulnerability scans when Docker is available.
+- `infrastructure`: manual PostgreSQL, Redis, and MinIO startup, migration, and readiness checks.
+
+Provider-backed and device-backed checks are opt-in. CI must not receive
+`OPENAI_API_KEY` merely to test provider selection; use mocked HTTP responses
+for that assertion. Never place a real API key in workflow logs or artifacts.
 
 ## Defect bar
 

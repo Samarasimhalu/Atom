@@ -13,6 +13,7 @@
     "qa:aegis:build": "npm run build --prefix tools/aegis-qa",
     "qa:aegis:test": "npm test --prefix tools/aegis-qa",
     "qa:aegis": "npm run qa:aegis:build && npm run qa:aegis:test",
+    "qa:report": "node scripts/generate-qa-report.js",
     "build:frontend": "cd src/frontend && npm run build",
     "start": "npm run dev",
     "lint:backend": "node --check src/backend/server.js && node --check src/backend/config.js && node --check src/backend/security.js && node --check src/backend/validation.js && node --check src/backend/mcpExecutor.js && node --check src/backend/appiumExecutor.js && node --check src/backend/executionRouter.js && node --check workers/appium/run-mobile-test.js && node --check src/backend/persistence.js && node --check src/backend/runQueue.js && node --check src/backend/runService.js && node --check src/backend/objectStorage.js && node --check src/backend/aiGateway.js && node --check src/backend/testSpecification.js && node --check src/backend/apiTestPlan.js && node --check src/backend/policyEngine.js && node --check src/backend/approvalWorkflow.js && node --check src/backend/evaluationHarness.js && node --check src/backend/signedWebhook.js && node --check src/backend/identityProvider.js && node --check src/backend/websocketTickets.js && node --check scripts/verify-release.js && node --check scripts/security-pentest-smoke.js && node --check scripts/remediate-p0-release.js && node --check scripts/validate-p1-release.js && node --check scripts/generate-access-review.js",
