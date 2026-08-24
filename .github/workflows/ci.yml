@@ -76,10 +76,6 @@ jobs:
           name: atom-sbom
           path: atom-sbom.cdx.json
 
-      - name: Dependency review
-        if: github.event_name == 'pull_request'
-        uses: actions/dependency-review-action@v4
-
       - name: Attest SBOM provenance
         if: github.ref == 'refs/heads/main'
         uses: actions/attest-build-provenance@v1
