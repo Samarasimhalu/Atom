@@ -268,8 +268,14 @@ execution disabled and does not require `OPENAI_API_KEY`.
 
 After every workflow run, the `Consolidated HTML report` job uploads one
 `atom-qa-html-report` artifact and adds a clickable link to the workflow summary.
+For manual full runs, it also deploys the report to GitHub Pages so the link
+opens directly in a browser tab. Pull-request runs use the artifact download
+link because deploying untrusted pull-request content to Pages is not safe.
 The report contains every job's status, captured backend/frontend/governance/
 infrastructure output, and the Aegis healing report when it was produced.
+
+Before the first manual deployment, enable GitHub Pages for the repository with
+the **GitHub Actions** source under **Settings > Pages**.
 
 For trusted repository runs, configure an Actions secret named
 `OPENAI_API_KEY`. The Aegis job passes that secret to its test process, and the

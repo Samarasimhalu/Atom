@@ -30,13 +30,14 @@ test('run service is idempotent and persists replayable lifecycle events', async
   assert.equal(second.replayed, true);
   assert.equal(first.run.id, second.run.id);
   let events = [];
-  for (let attempt = 0; attempt < 20; attempt += 1) {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
     await new Promise(resolve => setTimeout(resolve, 10));
     events = await service.replay(first.run.id, 'tenant-1');
-    if (events.length >= 3) break;
+    if (events.some(event => event.type === 'run.passed' || event.type === 'run.failed')) break;
   }
   assert.ok(events.length >= 3);
   assert.ok(events.some(event => event.type === 'run.queued'));
+  assert.ok(events.some(event => event.type === 'run.passed' || event.type === 'run.failed'));
   await queue.close(); await store.close(); await fs.rm(directory, { recursive: true, force: true });
 });
 
