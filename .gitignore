@@ -1,5 +1,7 @@
 node_modules/
 **/node_modules/
+tools/aegis-qa/artifacts/
+tools/aegis-qa/test-results/
 dist/
 **/dist/
 data/

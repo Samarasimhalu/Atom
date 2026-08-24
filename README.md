@@ -201,6 +201,10 @@ Run these commands from the repository root.
 | `npm run dev:backend` | Starts the Express backend on `PORT` or `3001`. |
 | `npm run dev:frontend` | Starts the Vite frontend. |
 | `npm run build` | Builds the frontend production bundle. |
+| `npm run qa:aegis:install` | Installs the vendored Aegis QA dependencies. |
+| `npm run qa:aegis:build` | Type-checks the vendored Aegis QA SDK. |
+| `npm run qa:aegis:test` | Runs the vendored Aegis Playwright healing tests. |
+| `npm run qa:aegis` | Runs the Aegis QA type-check and test suite. |
 | `npm start` | Alias for `npm run dev`; this is not a production process manager command. |
 | `npm run lint:backend` | Parses all hardened backend modules and security scripts. |
 | `npm test` | Runs the Node unit and integration regression tests. |
@@ -226,6 +230,29 @@ pnpm --dir src/frontend build
 # Vulnerability audit; CI fails only for HIGH and CRITICAL findings.
 pnpm --dir src/frontend audit --audit-level high
 ```
+
+### Vendored Aegis QA
+
+Atom includes the Aegis self-healing Playwright SDK under `tools/aegis-qa`. It is
+kept as an isolated package so its TypeScript and Playwright dependencies do not
+alter Atom's backend or frontend dependency graphs. The original Aegis project
+remains unchanged at its source location.
+
+```bash
+npm run qa:aegis:install
+npm exec --prefix tools/aegis-qa -- playwright install chromium
+npm run qa:aegis
+```
+
+The Aegis integration is local and confidence-gated: it tries the original
+locator first, heals only failed click/fill actions, rejects low-confidence or
+ambiguous candidates, and writes accepted repairs to
+`tools/aegis-qa/artifacts/aegis-healing.patch.json`.
+
+When `OPENAI_API_KEY` is set, Aegis uses the same key as Atom's AI gateway for
+locator-healing decisions. Without it, Aegis uses local Ollama when available
+and then its explainable local reasoning fallback. Optional Aegis settings are
+`AEGIS_OPENAI_MODEL`, `OPENAI_BASE_URL`, and `AEGIS_AI_TIMEOUT_MS`.
 
 ### Recommended local validation sequence
 
