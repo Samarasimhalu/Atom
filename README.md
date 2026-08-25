@@ -30,6 +30,7 @@
 - [Running isolated Playwright workers](#running-isolated-playwright-workers)
 - [Configuration](#configuration)
 - [CI/CD security gates](#cicd-security-gates)
+- [ATOM QA workflow](#atom-qa-workflow)
 - [Production deployment](#production-deployment)
 - [Troubleshooting](#troubleshooting)
 - [Documentation index](#documentation-index)
@@ -205,6 +206,7 @@ Run these commands from the repository root.
 | `npm run qa:aegis:build` | Type-checks the vendored Aegis QA SDK. |
 | `npm run qa:aegis:test` | Runs the vendored Aegis Playwright healing tests. |
 | `npm run qa:aegis` | Runs the Aegis QA type-check and test suite. |
+| `npm run qa:report` | Generates a consolidated HTML QA report from collected results. |
 | `npm start` | Alias for `npm run dev`; this is not a production process manager command. |
 | `npm run lint:backend` | Parses all hardened backend modules and security scripts. |
 | `npm test` | Runs the Node unit and integration regression tests. |
@@ -253,6 +255,33 @@ When `OPENAI_API_KEY` is set, Aegis uses the same key as Atom's AI gateway for
 locator-healing decisions. Without it, Aegis uses local Ollama when available
 and then its explainable local reasoning fallback. Optional Aegis settings are
 `AEGIS_OPENAI_MODEL`, `OPENAI_BASE_URL`, and `AEGIS_AI_TIMEOUT_MS`.
+
+### ATOM QA workflow
+
+`.github/workflows/atom-qa.yml` runs the repository QA checks as parallel jobs:
+backend core/security, frontend lint/build, governance/release controls, the
+isolated Aegis suite, worker-image builds, and local infrastructure readiness.
+The workflow is the CI execution
+layer for the QA strategy; the `ATOM QA` custom agent remains the interactive
+layer for exploratory end-to-end investigation and failure diagnosis. CI keeps
+execution disabled and does not require `OPENAI_API_KEY`.
+
+After every workflow run, the `Consolidated HTML report` job uploads one
+`atom-qa-html-report` artifact and adds a clickable link to the workflow summary.
+For manual full runs, it also deploys the report to GitHub Pages so the link
+opens directly in a browser tab. Pull-request runs use the artifact download
+link because deploying untrusted pull-request content to Pages is not safe.
+The report contains every job's status, captured backend/frontend/governance/
+infrastructure output, and the Aegis healing report when it was produced.
+
+Before the first manual deployment, enable GitHub Pages for the repository with
+the **GitHub Actions** source under **Settings > Pages**.
+
+For trusted repository runs, configure an Actions secret named
+`OPENAI_API_KEY`. The Aegis job passes that secret to its test process, and the
+same key is read by both Atom's AI gateway and Aegis's OpenAI healing provider.
+If the secret is unavailable, Aegis uses Ollama when available and then local
+reasoning; fork pull requests therefore do not need access to the secret.
 
 ### Recommended local validation sequence
 
@@ -486,12 +515,13 @@ Additional controls include `AI_ALLOWED_MODELS`, `AI_DEFAULT_MODEL`, `AI_DAILY_T
 
 ## CI/CD security gates
 
-Two GitHub Actions workflows enforce the core checks:
+Three GitHub Actions workflows enforce the core checks:
 
 | Workflow | Main gates |
 |---|---|
 | `.github/workflows/ci.yml` | Root dependency install, backend syntax checks, unit/integration tests, frontend lint/build/audit, Playwright and Appium worker image builds, Trivy CVE scans, SBOM and provenance controls. |
 | `.github/workflows/pr-soc2-security.yml` | SOC 2 regression tests, AI evaluation, non-destructive security simulation, dependency audits, secret scanning, worker image hardening checks, and vulnerability scanning. |
+| `.github/workflows/atom-qa.yml` | Parallel backend, frontend, governance, Aegis self-healing, and isolated worker-image QA jobs. |
 
 The worker image scan uses [Trivy](https://github.com/aquasecurity/trivy), which evaluates operating-system and library CVEs. It is intentionally scoped to vulnerability scanning because repository secret scanning is handled separately. The CI gate fails on fixed `HIGH` or `CRITICAL` findings.
 

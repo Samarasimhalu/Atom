@@ -11,6 +11,7 @@ class RunQueue {
     this.queue = this.connection ? new Queue(this.queueName, { connection: this.connection }) : null;
     this.worker = null;
     this.localJobs = new Map();
+    this.activeJobs = new Set();
   }
 
   async enqueue(runId, payload) {
@@ -20,7 +21,12 @@ class RunQueue {
     }
     const timer = setImmediate(() => {
       const job = this.localJobs.get(runId);
-      if (job && !job.cancelled && this.handler) Promise.resolve(this.handler({ id: runId, data: { runId, ...payload } })).catch(error => this.logger.error('queue.local.job_failed', { runId, error: error.message }));
+      if (job && !job.cancelled && this.handler) {
+        const activeJob = Promise.resolve(this.handler({ id: runId, data: { runId, ...payload } }))
+          .catch(error => this.logger.error('queue.local.job_failed', { runId, error: error.message }))
+          .finally(() => this.activeJobs.delete(activeJob));
+        this.activeJobs.add(activeJob);
+      }
     });
     this.localJobs.set(runId, { timer, cancelled: false });
     return { id: runId, durable: false };
@@ -47,6 +53,7 @@ class RunQueue {
   }
 
   async close() {
+    await Promise.all([...this.activeJobs]);
     if (this.worker) await this.worker.close();
     if (this.queue) await this.queue.close();
     if (this.connection) await this.connection.quit();
