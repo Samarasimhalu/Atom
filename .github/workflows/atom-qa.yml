@@ -270,20 +270,7 @@ jobs:
           name: atom-qa-html-report
           path: qa-report/index.html
           if-no-files-found: error
-      - name: Prepare report for browser viewing
-        if: ${{ github.event_name == 'workflow_dispatch' }}
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: qa-report
-      - name: Deploy report to GitHub Pages
-        if: ${{ github.event_name == 'workflow_dispatch' }}
-        id: pages-deploy
-        uses: actions/deploy-pages@v4
       - name: Publish report link
         run: |
           echo "## ATOM QA report" >> "$GITHUB_STEP_SUMMARY"
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "[Open the consolidated HTML report in your browser](${{ steps.pages-deploy.outputs.page_url }})" >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "[Download the consolidated HTML report](${{ steps.report-artifact.outputs.artifact-url }})" >> "$GITHUB_STEP_SUMMARY"
-          fi
+          echo "[Download the consolidated HTML report](${{ steps.report-artifact.outputs.artifact-url }})" >> "$GITHUB_STEP_SUMMARY"
