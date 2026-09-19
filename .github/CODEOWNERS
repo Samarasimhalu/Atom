@@ -1,20 +1,20 @@
 # Default review for all production changes
-* @itismohan
+* @Samarasimhalu
 
 # Security-sensitive paths require security/platform review.
-/src/backend/security.js @itismohan
-/src/backend/config.js @itismohan
-/src/backend/identityProvider.js @itismohan
-/src/backend/policyEngine.js @itismohan
-/src/backend/approvalWorkflow.js @itismohan
-/src/backend/persistence.js @itismohan
-/src/backend/runQueue.js @itismohan
-/src/backend/runService.js @itismohan
-/src/backend/objectStorage.js @itismohan
-/src/backend/mcpExecutor.js @itismohan
-/src/backend/signedWebhook.js @itismohan
-/infra/ @itismohan
-/workers/ @itismohan
-/.github/ @itismohan
-/compliance/ @itismohan
-/scripts/backup-restore-smoke.sh @itismohan
+/src/backend/security.js @Samarasimhalu
+/src/backend/config.js @Samarasimhalu
+/src/backend/identityProvider.js @Samarasimhalu
+/src/backend/policyEngine.js @Samarasimhalu
+/src/backend/approvalWorkflow.js @Samarasimhalu
+/src/backend/persistence.js @Samarasimhalu
+/src/backend/runQueue.js @Samarasimhalu
+/src/backend/runService.js @Samarasimhalu
+/src/backend/objectStorage.js @Samarasimhalu
+/src/backend/mcpExecutor.js @Samarasimhalu
+/src/backend/signedWebhook.js @Samarasimhalu
+/infra/ @Samarasimhalu
+/workers/ @Samarasimhalu
+/.github/ @Samarasimhalu
+/compliance/ @Samarasimhalu
+/scripts/backup-restore-smoke.sh @Samarasimhalu
