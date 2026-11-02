@@ -543,6 +543,7 @@ The complete documentation library is organized under [`docs/`](docs/README.md).
 | Area | Document | Purpose |
 |---|---|---|
 | Documentation | [`docs/README.md`](docs/README.md) | Categorized documentation landing page. |
+| Demo | [`docs/ATOM_LOCAL_DEMO_GUIDE.md`](docs/ATOM_LOCAL_DEMO_GUIDE.md) | Windows-first local setup, test generation, isolated execution, dashboard metrics, and demo-video outline. |
 | Architecture | [`docs/architecture/ATOM_ENTERPRISE_ARCHITECTURE_REVIEW.md`](docs/architecture/ATOM_ENTERPRISE_ARCHITECTURE_REVIEW.md) | Historical enterprise architecture assessment and identified control gaps. |
 | Architecture | [`docs/architecture/ENTERPRISE_FOUNDATION.md`](docs/architecture/ENTERPRISE_FOUNDATION.md) | Overview of the enterprise run lifecycle, governance, local infrastructure, and operational endpoints. |
 | Security | [`docs/security/SECURITY.md`](docs/security/SECURITY.md) | Security overview covering isolation, AI governance, access, and recovery. |
