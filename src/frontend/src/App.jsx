@@ -19,7 +19,6 @@ import {
   CheckCircle, 
   XCircle, 
   Clock,
-  Cpu,
   Globe,
   Shield,
   Rocket
@@ -27,7 +26,6 @@ import {
 import './App.css';
 import EnterpriseDashboard from './components/EnterpriseDashboard.jsx';
 import { useAtomRunStream } from './hooks/useAtomRunStream';
-import atomLogo from './assets/atom-logo.png';
 
 function App() {
   const [prompt, setPrompt] = useState('');
@@ -162,52 +160,21 @@ function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm dark:bg-slate-900/80 sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950">
-                <img src={atomLogo} alt="Atom logo" className="h-full w-full object-cover" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
-                  ATOM
-                </h1>
-                <p className="text-sm text-muted-foreground">Automated Testing and Orchestration Mesh</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <Badge variant={stream.connected ? "default" : "secondary"} className="flex items-center space-x-1">
-                <div className={`w-2 h-2 rounded-full ${stream.connected ? 'bg-green-500' : stream.status === 'disabled' ? 'bg-slate-400' : 'bg-amber-500'}`} />
-                <span>{stream.status === 'disabled' ? 'Live off' : stream.connected ? 'Live' : 'Reconnecting'}</span>
-              </Badge>
-              
-              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                <Cpu className="w-4 h-4" />
-                <span>Enterprise Ready</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-6 py-8">
-        <EnterpriseDashboard
-          refreshSignal={dashboardRefresh}
-          executionEvent={executionEvent}
-          focusedRunId={focusedRunId}
-          streamStatus={stream.status}
-          liveTransitions={liveTransitions}
-          onReconnect={stream.reconnectNow}
-          onRunSelected={setFocusedRunId}
-        />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <main className="dashboard-background h-screen overflow-y-auto overscroll-contain">
+        <div className="w-full px-3 py-4 sm:px-5 sm:py-6">
+          <EnterpriseDashboard
+            refreshSignal={dashboardRefresh}
+            executionEvent={executionEvent}
+            focusedRunId={focusedRunId}
+            streamStatus={stream.status}
+            liveTransitions={liveTransitions}
+            onReconnect={stream.reconnectNow}
+            onRunSelected={setFocusedRunId}
+          />
+        <div id="ai-test-assistant" className="scroll-mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
           {/* Left Panel - Chat Interface */}
           <div className="lg:col-span-1">
-            <Card className="h-fit shadow-xl border-0 bg-white/90 backdrop-blur-sm dark:bg-slate-800/90">
+            <Card className="h-fit border border-sky-200 bg-sky-50/85 shadow-sm dark:border-sky-900/70 dark:bg-slate-800">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center space-x-2">
                   <Bot className="w-5 h-5 text-blue-600" />
@@ -361,8 +328,8 @@ function App() {
           </div>
 
           {/* Right Panel - Test Execution */}
-          <div className="lg:col-span-2">
-            <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm dark:bg-slate-800/90">
+          <div id="atom-test-execution" className="scroll-mt-6 lg:col-span-2">
+            <Card className="border border-violet-200 bg-violet-50/85 shadow-xl backdrop-blur-sm dark:border-violet-900/70 dark:bg-slate-800/90">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center space-x-2">
@@ -422,7 +389,7 @@ function App() {
                           <p className="text-muted-foreground">
                             Enter a prompt and click "Generate Test" to see the code here.
                           </p>
-                        </div>
+                          </div>
                       </div>
                     )}
                   </TabsContent>
@@ -579,9 +546,8 @@ function App() {
           </p>
         </footer>
       </div>
-    </div>
+    </main>
   );
 }
 
 export default App;
-
