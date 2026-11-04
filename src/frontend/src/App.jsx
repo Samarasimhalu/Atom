@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button.jsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
 import { Textarea } from '@/components/ui/textarea.jsx';
@@ -58,6 +58,41 @@ function App() {
     if (['passed', 'failed', 'cancelled'].includes(run.state)) setTestResults(run.result || { status: run.state });
     return run;
   }, [apiBaseUrl, requestHeaders]);
+  useEffect(() => {
+    if (!isExecuting || !focusedRunId) return undefined;
+
+    let active = true;
+    let timer;
+    let lastState = 'queued';
+    const pollRun = async () => {
+      try {
+        const run = await loadRun(focusedRunId);
+        if (!active) return;
+        setExecutionError(null);
+        if (run.state !== lastState) {
+          lastState = run.state;
+          setExecutionEvent({ type: `run.${run.state}`, payload: run });
+        }
+        if (['passed', 'failed', 'cancelled'].includes(run.state)) {
+          setIsExecuting(false);
+          setActiveTab('results');
+          setDashboardRefresh(value => value + 1);
+          return;
+        }
+      } catch (error) {
+        if (!active) return;
+        console.error('Error refreshing run status:', error);
+        setExecutionError('Unable to refresh run status. Retrying automatically.');
+      }
+      if (active) timer = window.setTimeout(pollRun, 2000);
+    };
+
+    timer = window.setTimeout(pollRun, 1000);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [focusedRunId, isExecuting, loadRun]);
   const replayRunEvents = useCallback(async (runId, after) => {
     const response = await fetch(`${apiBaseUrl}/api/runs/${encodeURIComponent(runId)}/events?after=${after}`, { headers: requestHeaders, credentials: 'include' });
     if (!response.ok) throw new Error('run_event_replay_failed');
