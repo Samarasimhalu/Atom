@@ -27,11 +27,9 @@ import {
   Clock,
   Globe,
   Shield,
-  Rocket,
   Atom,
   ArrowUpRight,
   ArrowRight,
-  ChevronRight,
   CircleHelp,
   Sparkles,
   X,
@@ -42,6 +40,11 @@ import { useAtomRunStream } from "./hooks/useAtomRunStream";
 
 function App() {
   const [helpOpen, setHelpOpen] = useState(false);
+  const [activePage, setActivePage] = useState(() =>
+    window.location.hash === "#dashboard" || window.location.hash === "#atom-overview"
+      ? "dashboard"
+      : "workspace",
+  );
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
@@ -57,6 +60,18 @@ function App() {
   const [testType, setTestType] = useState("ui");
   const [mobilePlatform, setMobilePlatform] = useState("android");
   const [mobileDeviceName, setMobileDeviceName] = useState("");
+  useEffect(() => {
+    const syncPageWithHash = () => {
+      setActivePage(
+        window.location.hash === "#dashboard" || window.location.hash === "#atom-overview"
+          ? "dashboard"
+          : "workspace",
+      );
+    };
+
+    window.addEventListener("hashchange", syncPageWithHash);
+    return () => window.removeEventListener("hashchange", syncPageWithHash);
+  }, []);
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
   const wsUrl = import.meta.env.VITE_WS_URL || apiBaseUrl.replace(/^http/, "ws");
   const requestHeaders = useMemo(
@@ -257,91 +272,72 @@ function App() {
 
   return (
     <main className="enterprise-shell dashboard-background h-screen overflow-y-auto overscroll-contain">
-      <a className="skip-link" href="#ai-test-assistant">
-        Skip to test workspace
+      <a
+        className="skip-link"
+        href={activePage === "workspace" ? "#ai-test-assistant" : "#dashboard"}
+      >
+        Skip to {activePage === "workspace" ? "test workspace" : "dashboard content"}
       </a>
       <header className="atom-topbar">
-        <a className="atom-brand" href="#workspace-heading" aria-label="ATOM Enterprise home">
+        <a className="atom-brand" href="#test-workspace" aria-label="ATOM Enterprise home">
           <span className="brand-mark">
             <Atom size={25} strokeWidth={1.6} />
           </span>
-          <span>
-            atom<span className="brand-period">.</span>
+          <span className="brand-copy">
+            <span className="brand-name">ATOM</span>
+            <span className="brand-description">Automated Testing &amp; Orchestration Mesh</span>
           </span>
-          <span className="enterprise-label">ENTERPRISE</span>
         </a>
         <div className="topbar-breadcrumb">
-          <span className="topbar-studio">
-            <Sparkles size={16} />
-            AI Test Studio
-          </span>
+          <nav className="primary-nav" aria-label="Primary navigation">
+            <a
+              href="#test-workspace"
+              aria-current={activePage === "workspace" ? "page" : undefined}
+            >
+              <Bot size={16} aria-hidden="true" />
+              <span>Test Workspace</span>
+            </a>
+            <a
+              href="#dashboard"
+              aria-current={activePage === "dashboard" ? "page" : undefined}
+            >
+              <BarChart3 size={16} aria-hidden="true" />
+              <span>Dashboard</span>
+            </a>
+            <button
+              type="button"
+              className="workspace-guide-nav"
+              onClick={() => setHelpOpen(true)}
+            >
+              <CircleHelp size={16} aria-hidden="true" />
+              <span>Workspace guide</span>
+            </button>
+          </nav>
         </div>
         <div className="topbar-right">
-          <span className="workspace-badge">
-            <Shield size={13} />
-            Enterprise workspace
-          </span>
-          <span className="topbar-divider" />
-          <button
-            className="icon-button"
-            aria-label="Open workspace guide"
-            onClick={() => setHelpOpen(true)}
+          <a
+            className="view-source-link"
+            href="https://github.com/Samarasimhalu/Atom"
+            target="_blank"
+            rel="noreferrer"
           >
-            <CircleHelp size={19} />
-          </button>
-          <span className="profile-mark" aria-label="ATOM workspace">
-            A
-          </span>
+            <span>View source</span>
+            <ArrowUpRight size={16} aria-hidden="true" />
+          </a>
         </div>
       </header>
       <div className="enterprise-container w-full px-3 py-4 sm:px-5 sm:py-6">
-        <section className="studio-heading" id="workspace-heading">
+        {activePage === "workspace" ? (
+          <>
+        <section className="studio-heading workspace-page-heading" id="test-workspace">
           <div>
-            <div className="eyebrow">
-              <span />
-              BUILD. TEST. SHIP WITH CONFIDENCE.
-            </div>
-            <h1>
-              AI Test Studio<span className="heading-tag">AI POWERED</span>
-            </h1>
-            <p>From natural language to production-ready tests. All in one workspace.</p>
+            <h1>Test Workspace</h1>
+            <p>Create, review, and execute AI-assisted tests.</p>
           </div>
-          <button className="guide-button" onClick={() => setHelpOpen(true)}>
-            <CircleHelp size={15} />
-            Quick start guide
-            <ArrowUpRight size={14} />
-          </button>
-        </section>
-        <section className="studio-banner" aria-label="Test creation workflow">
-          <div className="banner-intro">
-            <span className="banner-icon">
-              <Sparkles size={23} strokeWidth={1.5} />
-            </span>
-            <div>
-              <h2>Your next test starts with a sentence.</h2>
-              <p>Describe the experience. Let AI handle the complexity.</p>
-            </div>
-          </div>
-          <div className="workflow-steps">
-            <span className={!currentTest ? "current" : "complete"}>
-              <i>{currentTest ? <CheckCircle size={13} /> : "1"}</i>Describe
-            </span>
-            <ChevronRight size={14} />
-            <span className={currentTest ? "current" : ""}>
-              <i>2</i>Generate
-            </span>
-            <ChevronRight size={14} />
-            <span className={isExecuting || testResults ? "current" : ""}>
-              <i>3</i>Execute
-            </span>
-          </div>
-          <Atom className="banner-watermark" size={170} strokeWidth={0.5} aria-hidden="true" />
         </section>
         <div className="workspace-section-heading">
           <div>
-            <span className="section-indicator" />
-            <h2>Test workspace</h2>
-            <span className="section-subtitle">Create and execute with AI</span>
+            <h2>Create a test</h2>
           </div>
           <span className="workspace-mode">
             <span />
@@ -801,34 +797,24 @@ function App() {
             </Card>
           </div>
         </div>
-
-        <EnterpriseDashboard
-          refreshSignal={dashboardRefresh}
-          executionEvent={executionEvent}
-          focusedRunId={focusedRunId}
-          streamStatus={stream.status}
-          liveTransitions={liveTransitions}
-          onReconnect={stream.reconnectNow}
-          onRunSelected={setFocusedRunId}
-        />
+          </>
+        ) : (
+          <div id="dashboard" className="dashboard-page">
+            <EnterpriseDashboard
+              refreshSignal={dashboardRefresh}
+              executionEvent={executionEvent}
+              focusedRunId={focusedRunId}
+              streamStatus={stream.status}
+              liveTransitions={liveTransitions}
+              onReconnect={stream.reconnectNow}
+              onRunSelected={setFocusedRunId}
+            />
+          </div>
+        )}
 
         {/* Footer */}
         <footer className="enterprise-footer mt-12 text-center text-sm text-muted-foreground">
-          <div className="flex items-center justify-center space-x-6">
-            <div className="flex items-center space-x-2">
-              <Shield className="w-4 h-4" />
-              <span>Enterprise Security</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Globe className="w-4 h-4" />
-              <span>Multi-Browser Support</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Rocket className="w-4 h-4" />
-              <span>AI-Powered Testing</span>
-            </div>
-          </div>
-          <p className="mt-4">ATOM v1.0.0 - Automated Testing and Orchestration Mesh</p>
+          <p>ATOM · AI-assisted test operations</p>
         </footer>
       </div>
       {helpOpen && (
