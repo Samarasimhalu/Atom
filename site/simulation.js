@@ -215,7 +215,7 @@
           if (p.y > canvas.height) p.y = 0;
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(229, 203, 233, 0.4)';
+          ctx.fillStyle = 'rgba(125, 211, 252, 0.42)';
           ctx.fill();
         });
         window.requestAnimationFrame(draw);
