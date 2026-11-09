@@ -21,6 +21,7 @@ const RunService = require('./runService');
 const PolicyEngine = require('./policyEngine');
 const ApprovalWorkflow = require('./approvalWorkflow');
 const EvaluationHarness = require('./evaluationHarness');
+const { PulseService, PulseKeyStore } = require('./pulse');
 const DataLifecycleService = require('./dataLifecycle');
 const { normalizeGeneratedTest } = require('./testSpecification');
 const { OidcVerifier, mapGroupsToRoles } = require('./identityProvider');
@@ -70,6 +71,24 @@ app.disable('x-powered-by');
 app.set('trust proxy', 1);
 app.use(correlationIdMiddleware(logger));
 app.use(securityHeaders);
+// Public, key-authenticated ingest for the browser SDK. It is registered before the
+// global CORS policy because customer sites have arbitrary origins; the credential is an
+// ingest-only API key (no cookies), which grants no read access of any kind.
+const pulseIngestCors = cors({ origin: true, methods: ['POST', 'OPTIONS'], allowedHeaders: ['Content-Type', 'X-Pulse-Key'], credentials: false, maxAge: 600 });
+const pulseIngestLimiter = createRateLimiter({ windowMs: config.rateLimit.windowMs, max: config.rateLimit.generationMax * 20 });
+app.options('/api/pulse/ingest', pulseIngestCors);
+app.post('/api/pulse/ingest', pulseIngestCors, express.json({ limit: '256kb' }), (req, res, next) => {
+  const record = pulseKeys.verify(req.get('x-pulse-key'));
+  if (!record) return res.status(401).json({ error: 'invalid_pulse_key', correlationId: req.correlationId });
+  req.tenantId = record.tenantId;
+  next();
+}, pulseIngestLimiter, (req, res) => {
+  try {
+    res.status(202).json({ ...pulse.ingest(req.tenantId, req.body?.events), correlationId: req.correlationId });
+  } catch (error) {
+    res.status(400).json({ error: error.message, correlationId: req.correlationId });
+  }
+});
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || config.auth.allowedOrigins.includes(origin)) return callback(null, true);
@@ -106,6 +125,13 @@ const approvalWorkflow = new ApprovalWorkflow(config, store, logger);
 const evaluationHarness = new EvaluationHarness(config, aiGenerator, policyEngine, logger);
 const dataLifecycle = new DataLifecycleService({ store, objectStorage, config, logger });
 const runService = new RunService({ store, queue: runQueue, executor: executionRouter, streaming: streamingService, objectStorage, config, logger, policyEngine });
+const pulseFile = process.env.PULSE_STORAGE_PATH || './data/pulse/pulse.json';
+const pulse = new PulseService({ filePath: pulseFile });
+const pulseKeys = new PulseKeyStore({ filePath: pulseFile.replace(/\.json$/, '') + '.keys.json' });
+async function existingSpecs(tenantId) {
+  const runs = await store.listRuns(tenantId, 200);
+  return runs.map(run => run.payload).filter(Boolean);
+}
 let retentionTimer;
 if (require.main === module) {
   retentionTimer = setInterval(async () => {
@@ -213,6 +239,41 @@ app.post('/api/generate/test', requirePermission('ai:generate'), createRateLimit
   }
 });
 
+// Atom Pulse: real-user journey ingestion, mining and coverage gaps.
+app.post('/api/pulse/events', requirePermission('pulse:ingest'), createRateLimiter({ windowMs: config.rateLimit.windowMs, max: config.rateLimit.generationMax * 20 }), (req, res) => {
+  try {
+    res.status(202).json({ ...pulse.ingest(req.tenantId, req.body?.events), correlationId: req.correlationId });
+  } catch (error) {
+    res.status(400).json({ error: error.message, correlationId: req.correlationId });
+  }
+});
+
+app.post('/api/pulse/keys', requirePermission('pulse:manage'), async (req, res) => {
+  const created = pulseKeys.create(req.tenantId, { label: req.body?.label, createdBy: req.user.id });
+  await store.recordAudit({ tenantId: req.tenantId, actorId: req.user.id, action: 'pulse.key_created', resourceType: 'pulse_key', resourceId: created.id, metadata: { correlationId: req.correlationId } });
+  res.status(201).json(created);
+});
+
+app.get('/api/pulse/keys', requirePermission('pulse:manage'), (req, res) => {
+  res.json({ keys: pulseKeys.list(req.tenantId) });
+});
+
+app.delete('/api/pulse/keys/:id', requirePermission('pulse:manage'), async (req, res) => {
+  if (!pulseKeys.revoke(req.tenantId, req.params.id)) return res.status(404).json({ error: 'key_not_found', correlationId: req.correlationId });
+  await store.recordAudit({ tenantId: req.tenantId, actorId: req.user.id, action: 'pulse.key_revoked', resourceType: 'pulse_key', resourceId: req.params.id, metadata: { correlationId: req.correlationId } });
+  res.status(204).end();
+});
+app.get('/api/pulse/journeys', requirePermission('pulse:read'), async (req, res) => {
+  res.json(pulse.coverage(req.tenantId, await existingSpecs(req.tenantId)));
+});
+
+app.get('/api/pulse/gaps', requirePermission('pulse:read'), async (req, res) => {
+  res.json(pulse.gaps(req.tenantId, await existingSpecs(req.tenantId), { limit: Math.min(Number(req.query.limit || 10), 50) }));
+});
+
+app.get('/api/pulse/summary', requirePermission('pulse:read'), async (req, res) => {
+  res.json(pulse.summarize(req.tenantId, await existingSpecs(req.tenantId)));
+});
 // MCP Test Execution Endpoints. Unsafe execution is denied unless an isolated
 // prebuilt worker image is explicitly configured and enabled.
 app.post('/api/execute/test', requirePermission('runs:create'), validationMiddleware(validateExecutionRequest), denyUnsafeExecution(config), async (req, res) => {
@@ -531,5 +592,5 @@ if (require.main === module) {
   });
 }
 
-module.exports = { app, server, wss, streamingService, store, websocketTickets };
+module.exports = { app, server, wss, streamingService, store, websocketTickets, pulse, pulseKeys };
 

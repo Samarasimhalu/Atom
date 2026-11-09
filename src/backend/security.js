@@ -142,10 +142,10 @@ function requireTenant(req, res, next) {
 }
 
 const ROLE_PERMISSIONS = {
-  viewer: ['runs:read', 'artifacts:read', 'dashboard:read'],
-  developer: ['runs:read', 'runs:create', 'runs:cancel', 'artifacts:read', 'dashboard:read', 'ai:generate'],
-  approver: ['runs:read', 'runs:create', 'runs:cancel', 'runs:approve', 'artifacts:read', 'dashboard:read', 'ai:generate'],
-  admin: ['runs:read', 'runs:create', 'runs:cancel', 'runs:approve', 'artifacts:read', 'artifacts:delete', 'audit:read', 'dashboard:read', 'quota:manage', 'admin:ai', 'admin:runtime', 'admin:privacy', 'ai:generate'],
+  viewer: ['runs:read', 'artifacts:read', 'dashboard:read', 'pulse:read'],
+  developer: ['runs:read', 'runs:create', 'runs:cancel', 'artifacts:read', 'dashboard:read', 'ai:generate', 'pulse:read', 'pulse:ingest'],
+  approver: ['runs:read', 'runs:create', 'runs:cancel', 'runs:approve', 'artifacts:read', 'dashboard:read', 'ai:generate', 'pulse:read', 'pulse:ingest'],
+  admin: ['runs:read', 'runs:create', 'runs:cancel', 'runs:approve', 'artifacts:read', 'artifacts:delete', 'audit:read', 'dashboard:read', 'quota:manage', 'admin:ai', 'admin:runtime', 'admin:privacy', 'ai:generate', 'pulse:read', 'pulse:ingest', 'pulse:manage'],
   owner: ['*']
 };
 
