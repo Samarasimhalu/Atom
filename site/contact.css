@@ -85,6 +85,23 @@
 
 .cm-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 
+/* Legibility: lighter frosted panel with dark text so nothing blends into the gradient */
+.cm-panel { background: rgba(255, 255, 255, 0.82); border-color: rgba(255, 255, 255, 0.9); color: #2b1450; }
+.cm-sub { color: #5b4a7a; }
+.cm-field span { color: #3b2466; font-weight: 500; }
+.cm-field input, .cm-field textarea { color: #1e0f3a; border-bottom-color: rgba(76, 29, 149, 0.55); }
+.cm-field input::placeholder, .cm-field textarea::placeholder { color: rgba(76, 29, 149, 0.45); }
+.cm-field input:focus, .cm-field textarea:focus { border-bottom-color: #7c3aed; box-shadow: 0 2px 0 0 rgba(124, 58, 237, 0.45); }
+.cm-field [aria-invalid="true"] { border-bottom-color: #dc2626; }
+.cm-err { color: #b91c1c; }
+.cm-status { color: #2b1450; }
+.cm-status a { color: #6d28d9; }
+.cm-close { color: #2b1450; background: rgba(76, 29, 149, 0.1); }
+.cm-close:hover { background: rgba(76, 29, 149, 0.2); }
+.cm-thanks p { color: #4a3a6a; }
+.cm-tick { background: rgba(124, 58, 237, 0.12); border-color: #7c3aed; }
+.cm-tick svg path { stroke: #7c3aed; }
+
 @media (max-width: 760px) {
   .cm-modal { grid-template-columns: 1fr; padding: 16px; gap: 16px; }
   .cm-art { min-height: 170px; padding: 16px; }
