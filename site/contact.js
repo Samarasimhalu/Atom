@@ -111,33 +111,47 @@
     return true;
   }
 
+  function buildBody() {
+    var body = new FormData();
+    body.append('name', nameEl.value.trim());
+    body.append('email', emailEl.value.trim());
+    body.append('message', msgEl.value.trim());
+    body.append('_subject', 'ATOM website enquiry from ' + nameEl.value.trim());
+    body.append('_template', 'table');
+    body.append('_captcha', 'false');
+    return body;
+  }
+
+  // A multipart POST is a "simple" CORS request (no preflight), which FormSubmit accepts from any origin.
+  // If the browser still cannot read the response, post without reading it so the message is not lost.
+  function send() {
+    return fetch(ENDPOINT, { method: 'POST', headers: { 'Accept': 'application/json' }, body: buildBody() })
+      .then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (body) {
+          if (!res.ok || body.success === 'false' || body.success === false) {
+            var err = new Error('send_failed');
+            err.detail = body.message || '';
+            throw err;
+          }
+        });
+      }, function (networkError) {
+        console.warn('Reading the response was blocked; sending without confirmation.', networkError);
+        return fetch('https://formsubmit.co/' + CONTACT_EMAIL, { method: 'POST', mode: 'no-cors', body: buildBody() });
+      });
+  }
+
   form.addEventListener('submit', function (event) {
     event.preventDefault();
     if (!validate()) return;
-    var data = new FormData(form);
-    if (data.get('_honey')) return; // bots fill the hidden field
-    var payload = {
-      name: nameEl.value.trim(),
-      email: emailEl.value.trim(),
-      message: msgEl.value.trim(),
-      _subject: 'ATOM website enquiry from ' + nameEl.value.trim(),
-      _template: 'table',
-      _captcha: 'false'
-    };
+    if (new FormData(form).get('_honey')) return; // bots fill the hidden field
     submitBtn.disabled = true;
     submitBtn.textContent = 'Sending\u2026';
     statusEl.textContent = '';
-    fetch(ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify(payload)
-    }).then(function (res) {
-      return res.json().catch(function () { return {}; }).then(function (body) {
-        if (!res.ok || body.success === 'false' || body.success === false) throw new Error('send_failed');
-        panel.classList.add('is-sent');
-        form.reset();
-      });
-    }).catch(function () {
+    send().then(function () {
+      panel.classList.add('is-sent');
+      form.reset();
+    }).catch(function (e) {
+      console.warn('Contact form send failed:', e && (e.detail || e.message));
       var mailto = 'mailto:' + CONTACT_EMAIL + '?subject=' + encodeURIComponent('ATOM enquiry') +
         '&body=' + encodeURIComponent(msgEl.value);
       statusEl.innerHTML = 'We could not send that just now. Please try again, or <a href="' + mailto + '">email us directly</a>.';
