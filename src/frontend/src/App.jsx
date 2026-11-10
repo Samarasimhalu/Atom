@@ -36,15 +36,18 @@ import {
 } from "lucide-react";
 import "./App.css";
 import EnterpriseDashboard from "./components/EnterpriseDashboard.jsx";
+import PulsePage from "./components/PulsePage.jsx";
 import { useAtomRunStream } from "./hooks/useAtomRunStream";
+
+function pageFromHash() {
+  const hash = window.location.hash;
+  if (hash === "#pulse") return "pulse";
+  return hash === "#dashboard" || hash === "#atom-overview" ? "dashboard" : "workspace";
+}
 
 function App() {
   const [helpOpen, setHelpOpen] = useState(false);
-  const [activePage, setActivePage] = useState(() =>
-    window.location.hash === "#dashboard" || window.location.hash === "#atom-overview"
-      ? "dashboard"
-      : "workspace",
-  );
+  const [activePage, setActivePage] = useState(pageFromHash);
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
@@ -62,11 +65,7 @@ function App() {
   const [mobileDeviceName, setMobileDeviceName] = useState("");
   useEffect(() => {
     const syncPageWithHash = () => {
-      setActivePage(
-        window.location.hash === "#dashboard" || window.location.hash === "#atom-overview"
-          ? "dashboard"
-          : "workspace",
-      );
+      setActivePage(pageFromHash());
     };
 
     window.addEventListener("hashchange", syncPageWithHash);
@@ -303,6 +302,13 @@ function App() {
             >
               <BarChart3 size={16} aria-hidden="true" />
               <span>Dashboard</span>
+            </a>
+            <a
+              href="#pulse"
+              aria-current={activePage === "pulse" ? "page" : undefined}
+            >
+              <Zap size={16} aria-hidden="true" />
+              <span>Pulse</span>
             </a>
             <button
               type="button"
@@ -798,6 +804,15 @@ function App() {
           </div>
         </div>
           </>
+        ) : activePage === "pulse" ? (
+          <PulsePage
+            apiBaseUrl={apiBaseUrl}
+            requestHeaders={requestHeaders}
+            onGenerateFromGap={(gapPrompt) => {
+              setPrompt(gapPrompt);
+              window.location.hash = "#test-workspace";
+            }}
+          />
         ) : (
           <div id="dashboard" className="dashboard-page">
             <EnterpriseDashboard
