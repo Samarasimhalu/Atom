@@ -38,6 +38,149 @@
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }
 
+  /* ---------- Animated neural-network background ---------- */
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var canvas = document.createElement('canvas');
+  canvas.className = 'hub__net';
+  canvas.setAttribute('aria-hidden', 'true');
+  hub.insertBefore(canvas, hub.firstChild);
+  var ctx = canvas.getContext('2d');
+  var net = { nodes: [], w: 0, h: 0, raf: 0, mx: -9999, my: -9999 };
+
+  function sizeNet() {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = hub.clientWidth, h = hub.clientHeight;
+    if (!w || !h) return;
+    net.w = w; net.h = h;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var count = Math.max(30, Math.min(120, Math.round((w * h) / 13000)));
+    while (net.nodes.length < count) {
+      net.nodes.push({ x: Math.random() * w, y: Math.random() * h, vx: (Math.random() - 0.5) * 0.45, vy: (Math.random() - 0.5) * 0.45, r: 1 + Math.random() * 1.4 });
+    }
+    net.nodes.length = count;
+  }
+
+  function drawNet() {
+    var n = net.nodes, w = net.w, h = net.h, link = 150, i, j;
+    ctx.clearRect(0, 0, w, h);
+    for (i = 0; i < n.length; i++) {
+      var p = n[i];
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < -20) p.x = w + 20; else if (p.x > w + 20) p.x = -20;
+      if (p.y < -20) p.y = h + 20; else if (p.y > h + 20) p.y = -20;
+    }
+    ctx.lineWidth = 1;
+    for (i = 0; i < n.length; i++) {
+      for (j = i + 1; j < n.length; j++) {
+        var dx = n[i].x - n[j].x, dy = n[i].y - n[j].y, d = Math.sqrt(dx * dx + dy * dy);
+        if (d < link) {
+          ctx.strokeStyle = 'rgba(125, 211, 252,' + ((1 - d / link) * 0.5).toFixed(3) + ')';
+          ctx.beginPath(); ctx.moveTo(n[i].x, n[i].y); ctx.lineTo(n[j].x, n[j].y); ctx.stroke();
+        }
+      }
+      var mdx = n[i].x - net.mx, mdy = n[i].y - net.my, md = Math.sqrt(mdx * mdx + mdy * mdy);
+      if (md < 190) {
+        ctx.strokeStyle = 'rgba(167, 139, 250,' + ((1 - md / 190) * 0.7).toFixed(3) + ')';
+        ctx.beginPath(); ctx.moveTo(n[i].x, n[i].y); ctx.lineTo(net.mx, net.my); ctx.stroke();
+      }
+    }
+    ctx.shadowColor = '#7dd3fc'; ctx.shadowBlur = 8; ctx.fillStyle = '#bae6fd';
+    for (i = 0; i < n.length; i++) {
+      ctx.beginPath(); ctx.arc(n[i].x, n[i].y, n[i].r, 0, 6.2832); ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+  }
+
+  function netLoop() {
+    drawNet();
+    net.raf = window.requestAnimationFrame(netLoop);
+  }
+  function startNet() {
+    if (net.raf) return;
+    sizeNet();
+    if (reduceMotion) { drawNet(); return; }
+    net.raf = window.requestAnimationFrame(netLoop);
+  }
+  function stopNet() {
+    if (net.raf) window.cancelAnimationFrame(net.raf);
+    net.raf = 0;
+  }
+  hub.addEventListener('mousemove', function (e) {
+    var r = hub.getBoundingClientRect();
+    net.mx = e.clientX - r.left; net.my = e.clientY - r.top;
+  });
+  hub.addEventListener('mouseleave', function () { net.mx = net.my = -9999; });
+  window.addEventListener('resize', function () { if (net.raf || reduceMotion) sizeNet(); });
+
+  /* ---------- Card -> slide right -> expand into the page ---------- */
+  var busy = false;
+
+  function openCard(card, id) {
+    if (busy) return;
+    var rect = card.getBoundingClientRect();
+    var hdrH = header ? header.offsetHeight : 64;
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var clone = card.cloneNode(true);
+    clone.classList.add('hub-card--flying');
+    clone.removeAttribute('href');
+    clone.style.left = rect.left + 'px';
+    clone.style.top = rect.top + 'px';
+    clone.style.width = rect.width + 'px';
+    clone.style.height = rect.height + 'px';
+    document.body.appendChild(clone);
+    busy = true;
+    hub.classList.add('is-leaving');
+
+    var slideLeft = Math.max(rect.left, vw - rect.width - 28);
+    var hubShift1 = hub.animate(
+      [{ transform: 'translateX(0)' }, { transform: 'translateX(' + Math.round(vw * 0.3) + 'px)' }],
+      { duration: 520, easing: 'cubic-bezier(.65,0,.35,1)', fill: 'forwards' }
+    );
+    var slide = clone.animate(
+      [{ left: rect.left + 'px' }, { left: slideLeft + 'px' }],
+      { duration: 520, easing: 'cubic-bezier(.65,0,.35,1)', fill: 'forwards' }
+    );
+
+    function finish() {
+      location.hash = id;           // renders the real page underneath
+      var fade = clone.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, easing: 'ease-out', fill: 'forwards' });
+      fade.onfinish = function () {
+        clone.remove();
+        hub.classList.remove('is-leaving');
+        busy = false;
+      };
+    }
+
+    slide.onfinish = function () {
+      clone.style.left = slideLeft + 'px';
+      slide.cancel();
+      var hubShift2 = hub.animate(
+        [{ transform: 'translateX(' + Math.round(vw * 0.3) + 'px)' }, { transform: 'translateX(' + vw + 'px)' }],
+        { duration: 600, easing: 'cubic-bezier(.7,0,.2,1)', fill: 'forwards' }
+      );
+      hubShift2.onfinish = function () { hub.getAnimations().forEach(function (a) { a.cancel(); }); };
+      clone.classList.add('is-expanding');
+      var expand = clone.animate(
+        [
+          { left: slideLeft + 'px', top: rect.top + 'px', width: rect.width + 'px', height: rect.height + 'px', borderRadius: '24px', backgroundColor: '#f1f5fb' },
+          { left: '0px', top: hdrH + 'px', width: vw + 'px', height: (vh - hdrH) + 'px', borderRadius: '0px', backgroundColor: '#ffffff' }
+        ],
+        { duration: 600, easing: 'cubic-bezier(.7,0,.2,1)', fill: 'forwards' }
+      );
+      expand.onfinish = finish;
+    };
+  }
+
+  hub.addEventListener('click', function (event) {
+    var card = event.target.closest && event.target.closest('a[data-feature]');
+    if (!card || event.metaKey || event.ctrlKey || event.shiftKey || event.button) return;
+    event.preventDefault();
+    var id = card.getAttribute('data-feature');
+    if (reduceMotion || !card.animate) { location.hash = id; return; }
+    openCard(card, id);
+  });
+
   function render() {
     var id = currentId();
     setHeaderHeight();
@@ -50,6 +193,7 @@
     });
     if (id) backLabel.innerHTML = 'Viewing <b></b>';
     if (id) backLabel.querySelector('b').textContent = titles[id];
+    if (id) stopNet(); else startNet();
     jumpTop();
     // Canvases and charts size themselves from layout; nudge them after reveal.
     window.setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 30);
