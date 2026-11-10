@@ -1099,7 +1099,7 @@ docker build \
                 <article>
                   <span>4 &middot; Ask</span>
                   <strong>&ldquo;Hey Atom&rdquo; voice copilot</strong>
-                  <small>Ask &ldquo;What&rsquo;s my coverage?&rdquo; or &ldquo;Generate a test for the top gap&rdquo;. Uses the browser&rsquo;s built-in speech, with no extra service.</small>
+                  <small>Ask &ldquo;How well are my customers covered?&rdquo;, &ldquo;Which journeys are most at risk?&rdquo; or &ldquo;Write a test for my riskiest journey&rdquo;. Uses the browser&rsquo;s built-in speech, with no extra service.</small>
                 </article>
               </div>
 
@@ -1137,7 +1137,7 @@ curl -sS "${ATOM_API}/api/pulse/gaps" \
   "${ATOM_HEADERS[@]}" | jq '.realUserCoveragePercent, .gaps[0]'
 
 # 3. Ask Atom out loud (Pulse page)
-"Hey Atom, generate a test for the top gap."</code></pre>
+"Hey Atom, write a test for my riskiest journey."</code></pre>
               <div class="boundary-callout">
                 <span>&#10003;</span>
                 <p style="margin:0;">

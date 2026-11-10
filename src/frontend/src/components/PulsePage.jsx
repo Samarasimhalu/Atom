@@ -175,7 +175,7 @@ export default function PulsePage({ apiBaseUrl, requestHeaders, onGenerateFromGa
             </CardTitle>
             <CardDescription>
               {SpeechRecognitionImpl
-                ? 'Try: "What is my coverage?", "Show untested journeys", or "Generate a test for the top gap".'
+                ? 'Try: "How well are my customers covered?", "Which journeys are most at risk?", or "Write a test for my riskiest journey".'
                 : "Voice input is not supported in this browser. Use the refresh button for a text summary."}
             </CardDescription>
           </CardHeader>
