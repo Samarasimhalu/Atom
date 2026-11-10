@@ -13,6 +13,7 @@
     <link rel="icon" type="image/png" href="assets/atom-logo.png" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="hub.css" />
+    <link rel="stylesheet" href="contact.css" />
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
@@ -541,6 +542,7 @@
         <div class="NewMegaMenu_actions">
           <a href="#start" class="NewMegaMenu_signIn">Get Started</a>
           <a href="https://github.com/samarasimhalu/Atom" class="NewMegaMenu_cta">View Source ↗</a>
+          <button type="button" class="NewMegaMenu_cta NewMegaMenu_contact" data-open-contact aria-haspopup="dialog">Contact Us</button>
         </div>
 
         <!-- Mobile Hamburger -->
@@ -613,6 +615,7 @@
       <div class="NewMobileMenu_drawerFooter">
         <a href="#start" class="NewMegaMenu_signIn" style="text-align:center;">Start Locally</a>
         <a href="https://github.com/samarasimhalu/Atom" class="NewMegaMenu_cta" style="text-align:center;">View Source ↗</a>
+          <button type="button" class="NewMegaMenu_cta NewMegaMenu_contact" data-open-contact aria-haspopup="dialog" style="text-align:center;">Contact Us</button>
       </div>
     </aside>
 
@@ -1772,5 +1775,6 @@ curl -sS http://localhost:3001/api/readyz | jq</code></pre>
 
     <script src="simulation.js"></script>
     <script src="hub.js"></script>
+    <script src="contact.js"></script>
   </body>
 </html>
