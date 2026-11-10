@@ -1,0 +1,95 @@
+/* Contact Us button + modal */
+.NewMegaMenu_contact {
+  border: 0; cursor: pointer; font-family: inherit;
+  background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+  box-shadow: 0 2px 10px rgba(124, 58, 237, 0.3);
+}
+.NewMegaMenu_contact:hover { box-shadow: 0 4px 16px rgba(124, 58, 237, 0.45); }
+
+.cm-overlay {
+  position: fixed; inset: 0; z-index: 3000; display: none; align-items: center; justify-content: center;
+  padding: 20px; background: rgba(10, 6, 30, 0.6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.cm-overlay.is-open { display: flex; animation: cmFade 0.25s ease both; }
+@keyframes cmFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cmPop { from { opacity: 0; transform: translateY(16px) scale(0.97); } to { opacity: 1; transform: none; } }
+
+.cm-modal {
+  position: relative; width: min(920px, 100%); max-height: 100%; overflow: auto;
+  display: grid; grid-template-columns: 1fr 1.1fr; gap: 28px; align-items: stretch;
+  padding: 28px; border-radius: 28px; font-family: var(--ff-font-poppins, sans-serif);
+  background: linear-gradient(100deg, #6d28d9 0%, #c026d3 38%, #f9a8d4 55%, #be185d 80%, #7e22ce 100%);
+  box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.7);
+  animation: cmPop 0.4s cubic-bezier(.2,.8,.2,1) both;
+}
+
+.cm-art {
+  position: relative; overflow: hidden; border-radius: 22px; min-height: 380px; padding: 28px;
+  display: flex; flex-direction: column; justify-content: flex-end; color: #fff;
+  background: radial-gradient(circle at 70% 20%, #2a0a5e, #0a0420 70%);
+}
+.cm-orb { position: absolute; border-radius: 50%; filter: blur(0.5px); animation: cmFloat 9s ease-in-out infinite; }
+.cm-orb--1 { width: 230px; height: 230px; top: -40px; right: -50px; background: radial-gradient(circle at 35% 30%, #fb923c, #db2777 45%, #4c1d95 80%); }
+.cm-orb--2 { width: 190px; height: 190px; top: 70px; left: 20px; background: radial-gradient(circle at 40% 35%, #c084fc, #7c3aed 50%, #1e1b4b 85%); animation-delay: -3s; }
+.cm-orb--3 { width: 90px; height: 90px; bottom: 150px; right: 30px; background: radial-gradient(circle at 35% 30%, #f472b6, #9d174d 70%); animation-delay: -5s; opacity: 0.9; }
+.cm-orb--4 { width: 60px; height: 60px; bottom: 120px; left: 40px; border: 2px solid rgba(244, 114, 182, 0.7); background: rgba(244, 114, 182, 0.12); animation-delay: -1s; }
+@keyframes cmFloat { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(10px, -14px); } }
+
+.cm-fact { position: relative; z-index: 1; padding: 16px 18px; border-radius: 16px; background: rgba(10, 4, 32, 0.55); border: 1px solid rgba(255, 255, 255, 0.18); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.cm-fact__label { display: block; margin-bottom: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #f9a8d4; }
+.cm-fact__text { margin: 0; font-size: 14px; line-height: 1.5; min-height: 63px; transition: opacity 0.35s ease, transform 0.35s ease; }
+.cm-fact__text.is-out { opacity: 0; transform: translateY(6px); }
+
+.cm-panel {
+  position: relative; padding: 30px 30px 26px; border-radius: 22px; color: #fff;
+  background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  display: flex; flex-direction: column; justify-content: center;
+}
+.cm-close {
+  position: absolute; top: 12px; right: 14px; width: 34px; height: 34px; border-radius: 50%; border: 0; cursor: pointer;
+  font-size: 22px; line-height: 1; color: #fff; background: rgba(255, 255, 255, 0.2);
+}
+.cm-close:hover { background: rgba(255, 255, 255, 0.35); }
+.cm-title { margin: 0 0 4px; text-align: center; font-size: 2rem; font-weight: 500; letter-spacing: 0.01em; }
+.cm-sub { margin: 0 0 22px; text-align: center; font-size: 13px; color: rgba(255, 255, 255, 0.85); }
+
+.cm-field { display: block; margin-bottom: 18px; }
+.cm-field span { display: block; font-size: 12px; color: rgba(255, 255, 255, 0.9); margin-bottom: 2px; }
+.cm-field input, .cm-field textarea {
+  width: 100%; box-sizing: border-box; padding: 8px 2px; font: 400 14px var(--ff-font-poppins, sans-serif); color: #fff;
+  background: transparent; border: 0; border-bottom: 1.5px solid rgba(255, 255, 255, 0.75); outline: none; resize: none;
+}
+.cm-field input::placeholder, .cm-field textarea::placeholder { color: rgba(255, 255, 255, 0.55); }
+.cm-field input:focus, .cm-field textarea:focus { border-bottom-color: #fff; box-shadow: 0 2px 0 0 rgba(255, 255, 255, 0.6); }
+.cm-field [aria-invalid="true"] { border-bottom-color: #fecaca; }
+.cm-err { min-height: 16px; margin: -10px 0 8px; font-size: 12px; color: #fee2e2; }
+
+.cm-submit {
+  align-self: center; margin-top: 4px; padding: 11px 32px; border: 0; border-radius: 999px; cursor: pointer;
+  font: 600 14px var(--ff-font-poppins, sans-serif); color: #fff; background: #2e0a4f;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.cm-submit:hover { background: #1b0634; transform: translateY(-1px); }
+.cm-submit:disabled { opacity: 0.6; cursor: wait; transform: none; }
+.cm-status { margin: 12px 0 0; min-height: 18px; text-align: center; font-size: 12.5px; color: #fff; }
+.cm-status a { color: #fff; }
+
+.cm-thanks { display: none; text-align: center; padding: 20px 0; }
+.cm-panel.is-sent form { display: none; }
+.cm-panel.is-sent .cm-thanks { display: block; animation: cmPop 0.45s ease both; }
+.cm-tick { width: 70px; height: 70px; margin: 0 auto 16px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, 0.25); border: 2px solid #fff; }
+.cm-tick svg { width: 34px; height: 34px; }
+.cm-thanks h3 { margin: 0 0 8px; font-size: 1.6rem; font-weight: 600; }
+.cm-thanks p { margin: 0 0 20px; font-size: 14px; color: rgba(255, 255, 255, 0.9); }
+
+.cm-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+
+@media (max-width: 760px) {
+  .cm-modal { grid-template-columns: 1fr; padding: 16px; gap: 16px; }
+  .cm-art { min-height: 170px; padding: 16px; }
+  .cm-orb--1 { width: 140px; height: 140px; } .cm-orb--2 { width: 110px; height: 110px; top: 30px; }
+  .cm-orb--3, .cm-orb--4 { display: none; }
+  .cm-fact__text { min-height: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .cm-orb, .cm-modal, .cm-overlay.is-open { animation: none; } }
