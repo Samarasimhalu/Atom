@@ -103,6 +103,15 @@
                         </span>
                       </a>
                     </li>
+                    <li>
+                      <a href="#pulse" class="NewMegaMenu_dropItem">
+                        <span class="NewMegaMenu_dropIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 12 7 12 10 4 14 20 17 12 21 12"/></svg></span>
+                        <span class="NewMegaMenu_dropContent">
+                          <span class="NewMegaMenu_dropLabel">Atom Pulse <span class="NewMegaMenu_badge">New</span></span>
+                          <span class="NewMegaMenu_dropDesc">Real-user coverage, journey mining &amp; the &ldquo;Hey Atom&rdquo; voice copilot</span>
+                        </span>
+                      </a>
+                    </li>
                   </ul>
                 </div>
 
@@ -573,6 +582,7 @@
           </button>
           <div class="NewMobileMenu_accPanel">
             <a href="#mobile-automation" class="NewMegaMenu_dropItem"><span class="NewMegaMenu_dropLabel">Native Mobile (iOS XCUITest &amp; Android UiAutomator2)</span></a>
+            <a href="#pulse" class="NewMegaMenu_dropItem"><span class="NewMegaMenu_dropLabel">Atom Pulse (real-user coverage &amp; voice copilot)</span></a>
             <a href="#api-workflow" class="NewMegaMenu_dropItem"><span class="NewMegaMenu_dropLabel">Declarative API Plans (api-test-plan/v1)</span></a>
             <a href="#simulator" class="NewMegaMenu_dropItem"><span class="NewMegaMenu_dropLabel">Interactive API Sandbox Simulator</span></a>
           </div>
@@ -1058,6 +1068,87 @@ docker build \
       </section>
 
       <!-- =====================================================================
+           6b. ATOM PULSE (#pulse)
+           ===================================================================== -->
+      <section id="pulse" class="section pulse-section" aria-labelledby="pulse-title">
+        <div class="container">
+          <div class="mobile-layout">
+            <div>
+              <span class="eyebrow">New &middot; Atom Pulse</span>
+              <h2 id="pulse-title">Test what your customers actually do, not just what you remembered to test.</h2>
+              <p style="color:var(--muted);">
+                Atom Pulse turns anonymized real-user journeys into a ranked list of untested paths. It reports a <strong>real-user coverage</strong> percentage, then drafts a regression test for each gap through the same governed pipeline: policy checks, human approval, and audit trail.
+              </p>
+
+              <div class="mobile-platforms">
+                <article>
+                  <span>1 &middot; Capture</span>
+                  <strong>Privacy-first SDK</strong>
+                  <small>One script tag records navigation, clicks, submits, JS errors and failed requests. It never records typed values and honors Do Not Track.</small>
+                </article>
+                <article>
+                  <span>2 &middot; Mine</span>
+                  <strong>Journeys, ranked by risk</strong>
+                  <small>Sessions are scrubbed, grouped into journeys, and scored by traffic, error rate and revenue paths such as checkout.</small>
+                </article>
+                <article>
+                  <span>3 &middot; Close the gap</span>
+                  <strong>Governed test generation</strong>
+                  <small>One click sends a gap to the AI gateway. The drafted test still goes through approval before anything runs.</small>
+                </article>
+                <article>
+                  <span>4 &middot; Ask</span>
+                  <strong>&ldquo;Hey Atom&rdquo; voice copilot</strong>
+                  <small>Ask &ldquo;What&rsquo;s my coverage?&rdquo; or &ldquo;Generate a test for the top gap&rdquo;. Uses the browser&rsquo;s built-in speech, with no extra service.</small>
+                </article>
+              </div>
+
+              <div class="atom-table-wrap" style="margin-top:20px;">
+                <table class="atom-table" aria-label="Atom Pulse API endpoints">
+                  <thead>
+                    <tr>
+                      <th>Endpoint</th>
+                      <th>Credential</th>
+                      <th>Purpose</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td><code>POST /api/pulse/ingest</code></td><td>Ingest-only key</td><td>Browser SDK sends events. Write-only; grants no read access.</td></tr>
+                    <tr><td><code>GET /api/pulse/gaps</code></td><td><code>pulse:read</code></td><td>Ranked untested journeys with suggested test prompts.</td></tr>
+                    <tr><td><code>GET /api/pulse/summary</code></td><td><code>pulse:read</code></td><td>Plain-language coverage summary used by the voice copilot.</td></tr>
+                    <tr><td><code>POST /api/pulse/keys</code></td><td><code>pulse:manage</code></td><td>Create, list or revoke ingest keys (admins only, audited).</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="code-panel-dark">
+              <div class="code-topline">
+                <span>pulse / real-user coverage</span>
+                <span>SDK &middot; /api/pulse</span>
+              </div>
+              <pre><code>&lt;!-- 1. Add to your site --&gt;
+&lt;script src="https://YOUR-ATOM/atom-pulse.js"
+        data-endpoint="https://YOUR-ATOM-API/api/pulse/ingest"
+        data-key="apk_..." async&gt;&lt;/script&gt;
+
+# 2. See what is untested
+curl -sS "${ATOM_API}/api/pulse/gaps" \
+  "${ATOM_HEADERS[@]}" | jq '.realUserCoveragePercent, .gaps[0]'
+
+# 3. Ask Atom out loud (Pulse page)
+"Hey Atom, generate a test for the top gap."</code></pre>
+              <div class="boundary-callout">
+                <span>&#10003;</span>
+                <p style="margin:0;">
+                  <strong>Privacy and governance by design.</strong> Emails, tokens and long numbers are redacted on ingest; URLs are templated (<code>/orders/:id</code>); keys are stored hashed, bound to one tenant, and revocable. Journeys are tenant-isolated, and generated tests keep Atom&rsquo;s approval gates.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- =====================================================================
            7. API TESTING & ORCHESTRATION (#api-workflow)
            ===================================================================== -->
       <section id="api-workflow" class="section api-workflow-section" aria-labelledby="api-title">
@@ -1525,6 +1616,7 @@ curl -sS http://localhost:3001/api/readyz | jq</code></pre>
                 <a href="#api-workflow" class="ff-footer__link">Declarative API Plans (<code>api-test-plan/v1</code>)</a><span class="ff-footer__sep">|</span>
                 <a href="#capabilities" class="ff-footer__link">Mixed Test Definitions</a><span class="ff-footer__sep">|</span>
                 <a href="#mobile-automation" class="ff-footer__link">Native Mobile (iOS XCUITest &amp; Android UiAutomator2)</a><span class="ff-footer__sep">|</span>
+                <a href="#pulse" class="ff-footer__link">Atom Pulse (Real-User Coverage)</a><span class="ff-footer__sep">|</span>
                 <a href="#capabilities" class="ff-footer__link">Vendored Aegis QA Self-Healing</a>
               </div>
               <div class="ff-footer__inline-links">

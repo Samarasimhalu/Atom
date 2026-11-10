@@ -2849,3 +2849,12 @@ button.ef-node:hover {
     grid-template-columns: 1fr;
   }
 }
+
+/* Atom Pulse (#pulse) reuses the mobile layout and platform cards. */
+.pulse-section {
+  border-bottom: 1px solid var(--line);
+}
+
+.pulse-section .mobile-platforms span {
+  letter-spacing: 0.02em;
+}
