@@ -132,19 +132,9 @@
     busy = true;
     hub.classList.add('is-leaving');
 
-    var slideLeft = Math.max(rect.left, vw - rect.width - 28);
-    var hubShift1 = hub.animate(
-      [{ transform: 'translateX(0)' }, { transform: 'translateX(' + Math.round(vw * 0.3) + 'px)' }],
-      { duration: 520, easing: 'cubic-bezier(.65,0,.35,1)', fill: 'forwards' }
-    );
-    var slide = clone.animate(
-      [{ left: rect.left + 'px' }, { left: slideLeft + 'px' }],
-      { duration: 520, easing: 'cubic-bezier(.65,0,.35,1)', fill: 'forwards' }
-    );
-
     function finish() {
       location.hash = id;           // renders the real page underneath
-      var fade = clone.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, easing: 'ease-out', fill: 'forwards' });
+      var fade = clone.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 280, easing: 'ease-out', fill: 'forwards' });
       fade.onfinish = function () {
         clone.remove();
         hub.classList.remove('is-leaving');
@@ -152,24 +142,16 @@
       };
     }
 
-    slide.onfinish = function () {
-      clone.style.left = slideLeft + 'px';
-      slide.cancel();
-      var hubShift2 = hub.animate(
-        [{ transform: 'translateX(' + Math.round(vw * 0.3) + 'px)' }, { transform: 'translateX(' + vw + 'px)' }],
-        { duration: 600, easing: 'cubic-bezier(.7,0,.2,1)', fill: 'forwards' }
-      );
-      hubShift2.onfinish = function () { hub.getAnimations().forEach(function (a) { a.cancel(); }); };
-      clone.classList.add('is-expanding');
-      var expand = clone.animate(
-        [
-          { left: slideLeft + 'px', top: rect.top + 'px', width: rect.width + 'px', height: rect.height + 'px', borderRadius: '24px', backgroundColor: '#f1f5fb' },
-          { left: '0px', top: hdrH + 'px', width: vw + 'px', height: (vh - hdrH) + 'px', borderRadius: '0px', backgroundColor: '#ffffff' }
-        ],
-        { duration: 600, easing: 'cubic-bezier(.7,0,.2,1)', fill: 'forwards' }
-      );
-      expand.onfinish = finish;
-    };
+    // Enlarge the card in place until it fills the content area, then reveal the page.
+    clone.classList.add('is-expanding');
+    var expand = clone.animate(
+      [
+        { left: rect.left + 'px', top: rect.top + 'px', width: rect.width + 'px', height: rect.height + 'px', borderRadius: '24px', backgroundColor: '#f1f5fb' },
+        { left: '0px', top: hdrH + 'px', width: vw + 'px', height: (vh - hdrH) + 'px', borderRadius: '0px', backgroundColor: '#ffffff' }
+      ],
+      { duration: 650, easing: 'cubic-bezier(.7,0,.2,1)', fill: 'forwards' }
+    );
+    expand.onfinish = finish;
   }
 
   hub.addEventListener('click', function (event) {

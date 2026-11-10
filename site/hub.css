@@ -191,3 +191,8 @@ main section { scroll-margin-top: 120px; }
 .hub-card--flying.is-expanding .hub-card__foot { opacity: 0; }
 .hub.is-leaving .hub-card:not(.hub-card--flying) { opacity: 0.18; transform: scale(0.96) !important; filter: blur(2px); transition: opacity 0.5s ease, transform 0.5s ease, filter 0.5s ease; }
 .hub.is-leaving .hub__head { opacity: 0.2; transition: opacity 0.5s ease; }
+
+/* Card enlarges in place: the rest of the cards just recede */
+.hub.is-leaving .hub-card:not(.hub-card--flying) { opacity: 0.25; transform: scale(0.97) !important; filter: blur(1px); transition: opacity 0.45s ease, transform 0.45s ease, filter 0.45s ease; }
+.hub.is-leaving .hub__head { opacity: 0.25; }
+.hub-card--flying { box-shadow: 0 30px 70px -20px rgba(0, 0, 0, 0.7); }
