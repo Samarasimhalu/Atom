@@ -842,9 +842,11 @@ function App() {
         )}
 
         {/* Footer */}
-        <footer className="enterprise-footer mt-12 text-center text-sm text-muted-foreground">
-          <p>ATOM · AI-assisted test operations</p>
-        </footer>
+        {activePage !== "pulse" && (
+          <footer className="enterprise-footer mt-12 text-center text-sm text-muted-foreground">
+            <p>ATOM · AI-assisted test operations</p>
+          </footer>
+        )}
       </div>
       {helpOpen && (
         <div className="guide-overlay" onClick={() => setHelpOpen(false)}>

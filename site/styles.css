@@ -367,9 +367,9 @@ code, pre {
 }
 
 .NewMegaMenu_badge--new {
-  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  background: linear-gradient(135deg, #10b981, #059669) !important;
   color: #ffffff !important;
-  box-shadow: 0 1px 4px rgba(220, 38, 38, 0.4);
+  box-shadow: 0 1px 6px rgba(16, 185, 129, 0.45);
 }
 
 .NewMegaMenu_itemList {
