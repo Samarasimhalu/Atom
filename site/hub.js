@@ -45,11 +45,16 @@
   canvas.setAttribute('aria-hidden', 'true');
   hub.insertBefore(canvas, hub.firstChild);
   var ctx = canvas.getContext('2d');
-  var net = { nodes: [], w: 0, h: 0, raf: 0, mx: -9999, my: -9999 };
+  var net = { nodes: [], w: 0, h: 0, raf: 0, mx: -9999, my: -9999, host: hub };
+  var welcome = document.getElementById('welcome');
+  function setNetHost(el) {
+    if (canvas.parentNode !== el) el.insertBefore(canvas, el.firstChild);
+    net.host = el;
+  }
 
   function sizeNet() {
     var dpr = Math.min(window.devicePixelRatio || 1, 2);
-    var w = hub.clientWidth, h = hub.clientHeight;
+    var w = net.host.clientWidth, h = net.host.clientHeight;
     if (!w || !h) return;
     net.w = w; net.h = h;
     canvas.width = w * dpr; canvas.height = h * dpr;
@@ -106,15 +111,21 @@
     if (net.raf) window.cancelAnimationFrame(net.raf);
     net.raf = 0;
   }
-  hub.addEventListener('mousemove', function (e) {
-    var r = hub.getBoundingClientRect();
+  function onNetMove(e) {
+    var r = net.host.getBoundingClientRect();
     net.mx = e.clientX - r.left; net.my = e.clientY - r.top;
+  }
+  function onNetLeave() { net.mx = net.my = -9999; }
+  [hub, welcome].forEach(function (el) {
+    if (!el) return;
+    el.addEventListener('mousemove', onNetMove);
+    el.addEventListener('mouseleave', onNetLeave);
   });
-  hub.addEventListener('mouseleave', function () { net.mx = net.my = -9999; });
   window.addEventListener('resize', function () { if (net.raf || reduceMotion) sizeNet(); });
 
   /* ---------- Card -> slide right -> expand into the page ---------- */
   var busy = false;
+  var origin = 'features'; // where the Back button returns: 'features' (cards) or 'welcome'
 
   function openCard(card, id) {
     if (busy) return;
@@ -159,56 +170,98 @@
     if (!card || event.metaKey || event.ctrlKey || event.shiftKey || event.button) return;
     event.preventDefault();
     var id = card.getAttribute('data-feature');
+    origin = 'features';
     if (reduceMotion || !card.animate) { location.hash = id; return; }
     openCard(card, id);
   });
 
+  // Routes: '' = welcome screen, '#features' = cards, '#<feature id>' = a single feature.
+  function route() {
+    var raw = decodeURIComponent((location.hash || '').replace(/^#\/?/, ''));
+    if (raw === 'features') return 'features';
+    return Object.prototype.hasOwnProperty.call(titles, raw) ? raw : 'welcome';
+  }
+
+  var backText = document.getElementById('hubBackText');
+
   function render() {
-    var id = currentId();
+    var r = route();
+    var isView = r !== 'welcome' && r !== 'features';
     setHeaderHeight();
-    document.body.classList.toggle('hub-mode', !id);
-    document.body.classList.toggle('view-mode', !!id);
-    hub.classList.toggle('is-hidden', !!id);
-    back.classList.toggle('is-hidden', !id);
+    document.body.classList.toggle('welcome-mode', r === 'welcome');
+    document.body.classList.toggle('hub-mode', r === 'features');
+    document.body.classList.toggle('view-mode', isView);
+    if (welcome) welcome.classList.toggle('is-hidden', r !== 'welcome');
+    hub.classList.toggle('is-hidden', r !== 'features');
+    back.classList.toggle('is-hidden', !isView);
     sections().forEach(function (section) {
-      section.classList.toggle('is-hidden', !id || !belongsTo(section, id));
+      if (section === welcome) return;
+      section.classList.toggle('is-hidden', !isView || !belongsTo(section, r));
     });
-    if (id) backLabel.innerHTML = 'Viewing <b></b>';
-    if (id) backLabel.querySelector('b').textContent = titles[id];
-    if (id) stopNet(); else startNet();
+    if (isView) {
+      backLabel.innerHTML = 'Viewing <b></b>';
+      backLabel.querySelector('b').textContent = titles[r];
+      if (backText) backText.textContent = origin === 'welcome' ? 'Back' : 'All features';
+      stopNet();
+    } else {
+      if (r !== 'features') origin = 'features';
+      setNetHost(r === 'welcome' && welcome ? welcome : hub);
+      startNet();
+    }
     jumpTop();
     // Canvases and charts size themselves from layout; nudge them after reveal.
     window.setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 30);
   }
 
-  function goHub() {
-    if (location.hash) {
+  function go(hash) {
+    if (hash) {
+      location.hash = hash;
+    } else if (location.hash) {
       location.hash = '';
       // Clearing the hash leaves a trailing '#'; keep the URL clean.
-      if (window.history && history.replaceState) {
-        history.replaceState(null, '', location.pathname + location.search);
-      }
+      if (window.history && history.replaceState) history.replaceState(null, '', location.pathname + location.search);
+      render();
+    } else {
+      render();
     }
-    render();
   }
 
-  back.querySelector('button').addEventListener('click', goHub);
+  function goBack() { go(origin === 'welcome' ? '' : 'features'); }
+
+  back.querySelector('button').addEventListener('click', goBack);
   window.addEventListener('hashchange', render);
   window.addEventListener('resize', setHeaderHeight);
   document.addEventListener('keydown', function (event) {
-    if (event.key === 'Escape' && currentId()) goHub();
+    if (event.key !== 'Escape') return;
+    var r = route();
+    if (r === 'features') go('');
+    else if (r !== 'welcome') goBack();
   });
 
-  // Logo and any "#top" link return to the cards.
   document.addEventListener('click', function (event) {
-    var link = event.target.closest && event.target.closest('a[href="#top"], a[href="#main-content"]');
+    var t = event.target.closest ? event.target : null;
+    if (!t) return;
+    // Welcome / hub buttons: data-go="features" | "start" | "welcome"
+    var nav = t.closest('[data-go]');
+    if (nav) {
+      event.preventDefault();
+      var dest = nav.getAttribute('data-go');
+      if (dest === 'welcome') go('');
+      else {
+        origin = dest === 'start' && route() === 'welcome' ? 'welcome' : 'features';
+        go(dest);
+      }
+      return;
+    }
+    // Logo and any "#top" link return to the welcome screen.
+    var link = t.closest('a[href="#top"], a[href="#main-content"]');
     if (link && link.className.indexOf('skip-link') === -1) {
       event.preventDefault();
-      goHub();
+      go('');
     }
     // Hero lifecycle nodes jump to the walkthrough, which lives in its own view.
-    var jump = event.target.closest && event.target.closest('[data-jump]');
-    if (jump && currentId() !== 'walkthrough') location.hash = 'walkthrough';
+    var jump = t.closest('[data-jump]');
+    if (jump && route() !== 'walkthrough') location.hash = 'walkthrough';
   });
 
   render();
