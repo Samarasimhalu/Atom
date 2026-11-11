@@ -307,5 +307,32 @@
     });
   })();
 
+  // Ensure all external destinations (like GitHub repo, docs, actions) open in a new tab,
+  // while internal ATOM features and pages stay within the same window.
+  (function () {
+    function enforceExternalTargets() {
+      var links = document.querySelectorAll('a[href^="http://"], a[href^="https://"]');
+      for (var i = 0; i < links.length; i++) {
+        var a = links[i];
+        if (a.hostname && a.hostname !== window.location.hostname) {
+          a.setAttribute('target', '_blank');
+          a.setAttribute('rel', 'noopener noreferrer');
+        }
+      }
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', enforceExternalTargets);
+    } else {
+      enforceExternalTargets();
+    }
+    document.addEventListener('click', function (e) {
+      var a = e.target && e.target.closest && e.target.closest('a[href^="http://"], a[href^="https://"]');
+      if (a && a.hostname && a.hostname !== window.location.hostname) {
+        a.setAttribute('target', '_blank');
+        a.setAttribute('rel', 'noopener noreferrer');
+      }
+    }, true);
+  })();
+
   render();
 })();
