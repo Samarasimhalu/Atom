@@ -2,7 +2,30 @@
 (function () {
   'use strict';
 
-  var APP_URL = 'http://localhost:5173/#test-workspace';
+  var hostname = (window.location && window.location.hostname) || '';
+  var isLocal = Boolean(
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '0.0.0.0' ||
+    hostname === '[::1]' ||
+    hostname.startsWith('192.168.') ||
+    hostname.startsWith('10.') ||
+    hostname.endsWith('.local') ||
+    (window.location && window.location.protocol === 'file:')
+  );
+
+  // In local development, direct to Vite dev server on port 5173.
+  // In production (e.g. https://www.atomworld.net/), launch the live web workspace directly at /app/#test-workspace without localhost.
+  var APP_URL = isLocal
+    ? 'http://localhost:5173/#test-workspace'
+    : ((window.location && window.location.origin ? window.location.origin : 'https://www.atomworld.net') + '/app/#test-workspace');
+
+  var noteHtml = isLocal
+    ? '<div class="app-confirm-note">' +
+        '<span>Local development destination: <code>http://localhost:5173</code></span>' +
+        '<small>Make sure your local development server is running via <code>npm.cmd run dev</code>.</small>' +
+      '</div>'
+    : '';
 
   var overlay = document.createElement('div');
   overlay.className = 'app-confirm-overlay';
@@ -35,10 +58,7 @@
           '<span>Execute in sealed containers and capture replayable event streams and audit-ready test reports.</span>' +
         '</div>' +
       '</div>' +
-      '<div class="app-confirm-note">' +
-        '<span>Local service destination: <code>http://localhost:5173</code></span>' +
-        '<small>Make sure your local development server is running via <code>npm.cmd run dev</code>.</small>' +
-      '</div>' +
+      noteHtml +
       '<div class="app-confirm-actions">' +
         '<button type="button" class="app-confirm-btn app-confirm-btn--cancel" id="appConfirmCancel">Stay on website</button>' +
         '<button type="button" class="app-confirm-btn app-confirm-btn--confirm" id="appConfirmGo">Confirm &amp; Launch Workspace &rarr;</button>' +

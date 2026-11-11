@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'site/**'
+      - 'src/frontend/**'
       - 'CNAME'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
@@ -24,6 +25,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Build frontend for GitHub Pages
+        run: |
+          npm ci --prefix src/frontend || npm install --prefix src/frontend
+          npm run --prefix src/frontend build -- --base=/app/ --outDir=../../site/app --emptyOutDir
       - name: Configure and enable GitHub Pages
         uses: actions/configure-pages@v4
       - name: Upload static site artifact
