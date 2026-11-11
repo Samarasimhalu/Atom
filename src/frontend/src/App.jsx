@@ -42,6 +42,7 @@ import PulsePage from "./components/PulsePage.jsx";
 import { useAtomRunStream } from "./hooks/useAtomRunStream";
 import {
   getApiBaseUrl,
+  getWebsiteUrl,
   generateAtomTest,
   executeAtomTest,
   getLocalRunById,
@@ -344,9 +345,7 @@ function App() {
         <div className="topbar-right">
           <a
             className="marketing-link"
-            href="http://localhost:3000"
-            target="_blank"
-            rel="noreferrer"
+            href={getWebsiteUrl("/#features")}
             title="Explore features on the ATOM interactive showcase"
           >
             <span>Explore Features</span>
@@ -356,7 +355,7 @@ function App() {
             className="view-source-link"
             href="https://github.com/Samarasimhalu/Atom"
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
           >
             <span>View source</span>
             <ArrowUpRight size={14} aria-hidden="true" />
