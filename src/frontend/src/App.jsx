@@ -40,6 +40,12 @@ import ConstellationBackground from "./components/ConstellationBackground.jsx";
 import EnterpriseDashboard from "./components/EnterpriseDashboard.jsx";
 import PulsePage from "./components/PulsePage.jsx";
 import { useAtomRunStream } from "./hooks/useAtomRunStream";
+import {
+  getApiBaseUrl,
+  generateAtomTest,
+  executeAtomTest,
+  getLocalRunById,
+} from "./lib/atomClient";
 
 function pageFromHash() {
   const hash = window.location.hash;
@@ -73,7 +79,7 @@ function App() {
     window.addEventListener("hashchange", syncPageWithHash);
     return () => window.removeEventListener("hashchange", syncPageWithHash);
   }, []);
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
+  const apiBaseUrl = getApiBaseUrl();
   const wsUrl = import.meta.env.VITE_WS_URL || apiBaseUrl.replace(/^http/, "ws");
   const requestHeaders = useMemo(
     () => ({
@@ -90,6 +96,12 @@ function App() {
   );
   const loadRun = useCallback(
     async (runId) => {
+      const localRun = getLocalRunById(runId);
+      if (localRun) {
+        if (["passed", "failed", "cancelled"].includes(localRun.state))
+          setTestResults(localRun.result || { status: localRun.state });
+        return localRun;
+      }
       const response = await fetch(`${apiBaseUrl}/api/runs/${encodeURIComponent(runId)}`, {
         headers: requestHeaders,
         credentials: "include",
@@ -139,6 +151,8 @@ function App() {
   }, [focusedRunId, isExecuting, loadRun]);
   const replayRunEvents = useCallback(
     async (runId, after) => {
+      const localRun = getLocalRunById(runId);
+      if (localRun) return [];
       const response = await fetch(
         `${apiBaseUrl}/api/runs/${encodeURIComponent(runId)}/events?after=${after}`,
         { headers: requestHeaders, credentials: "include" },
@@ -194,30 +208,27 @@ function App() {
 
     try {
       setIsGenerating(true);
-      const response = await fetch(`${apiBaseUrl}/api/generate/test`, {
-        method: "POST",
-        headers: requestHeaders,
-        body: JSON.stringify({
-          prompt: prompt.trim(),
-          testType,
-          options:
-            testType === "mobile"
-              ? {
-                  mobile: {
-                    platform: mobilePlatform,
-                    ...(mobileDeviceName.trim() ? { deviceName: mobileDeviceName.trim() } : {}),
-                  },
-                }
-              : {},
-        }),
+      setExecutionError(null);
+      const options =
+        testType === "mobile"
+          ? {
+              mobile: {
+                platform: mobilePlatform,
+                ...(mobileDeviceName.trim() ? { deviceName: mobileDeviceName.trim() } : {}),
+              },
+            }
+          : {};
+
+      const generatedTest = await generateAtomTest({
+        prompt: prompt.trim(),
+        testType,
+        options,
+        apiBaseUrl,
+        requestHeaders,
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to generate test");
-      }
-
-      const generatedTest = await response.json();
       setCurrentTest(generatedTest);
+      setActiveTab("code");
       setIsGenerating(false);
     } catch (error) {
       console.error("Error generating test:", error);
@@ -230,22 +241,32 @@ function App() {
 
     try {
       const sessionId = `session-${Date.now()}`;
-
       setExecutionError(null);
-      const response = await fetch(`${apiBaseUrl}/api/execute/test`, {
-        method: "POST",
-        headers: { ...requestHeaders, "Idempotency-Key": `ui-${crypto.randomUUID()}` },
-        body: JSON.stringify({
-          testData: currentTest,
-          sessionId,
-        }),
+      setExecutionLogs([]);
+      setTestResults(null);
+      setActiveTab("logs");
+      setIsExecuting(true);
+
+      const submission = await executeAtomTest({
+        testData: currentTest,
+        sessionId,
+        apiBaseUrl,
+        requestHeaders,
+        onLog: (logEntry) => {
+          setExecutionLogs((prev) => [...prev, logEntry]);
+        },
+        onStateChange: (event) => {
+          setExecutionEvent({ type: `run.${event.state}`, payload: event });
+          setLiveTransitions((current) => [event, ...current].slice(0, 6));
+        },
+        onComplete: (completedRun, finalResult) => {
+          setTestResults(finalResult);
+          setIsExecuting(false);
+          setActiveTab("results");
+          setDashboardRefresh((value) => value + 1);
+        },
       });
 
-      if (!response.ok) {
-        const failure = await response.json().catch(() => ({}));
-        throw new Error(failure.error || "Failed to execute test");
-      }
-      const submission = await response.json();
       const runId = submission.run?.id || null;
       setFocusedRunId(runId);
       setExecutionEvent({
@@ -253,9 +274,6 @@ function App() {
         payload: { ...submission.run, runId, state: submission.status },
       });
       setDashboardRefresh((value) => value + 1);
-      setIsExecuting(true);
-
-      // Lifecycle events continue through the tenant-authorized run stream when WebSockets are enabled.
     } catch (error) {
       console.error("Error executing test:", error);
       setIsExecuting(false);
