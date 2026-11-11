@@ -145,6 +145,7 @@ export default function PulsePage({ apiBaseUrl, requestHeaders, onGenerateFromGa
     <div className="space-y-4" id="pulse">
       <section className="studio-heading workspace-page-heading">
         <div>
+          <span className="eyebrow">REAL-USER COVERAGE &amp; VOICE COPILOT</span>
           <h1>Atom Pulse</h1>
           <p>Real-user coverage: the journeys your customers actually take, and which ones have no tests.</p>
         </div>
@@ -187,10 +188,10 @@ export default function PulsePage({ apiBaseUrl, requestHeaders, onGenerateFromGa
                 {listening ? <MicOff size={16} aria-hidden="true" /> : <Mic size={16} aria-hidden="true" />}
                 {listening ? "Stop listening" : "Talk to Atom"}
               </Button>
-              <Button type="button" variant="outline" onClick={refresh} disabled={loading}>
-                <RefreshCw size={16} aria-hidden="true" /> Refresh
+              <Button type="button" onClick={refresh} disabled={loading}>
+                <RefreshCw size={16} aria-hidden="true" className={loading ? "animate-spin" : ""} /> Refresh
               </Button>
-              <Button type="button" variant="outline" onClick={loadDemo}>
+              <Button type="button" onClick={loadDemo}>
                 <Sparkles size={16} aria-hidden="true" /> Load demo traffic
               </Button>
             </div>

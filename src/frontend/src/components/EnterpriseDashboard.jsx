@@ -272,10 +272,10 @@ export default function EnterpriseDashboard({
     <section id="atom-overview" aria-labelledby="dashboard-title" className="dashboard-page-content">
       <header className="dashboard-heading">
         <div>
-          <p className="dashboard-eyebrow">Operations</p>
-          <h1 id="dashboard-title">Dashboard</h1>
+          <span className="eyebrow">DURABLE OPERATIONS &amp; CI</span>
+          <h1 id="dashboard-title">Governed Run Mesh</h1>
           <p className="dashboard-description">
-            A concise view of test activity and execution health.
+            Live execution events, worker status, and audit-ready run evidence.
           </p>
         </div>
         <div className="dashboard-heading-actions">

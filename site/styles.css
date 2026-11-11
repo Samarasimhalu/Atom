@@ -366,6 +366,12 @@ code, pre {
   line-height: 1.4;
 }
 
+.NewMegaMenu_badge--new {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 4px rgba(220, 38, 38, 0.4);
+}
+
 .NewMegaMenu_itemList {
   list-style: none;
   margin: 0;
