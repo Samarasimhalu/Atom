@@ -188,10 +188,10 @@ export default function PulsePage({ apiBaseUrl, requestHeaders, onGenerateFromGa
                 {listening ? <MicOff size={16} aria-hidden="true" /> : <Mic size={16} aria-hidden="true" />}
                 {listening ? "Stop listening" : "Talk to Atom"}
               </Button>
-              <Button type="button" variant="outline" onClick={refresh} disabled={loading}>
-                <RefreshCw size={16} aria-hidden="true" /> Refresh
+              <Button type="button" onClick={refresh} disabled={loading}>
+                <RefreshCw size={16} aria-hidden="true" className={loading ? "animate-spin" : ""} /> Refresh
               </Button>
-              <Button type="button" variant="outline" onClick={loadDemo}>
+              <Button type="button" onClick={loadDemo}>
                 <Sparkles size={16} aria-hidden="true" /> Load demo traffic
               </Button>
             </div>

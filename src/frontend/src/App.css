@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
@@ -2398,38 +2398,18 @@
   background: #d8eaff;
 }
 
-.quick-example {
-  color: #5c5773 !important;
-  border-color: #e5ddf5 !important;
-  background: #faf7ff !important;
+.quick-example,
+.quick-example:nth-child(n) {
+  color: #cbd5e1 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
 }
 
-.quick-example:nth-child(2) {
-  border-color: #dce8f7 !important;
-  background: #f5f9ff !important;
-}
-
-.quick-example:nth-child(3) {
-  border-color: #d5ece7 !important;
-  background: #f2fbf8 !important;
-}
-
-.quick-example .example-icon {
-  border-color: #e1d1f8;
-  color: #8950cf;
-  background: #f0e5ff;
-}
-
-.quick-example:nth-child(2) .example-icon {
-  border-color: #cde0f7;
-  color: #3b7dc9;
-  background: #e4f0ff;
-}
-
-.quick-example:nth-child(3) .example-icon {
-  border-color: #c5e9df;
-  color: #218f78;
-  background: #dff5ed;
+.quick-example .example-icon,
+.quick-example:nth-child(n) .example-icon {
+  border-color: rgba(147, 197, 253, 0.3) !important;
+  color: #93c5fd !important;
+  background: rgba(59, 130, 246, 0.15) !important;
 }
 
 .prompt-section label,
@@ -5089,4 +5069,71 @@ code, pre {
   background: rgba(6, 13, 31, 0.6) !important;
   border-radius: 14px !important;
   color: #94a3b8 !important;
+}
+
+/* Ensure all quick examples have identical background, border and high-contrast readable text */
+.quick-example,
+.quick-example:nth-child(n) {
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 14px !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #f1f5f9 !important;
+  padding: 12px 14px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  line-height: 1.5 !important;
+  transition: all 0.2s ease !important;
+}
+
+.quick-example:hover,
+.quick-example:nth-child(n):hover {
+  background: rgba(59, 130, 246, 0.2) !important;
+  border-color: rgba(96, 165, 250, 0.5) !important;
+  color: #ffffff !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.28) !important;
+}
+
+.quick-example .example-icon,
+.quick-example:nth-child(n) .example-icon {
+  border-color: rgba(147, 197, 253, 0.35) !important;
+  color: #93c5fd !important;
+  background: rgba(59, 130, 246, 0.2) !important;
+}
+
+.quick-example .example-arrow,
+.quick-example:nth-child(n) .example-arrow {
+  color: #94a3b8 !important;
+}
+.quick-example:hover .example-arrow,
+.quick-example:nth-child(n):hover .example-arrow {
+  color: #ffffff !important;
+}
+
+/* Atom Pulse: match all actions in Hey Atom card to the primary "Talk to Atom" styling */
+#pulse .flex.flex-wrap.gap-2 button,
+#pulse [data-slot="button"] {
+  background: linear-gradient(135deg, #1d4ed8 0%, #0284c7 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 2px 10px rgba(29, 78, 216, 0.35) !important;
+  font-weight: 600 !important;
+  border-radius: 10px !important;
+  padding: 8px 16px !important;
+  opacity: 1 !important;
+  transition: all 0.18s ease !important;
+}
+
+#pulse .flex.flex-wrap.gap-2 button:hover:not(:disabled),
+#pulse [data-slot="button"]:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2563eb 0%, #0369a1 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 16px rgba(29, 78, 216, 0.5) !important;
+}
+
+#pulse .flex.flex-wrap.gap-2 button:disabled,
+#pulse [data-slot="button"]:disabled {
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
 }
