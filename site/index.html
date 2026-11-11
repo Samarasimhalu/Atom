@@ -624,14 +624,39 @@
       <div class="hub-back is-hidden" id="hubBack">
         <button type="button" class="hub-back__btn" aria-label="Back to all features">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          All features
+          <span id="hubBackText">All features</span>
         </button>
         <span class="hub-back__label" id="hubBackLabel"></span>
       </div>
 
+      <!-- WELCOME: intro to ATOM, with Get started and View features. -->
+      <section class="welcome" id="welcome" aria-labelledby="welcome-title">
+        <div class="welcome__inner">
+          <div class="welcome__brand"><img src="assets/atom-logo.png" alt="" width="34" height="34" /><span>ATOM</span></div>
+          <h1 class="welcome__title" id="welcome-title">Governed AI testing <span>for web, API and mobile.</span></h1>
+          <p class="welcome__lead">ATOM is an Automated Testing and Orchestration Mesh. It turns plain-language requests into UI, API, visual and native mobile tests, then runs them in isolated workers behind policy checks, human approval and a full audit trail.</p>
+          <p class="welcome__sub">Replayable runs. Real-user coverage with Atom Pulse. Built for teams that need speed without losing control.</p>
+
+          <div class="welcome__actions">
+            <button type="button" class="welcome-btn welcome-btn--primary" data-go="start">Get started <span aria-hidden="true">&rarr;</span></button>
+            <button type="button" class="welcome-btn welcome-btn--ghost" data-go="features">View features</button>
+          </div>
+
+          <div class="welcome__cmd" aria-label="Quick start command"><span class="welcome__prompt">$</span><code>npm ci &amp;&amp; npm run dev</code></div>
+          <p class="welcome__hint">Safe development profile. Execution stays disabled until you configure a hardened worker.</p>
+
+          <ul class="welcome__stats">
+            <li><strong>4-stage</strong><span>governed lifecycle</span></li>
+            <li><strong>UI &middot; API &middot; Mobile</strong><span>one orchestration mesh</span></li>
+            <li><strong>Human-approved</strong><span>every AI-generated test</span></li>
+            <li><strong>Audit-ready</strong><span>replayable evidence</span></li>
+          </ul>
+        </div>
+      </section>
       <section class="hub" id="featureHub" aria-labelledby="hub-title">
         <div class="hub__inner">
-          <header class="hub__head">
+          <button type="button" class="hub__home" data-go="welcome"><span aria-hidden="true">&larr;</span> Overview</button>
+            <header class="hub__head">
             <span class="hub__eyebrow">Explore ATOM</span>
             <h1 class="hub__title" id="hub-title">Pick a feature and <span>see it in action</span></h1>
             <p class="hub__sub">Everything ATOM does for governed, AI-assisted testing, one card at a time. Open any card, and come back whenever you like.</p>
