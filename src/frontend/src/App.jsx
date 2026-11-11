@@ -35,6 +35,8 @@ import {
   X,
 } from "lucide-react";
 import "./App.css";
+import atomLogo from "./assets/atom-logo.png";
+import ConstellationBackground from "./components/ConstellationBackground.jsx";
 import EnterpriseDashboard from "./components/EnterpriseDashboard.jsx";
 import PulsePage from "./components/PulsePage.jsx";
 import { useAtomRunStream } from "./hooks/useAtomRunStream";
@@ -262,15 +264,15 @@ function App() {
   };
 
   const examplePrompts = [
-    "Test the login page with invalid credentials and verify error message",
-    "Check if the signup API returns 404 for missing required fields",
-    "Test file upload functionality on Safari browser",
-    "Verify responsive design on mobile viewport for homepage",
-    "Test payment form validation with various input scenarios",
+    "Verify the multi-step checkout workflow with payment confirmation in Chromium",
+    "Chain customer creation API with forward-only order ID assertions",
+    "Validate native Android checkout screen using Appium managed broker",
+    "Test real-user search journey and verify error handling on 3DS payment challenge",
   ];
 
   return (
     <main className="enterprise-shell dashboard-background h-screen overflow-y-auto overscroll-contain">
+      <ConstellationBackground />
       <a
         className="skip-link"
         href={activePage === "workspace" ? "#ai-test-assistant" : "#dashboard"}
@@ -280,7 +282,7 @@ function App() {
       <header className="atom-topbar">
         <a className="atom-brand" href="#test-workspace" aria-label="ATOM Enterprise home">
           <span className="brand-mark">
-            <Atom size={25} strokeWidth={1.6} />
+            <img src={atomLogo} alt="ATOM logo" />
           </span>
           <span className="brand-copy">
             <span className="brand-name">ATOM</span>
@@ -309,6 +311,7 @@ function App() {
             >
               <Zap size={16} aria-hidden="true" />
               <span>Pulse</span>
+              <span className="topbar-badge topbar-badge--new">New feature</span>
             </a>
             <button
               type="button"
@@ -322,23 +325,34 @@ function App() {
         </div>
         <div className="topbar-right">
           <a
+            className="marketing-link"
+            href="http://localhost:3000"
+            target="_blank"
+            rel="noreferrer"
+            title="Explore features on the ATOM interactive showcase"
+          >
+            <span>Explore Features</span>
+            <ArrowUpRight size={14} aria-hidden="true" />
+          </a>
+          <a
             className="view-source-link"
             href="https://github.com/Samarasimhalu/Atom"
             target="_blank"
             rel="noreferrer"
           >
             <span>View source</span>
-            <ArrowUpRight size={16} aria-hidden="true" />
+            <ArrowUpRight size={14} aria-hidden="true" />
           </a>
         </div>
       </header>
-      <div className="enterprise-container w-full px-3 py-4 sm:px-5 sm:py-6">
+      <div className="enterprise-container relative z-10 w-full px-3 py-4 sm:px-5 sm:py-6">
         {activePage === "workspace" ? (
           <>
         <section className="studio-heading workspace-page-heading" id="test-workspace">
           <div>
+            <span className="eyebrow">GOVERNED AI EXECUTION MESH</span>
             <h1>Test Workspace</h1>
-            <p>Create, review, and execute AI-assisted tests.</p>
+            <p>Turn plain-language requests into UI, API, visual, and native mobile tests — reviewed, approved, and executed across isolated workers.</p>
           </div>
         </section>
         <div className="workspace-section-heading">
@@ -356,17 +370,17 @@ function App() {
         >
           {/* Left Panel - Chat Interface */}
           <div className="assistant-column lg:col-span-1">
-            <Card className="enterprise-panel assistant-panel h-fit border border-sky-200 bg-sky-50/85 shadow-sm dark:border-sky-900/70 dark:bg-slate-800">
+            <Card className="enterprise-panel assistant-panel h-fit shadow-sm">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center space-x-2">
                   <span className="panel-icon assistant-icon">
-                    <Bot className="w-5 h-5 text-blue-600" />
+                    <Bot className="w-5 h-5 text-blue-400" />
                   </span>
                   <span>AI Test Assistant</span>
-                  <span className="ai-label">AI</span>
+                  <span className="ai-label">AI Gateway</span>
                 </CardTitle>
                 <CardDescription>
-                  Describe the test you want to create and I'll generate it for you.
+                  Describe your test scenario in plain English. Inputs are redacted and execution requires policy approval.
                 </CardDescription>
               </CardHeader>
 

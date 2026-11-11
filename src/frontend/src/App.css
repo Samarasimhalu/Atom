@@ -4525,3 +4525,568 @@
 .dark .dashboard-status-list strong {
   color: #dceaff;
 }
+
+/* =========================================================================
+   ATOM Brand Identity Alignment (matching site/ design system)
+   ========================================================================= */
+:root {
+  --ff-font-poppins: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --ff-font-mono: 'JetBrains Mono', monospace;
+  --brand-color: #1d4ed8;
+  --accent-blue: #3b82f6;
+  --accent-purple: #8b5cf6;
+  --accent-teal: #14b8a6;
+  --accent-emerald: #10b981;
+}
+
+body, button, input, select, textarea {
+  font-family: var(--ff-font-poppins) !important;
+}
+
+code, pre {
+  font-family: var(--ff-font-mono) !important;
+}
+
+/* Atmospheric cosmic background matching site/ */
+.dashboard-background {
+  background:
+    radial-gradient(1200px 700px at 20% -10%, #1b3a73 0%, transparent 65%),
+    radial-gradient(1000px 600px at 95% 100%, #17315f 0%, transparent 60%),
+    radial-gradient(800px 500px at 50% 110%, rgba(20, 184, 166, 0.15), transparent 60%),
+    #0a1530 !important;
+  color: #e2e8f0 !important;
+  min-height: 100vh;
+}
+
+/* Eyebrow styling matching site/ */
+.eyebrow {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 4px 12px !important;
+  border-radius: 999px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: #93c5fd !important;
+  background: rgba(59, 130, 246, 0.15) !important;
+  border: 1px solid rgba(147, 197, 253, 0.3) !important;
+  margin-bottom: 8px !important;
+}
+.eyebrow::before {
+  content: "" !important;
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background: #34d399 !important;
+  box-shadow: 0 0 8px #34d399 !important;
+}
+
+/* Topbar matching site/ */
+.atom-topbar {
+  background: rgba(6, 13, 31, 0.88) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 100 !important;
+  padding: 10px 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.atom-topbar .atom-brand {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  text-decoration: none !important;
+}
+
+.atom-topbar .brand-mark {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 10px !important;
+  background: linear-gradient(135deg, #0b1736 0%, #1d4ed8 65%, #0ea5e9 100%) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 4px !important;
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3) !important;
+  overflow: hidden !important;
+}
+
+.atom-topbar .brand-mark img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
+.atom-topbar .brand-copy {
+  display: flex !important;
+  flex-direction: column !important;
+  line-height: 1.1 !important;
+}
+
+.atom-topbar .brand-name {
+  font-size: 19px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+  background: linear-gradient(125deg, #60a5fa 0%, #a78bfa 55%, #2dd4bf 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.atom-topbar .brand-description {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.04em !important;
+  color: #94a3b8 !important;
+}
+
+.primary-nav {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  background: rgba(15, 23, 42, 0.6) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  padding: 4px 6px !important;
+  border-radius: 999px !important;
+}
+
+.primary-nav a,
+.workspace-guide-nav {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 7px 14px !important;
+  border-radius: 999px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: #cbd5e1 !important;
+  text-decoration: none !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  cursor: pointer !important;
+  transition: all 0.18s ease !important;
+}
+
+.primary-nav a:hover,
+.workspace-guide-nav:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.primary-nav a[aria-current="page"] {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.35), rgba(124, 58, 237, 0.35)) !important;
+  border-color: rgba(147, 197, 253, 0.45) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.3) !important;
+  font-weight: 600 !important;
+}
+
+.topbar-badge--new {
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+  padding: 2px 7px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  color: #ffffff !important;
+  margin-left: 6px !important;
+  box-shadow: 0 1px 4px rgba(220, 38, 38, 0.4) !important;
+}
+
+.topbar-right {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.marketing-link,
+.view-source-link {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 8px 16px !important;
+  border-radius: 10px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  transition: all 0.16s ease !important;
+}
+
+.marketing-link {
+  background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 10px rgba(124, 58, 237, 0.3) !important;
+}
+
+.marketing-link:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.45) !important;
+}
+
+.view-source-link {
+  background: linear-gradient(135deg, #1d4ed8 0%, #0284c7 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 10px rgba(29, 78, 216, 0.28) !important;
+}
+
+.view-source-link:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 16px rgba(29, 78, 216, 0.38) !important;
+}
+
+/* Studio Headings */
+.studio-heading {
+  margin-bottom: 24px !important;
+}
+.studio-heading h1 {
+  font-size: clamp(2rem, 3.5vw, 2.75rem) !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.025em !important;
+  color: #ffffff !important;
+  margin: 6px 0 10px !important;
+  line-height: 1.15 !important;
+}
+.studio-heading p {
+  font-size: 1.05rem !important;
+  color: #94a3b8 !important;
+  max-width: 740px !important;
+  line-height: 1.6 !important;
+}
+
+.workspace-section-heading h2 {
+  font-size: 1.35rem !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  letter-spacing: -0.01em !important;
+}
+
+.workspace-mode {
+  border-radius: 999px !important;
+  background: rgba(15, 23, 42, 0.6) !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+  color: #93c5fd !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  padding: 5px 12px !important;
+}
+.workspace-mode span {
+  background: #34d399 !important;
+  box-shadow: 0 0 8px #34d399 !important;
+}
+
+/* Modern Card Panels matching site/ */
+.enterprise-panel {
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 20px !important;
+  background: rgba(13, 24, 52, 0.72) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+  color: #f1f5f9 !important;
+}
+
+.enterprise-panel [data-slot="card-header"] {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: transparent !important;
+  padding: 20px 24px 16px !important;
+}
+
+.enterprise-panel [data-slot="card-title"] {
+  color: #ffffff !important;
+  font-size: 1.15rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.enterprise-panel [data-slot="card-description"] {
+  color: #94a3b8 !important;
+  font-size: 0.88rem !important;
+  line-height: 1.5 !important;
+}
+
+.ai-label {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+  padding: 3px 8px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(135deg, #1d4ed8, #0ea5e9) !important;
+  color: #ffffff !important;
+  margin-left: 8px !important;
+}
+
+/* Quick Examples */
+.quick-example {
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 14px !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: #cbd5e1 !important;
+  padding: 12px 14px !important;
+  font-size: 12.5px !important;
+  transition: all 0.2s ease !important;
+}
+
+.quick-example:hover {
+  background: rgba(59, 130, 246, 0.15) !important;
+  border-color: rgba(96, 165, 250, 0.4) !important;
+  color: #ffffff !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.22) !important;
+}
+
+/* Inputs & Selects */
+.enterprise-panel select,
+.enterprise-panel input,
+.prompt-input {
+  background: rgba(7, 14, 32, 0.75) !important;
+  border: 1px solid rgba(148, 163, 184, 0.28) !important;
+  border-radius: 12px !important;
+  color: #ffffff !important;
+  font-size: 13.5px !important;
+}
+
+.enterprise-panel select:focus,
+.enterprise-panel input:focus,
+.prompt-input:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25) !important;
+  background: rgba(7, 14, 32, 0.9) !important;
+}
+
+.prompt-label {
+  color: #e2e8f0 !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+}
+.prompt-label span {
+  color: #94a3b8 !important;
+  font-weight: 400 !important;
+}
+
+.prompt-note {
+  color: #94a3b8 !important;
+  font-size: 12px !important;
+}
+
+/* Action Buttons */
+.primary-action {
+  background: linear-gradient(135deg, #1d4ed8 0%, #7c3aed 100%) !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 18px rgba(37, 99, 235, 0.35) !important;
+  transition: all 0.2s ease !important;
+}
+
+.primary-action:hover:not(:disabled) {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 26px rgba(37, 99, 235, 0.5) !important;
+}
+
+.execute-action {
+  background: linear-gradient(135deg, #059669 0%, #0d9488 100%) !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 18px rgba(13, 148, 136, 0.35) !important;
+}
+.execute-action:hover:not(:disabled) {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 26px rgba(13, 148, 136, 0.5) !important;
+}
+
+/* Generated Test Box */
+.generated-test {
+  border: 1px solid rgba(52, 211, 153, 0.35) !important;
+  border-radius: 16px !important;
+  background: linear-gradient(145deg, rgba(6, 78, 59, 0.25), rgba(15, 23, 42, 0.6)) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Tabs */
+.enterprise-tabs {
+  background: rgba(7, 14, 32, 0.65) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  border-radius: 12px !important;
+  padding: 4px !important;
+}
+
+.enterprise-tabs [data-slot="tabs-trigger"] {
+  border-radius: 8px !important;
+  color: #94a3b8 !important;
+  font-weight: 500 !important;
+  transition: all 0.16s ease !important;
+}
+
+.enterprise-tabs [data-slot="tabs-trigger"][data-state="active"] {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.3), rgba(124, 58, 237, 0.3)) !important;
+  border: 1px solid rgba(96, 165, 250, 0.35) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.25) !important;
+}
+
+/* Code surface terminal */
+.code-surface {
+  background: #080e1e !important;
+  border: 1px solid rgba(148, 163, 184, 0.22) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4) !important;
+}
+
+.code-surface::before {
+  background:
+    radial-gradient(circle at 1rem 50%, #ff5f56 0 3px, transparent 4px),
+    radial-gradient(circle at 1.7rem 50%, #ffbd2e 0 3px, transparent 4px),
+    radial-gradient(circle at 2.4rem 50%, #27c93f 0 3px, transparent 4px),
+    #0c1428 !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15) !important;
+}
+
+.execution-statusbar {
+  border-top: 1px solid rgba(148, 163, 184, 0.15) !important;
+  color: #94a3b8 !important;
+  font-size: 12px !important;
+}
+
+.statusbar-dot {
+  background: #34d399 !important;
+  box-shadow: 0 0 8px #34d399 !important;
+}
+
+/* Pulse Page Cards */
+#pulse .rounded-xl,
+#pulse [data-slot="card"] {
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 20px !important;
+  background: rgba(13, 24, 52, 0.72) !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.5) !important;
+  color: #f1f5f9 !important;
+}
+
+/* Dashboard Metrics & Panels */
+.dashboard-heading h1 {
+  font-size: clamp(2rem, 3.5vw, 2.75rem) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  margin: 6px 0 10px !important;
+}
+.dashboard-description {
+  color: #94a3b8 !important;
+  font-size: 1rem !important;
+}
+
+.dashboard-metric {
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 18px !important;
+  background: rgba(13, 24, 52, 0.75) !important;
+  backdrop-filter: blur(16px) !important;
+  box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+  padding: 20px !important;
+}
+.dashboard-metric p {
+  color: #94a3b8 !important;
+  font-size: 13px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+.dashboard-metric strong {
+  color: #ffffff !important;
+  font-size: 2.2rem !important;
+}
+.dashboard-metric span {
+  color: #7dd3fc !important;
+  font-size: 12px !important;
+}
+
+.dashboard-panel {
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 20px !important;
+  background: rgba(13, 24, 52, 0.75) !important;
+  backdrop-filter: blur(16px) !important;
+  box-shadow: 0 20px 45px -12px rgba(0, 0, 0, 0.5) !important;
+}
+
+.dashboard-panel-heading h2 {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+.dashboard-panel-heading p {
+  color: #94a3b8 !important;
+}
+
+.dashboard-run {
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 14px !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: #e2e8f0 !important;
+  transition: all 0.18s ease !important;
+}
+.dashboard-run:hover {
+  background: rgba(59, 130, 246, 0.14) !important;
+  border-color: rgba(96, 165, 250, 0.35) !important;
+  transform: translateX(3px) !important;
+}
+.dashboard-run[aria-pressed="true"] {
+  background: rgba(37, 99, 235, 0.22) !important;
+  border-color: rgba(96, 165, 250, 0.5) !important;
+}
+
+.dashboard-live {
+  background: rgba(15, 23, 42, 0.6) !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+  border-radius: 999px !important;
+  color: #7dd3fc !important;
+}
+.dashboard-refresh {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+  border-radius: 999px !important;
+  padding: 6px 16px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.16s ease !important;
+}
+.dashboard-refresh:hover {
+  background: rgba(255, 255, 255, 0.16) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Workspace Guide Modal */
+.guide-dialog {
+  background: linear-gradient(135deg, rgba(13, 24, 52, 0.95), rgba(7, 14, 32, 0.98)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7) !important;
+  color: #ffffff !important;
+}
+.guide-dialog h2 {
+  color: #ffffff !important;
+}
+.guide-dialog ol li strong {
+  color: #7dd3fc !important;
+}
+.guide-dialog ol li p {
+  color: #cbd5e1 !important;
+}
+.guide-footnote {
+  color: #94a3b8 !important;
+}
+
+/* Footer */
+.enterprise-footer {
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: rgba(6, 13, 31, 0.6) !important;
+  border-radius: 14px !important;
+  color: #94a3b8 !important;
+}

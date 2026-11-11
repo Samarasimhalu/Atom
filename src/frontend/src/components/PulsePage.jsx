@@ -145,6 +145,7 @@ export default function PulsePage({ apiBaseUrl, requestHeaders, onGenerateFromGa
     <div className="space-y-4" id="pulse">
       <section className="studio-heading workspace-page-heading">
         <div>
+          <span className="eyebrow">REAL-USER COVERAGE &amp; VOICE COPILOT</span>
           <h1>Atom Pulse</h1>
           <p>Real-user coverage: the journeys your customers actually take, and which ones have no tests.</p>
         </div>
