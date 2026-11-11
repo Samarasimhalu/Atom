@@ -135,3 +135,9 @@
   .NewMegaMenu_menu, .NewMegaMenu_actions { display: none; }
   .NewMobileMenu_hamburger { display: flex; }
 }
+/* Simulator: hide the idle "Ready to simulate" line; export buttons only appear after a run */
+.runner-status[data-tone="idle"] { display: none; }
+.runner-export-actions[hidden] { display: none; }
+
+/* Walkthrough: Previous / Next are inert at the first / last stage */
+#btnPrev:disabled, #btnNext:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }

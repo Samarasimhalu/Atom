@@ -48,11 +48,42 @@
       });
     }
 
+    // Remember the pointer so a delayed close can check where it really is.
+    let pointerX = -1;
+    let pointerY = -1;
+    document.addEventListener('mousemove', event => {
+      pointerX = event.clientX;
+      pointerY = event.clientY;
+    }, { passive: true });
+
+    function within(rect, pad) {
+      return pointerX >= rect.left - pad && pointerX <= rect.right + pad &&
+        pointerY >= rect.top - pad && pointerY <= rect.bottom + pad;
+    }
+
+    // True while the pointer is on the open menu: its button, its panel, or the gap between them.
+    function pointerOnActiveMenu() {
+      const item = megaItems.find(el => el.getAttribute('data-mega-item') === activeKey);
+      if (!item) return false;
+      const itemRect = item.getBoundingClientRect();
+      if (within(itemRect, 2)) return true;
+      const panel = item.querySelector('[data-mega-panel]');
+      if (!panel) return false;
+      const panelRect = panel.getBoundingClientRect();
+      if (within(panelRect, 4)) return true;
+      return pointerX >= itemRect.left && pointerX <= itemRect.right &&
+        pointerY >= itemRect.bottom && pointerY <= panelRect.top;
+    }
+
     function scheduleClose() {
       clearTimer();
       closeTimer = window.setTimeout(() => {
+        if (pointerOnActiveMenu()) {
+          scheduleClose(); // still hovering: a slow move across the gap must not close it
+          return;
+        }
         closeAll();
-      }, 180);
+      }, 260);
     }
 
     megaItems.forEach(item => {
@@ -523,6 +554,11 @@
       updateStepper();
       renderSide(currentStage);
       renderPane(currentStage);
+      // First stage has nothing before it and the last has nothing after it.
+      const prevStageBtn = document.getElementById('btnPrev');
+      const nextStageBtn = document.getElementById('btnNext');
+      if (prevStageBtn) prevStageBtn.disabled = currentStage === 0;
+      if (nextStageBtn) nextStageBtn.disabled = currentStage === 3;
       if (statusEl) {
         statusEl.textContent = `Viewing Stage ${currentStage + 1} (${stageMeta[currentStage].name}).`;
       }
@@ -675,6 +711,8 @@
     function setExportAvailability(enabled) {
       exportJsonButton.disabled = !enabled;
       exportPdfButton.disabled = !enabled;
+      // Hide the export buttons until a simulation has finished.
+      exportJsonButton.parentElement.hidden = !enabled;
     }
 
     function refreshAuthIndicator() {
