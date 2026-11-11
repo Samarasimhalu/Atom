@@ -253,3 +253,17 @@ body.welcome-mode .ff-footer { display: none; }
 }
 .hub__home:hover { background: rgba(255, 255, 255, 0.18); transform: translateX(-2px); }
 .hub__home:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+/* Copy button on the welcome command */
+.welcome__cmd { padding-right: 10px; }
+.welcome__copy {
+  position: relative; display: inline-grid; place-items: center; width: 32px; height: 32px; margin-left: 6px; cursor: pointer;
+  color: #cbd5e1; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 8px;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+.welcome__copy:hover { background: rgba(255, 255, 255, 0.18); color: #fff; }
+.welcome__copy:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+.welcome__copy .icon-check { display: none; color: #34d399; }
+.welcome__copy.is-copied { border-color: #34d399; background: rgba(52, 211, 153, 0.15); }
+.welcome__copy.is-copied .icon-copy { display: none; }
+.welcome__copy.is-copied .icon-check { display: block; }
+.welcome__copied { position: absolute; top: -28px; left: 50%; transform: translateX(-50%); white-space: nowrap; font: 600 11px var(--ff-font-poppins, sans-serif); color: #34d399; pointer-events: none; }

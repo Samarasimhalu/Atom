@@ -264,5 +264,48 @@
     if (jump && route() !== 'walkthrough') location.hash = 'walkthrough';
   });
 
+  // Copy the quick-start command from the welcome screen.
+  (function () {
+    var btn = document.getElementById('welcomeCopy');
+    var textEl = document.getElementById('welcomeCmdText');
+    if (!btn || !textEl) return;
+    var label = btn.querySelector('.welcome__copied');
+    var timer = 0;
+
+    function fallbackCopy(text) {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed;top:-1000px;opacity:0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      ta.remove();
+      return ok;
+    }
+
+    function done(ok) {
+      btn.classList.toggle('is-copied', ok);
+      label.textContent = ok ? 'Copied!' : 'Press Ctrl+C to copy';
+      btn.setAttribute('aria-label', ok ? 'Copied' : 'Copy command');
+      window.clearTimeout(timer);
+      timer = window.setTimeout(function () {
+        btn.classList.remove('is-copied');
+        label.textContent = '';
+        btn.setAttribute('aria-label', 'Copy command');
+      }, 1800);
+    }
+
+    btn.addEventListener('click', function () {
+      var text = textEl.textContent.trim();
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(fallbackCopy(text)); });
+      } else {
+        done(fallbackCopy(text)); // http://<LAN-ip> pages are not a secure context
+      }
+    });
+  })();
+
   render();
 })();
