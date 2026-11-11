@@ -85,7 +85,7 @@
 
   function confirmLaunch() {
     closeModal();
-    window.open(APP_URL, '_blank');
+    window.open(APP_URL, '_blank', 'noopener,noreferrer');
   }
 
   document.addEventListener('click', function (event) {
