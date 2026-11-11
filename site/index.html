@@ -540,6 +540,7 @@
 
         <!-- Right CTA Actions -->
         <div class="NewMegaMenu_actions">
+          <button type="button" class="NewMegaMenu_cta NewMegaMenu_appLaunch" data-launch-app>Test Workspace ↗</button>
           <a href="#start" class="NewMegaMenu_signIn">Get Started</a>
           <a href="https://github.com/samarasimhalu/Atom" class="NewMegaMenu_cta">View Source ↗</a>
           <button type="button" class="NewMegaMenu_cta NewMegaMenu_contact" data-open-contact aria-haspopup="dialog">Contact Us</button>
@@ -613,6 +614,7 @@
         </div>
       </div>
       <div class="NewMobileMenu_drawerFooter">
+        <button type="button" class="NewMegaMenu_cta NewMegaMenu_appLaunch" data-launch-app style="text-align:center;">Test Workspace ↗</button>
         <a href="#start" class="NewMegaMenu_signIn" style="text-align:center;">Start Locally</a>
         <a href="https://github.com/samarasimhalu/Atom" class="NewMegaMenu_cta" style="text-align:center;">View Source ↗</a>
           <button type="button" class="NewMegaMenu_cta NewMegaMenu_contact" data-open-contact aria-haspopup="dialog" style="text-align:center;">Contact Us</button>
@@ -638,11 +640,12 @@
           <p class="welcome__sub">Replayable runs. Real-user coverage with Atom Pulse. Built for teams that need speed without losing control.</p>
 
           <div class="welcome__actions">
-            <button type="button" class="welcome-btn welcome-btn--primary" data-go="start">Get started <span aria-hidden="true">&rarr;</span></button>
+            <button type="button" class="welcome-btn welcome-btn--workspace" data-launch-app>Test Workspace <span aria-hidden="true">&rarr;</span></button>
+            <button type="button" class="welcome-btn welcome-btn--primary" data-go="start">Get started</button>
             <button type="button" class="welcome-btn welcome-btn--ghost" data-go="features">View features</button>
           </div>
 
-          <div class="welcome__cmd" aria-label="Quick start command"><span class="welcome__prompt">$</span><code>npm ci &amp;&amp; npm run dev</code></div>
+          <div class="welcome__cmd" aria-label="Quick start command"><span class="welcome__prompt">$</span><code id="welcomeCmdText">npm ci &amp;&amp; npm run dev</code><button type="button" class="welcome__copy" id="welcomeCopy" aria-label="Copy command" title="Copy command"><svg class="icon-copy" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="icon-check" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span class="welcome__copied" role="status" aria-live="polite"></span></button></div>
           <p class="welcome__hint">Safe development profile. Execution stays disabled until you configure a hardened worker.</p>
 
           <ul class="welcome__stats">
@@ -1796,5 +1799,6 @@ curl -sS http://localhost:3001/api/readyz | jq</code></pre>
     <script src="simulation.js"></script>
     <script src="hub.js"></script>
     <script src="contact.js"></script>
+    <script src="workspace-modal.js"></script>
   </body>
 </html>

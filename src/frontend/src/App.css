@@ -4675,10 +4675,10 @@ code, pre {
   text-transform: uppercase !important;
   padding: 2px 7px !important;
   border-radius: 999px !important;
-  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  background: linear-gradient(135deg, #10b981, #059669) !important;
   color: #ffffff !important;
   margin-left: 6px !important;
-  box-shadow: 0 1px 4px rgba(220, 38, 38, 0.4) !important;
+  box-shadow: 0 1px 6px rgba(16, 185, 129, 0.45) !important;
 }
 
 .topbar-right {
@@ -5136,4 +5136,93 @@ code, pre {
   opacity: 0.55 !important;
   cursor: not-allowed !important;
   transform: none !important;
+}
+
+/* =========================================================================
+   Dashboard Card Headings: Blue background with crisp white typography
+   ========================================================================= */
+.dashboard-panel-heading {
+  background: linear-gradient(135deg, #1d4ed8 0%, #0b1736 100%) !important;
+  border-bottom: 1px solid rgba(147, 197, 253, 0.3) !important;
+  border-radius: 19px 19px 0 0 !important;
+  padding: 18px 22px !important;
+}
+
+.dashboard-panel-heading h2 {
+  color: #ffffff !important;
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.015em !important;
+  margin: 0 !important;
+}
+
+.dashboard-panel-heading p {
+  color: #e0f2fe !important;
+  font-size: 12.5px !important;
+  margin: 3px 0 0 !important;
+}
+
+.dashboard-panel-heading > svg,
+.dashboard-count {
+  color: #bfdbfe !important;
+}
+
+.dashboard-count {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  padding: 3px 10px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Dashboard Run List Typography & States */
+.dashboard-run-main code,
+.dashboard-selected-run code {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  text-shadow: 0 0 10px rgba(125, 211, 252, 0.25) !important;
+}
+
+.dashboard-run-meta,
+.dashboard-run-duration {
+  color: #cbd5e1 !important;
+  font-size: 12px !important;
+}
+
+.dashboard-run-duration svg {
+  color: #94a3b8 !important;
+}
+
+/* Health Metrics & Status Breakdown */
+.dashboard-health-score strong {
+  color: #38bdf8 !important;
+}
+.dashboard-health-score span {
+  color: #94a3b8 !important;
+}
+
+.dashboard-status-list div span {
+  color: #e2e8f0 !important;
+  font-size: 13px !important;
+}
+.dashboard-status-list div strong {
+  color: #ffffff !important;
+  font-size: 13.5px !important;
+}
+
+.dashboard-activity-copy {
+  color: #cbd5e1 !important;
+  font-size: 13px !important;
+}
+
+.dashboard-transition-list button span {
+  color: #ffffff !important;
+}
+
+.dashboard-selected-run {
+  background: rgba(30, 58, 138, 0.35) !important;
+  border: 1px solid rgba(96, 165, 250, 0.4) !important;
+  color: #ffffff !important;
 }
