@@ -68,10 +68,10 @@
     var next;
     do { next = Math.floor(Math.random() * FACTS.length); } while (next === factIdx && FACTS.length > 1);
     factIdx = first ? factIdx : next;
-    if (first) { factEl.textContent = 'Do you know, ' + FACTS[factIdx]; return; }
+    if (first) { factEl.textContent = FACTS[factIdx]; return; }
     factEl.classList.add('is-out');
     window.setTimeout(function () {
-      factEl.textContent = 'Do you know, ' + FACTS[factIdx];
+      factEl.textContent = FACTS[factIdx];
       factEl.classList.remove('is-out');
     }, 350);
   }
