@@ -591,8 +591,8 @@ function App() {
           </div>
 
           {/* Right Panel - Test Execution */}
-          <div id="atom-test-execution" className="scroll-mt-6 lg:col-span-2">
-            <Card className="enterprise-panel execution-panel border border-violet-200 bg-violet-50/85 shadow-xl backdrop-blur-sm dark:border-violet-900/70 dark:bg-slate-800/90">
+          <div id="atom-test-execution" className="scroll-mt-6 lg:col-span-2 flex flex-col">
+            <Card className="enterprise-panel execution-panel flex flex-col flex-1 border border-violet-200 bg-violet-50/85 shadow-xl backdrop-blur-sm dark:border-violet-900/70 dark:bg-slate-800/90">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center space-x-2">
@@ -617,9 +617,9 @@ function App() {
                 </div>
               </CardHeader>
 
-              <CardContent>
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                  <TabsList className="enterprise-tabs grid w-full grid-cols-4 mb-6">
+              <CardContent className="flex flex-col flex-1 pb-6">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 w-full">
+                  <TabsList className="enterprise-tabs grid w-full grid-cols-4 mb-5">
                     <TabsTrigger value="code" className="flex items-center space-x-2">
                       <Code className="w-4 h-4" />
                       <span>Code</span>
@@ -638,22 +638,22 @@ function App() {
                     </TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="code" className="space-y-4">
+                  <TabsContent value="code" className="flex flex-col flex-1 space-y-3 m-0 data-[state=inactive]:hidden">
                     {currentTest ? (
-                      <div className="space-y-4">
+                      <div className="flex flex-col flex-1 space-y-3">
                         <div className="flex items-center justify-between">
-                          <h3 className="font-semibold">Generated Test Code</h3>
+                          <h3 className="font-semibold text-sm">Generated Test Code</h3>
                           <Badge variant="outline">{currentTest.testType} test</Badge>
                         </div>
 
-                        <ScrollArea className="code-surface h-[500px] w-full rounded-md border bg-slate-50 dark:bg-slate-900">
+                        <ScrollArea className="code-surface flex-1 w-full rounded-md border bg-slate-50 dark:bg-slate-900">
                           <pre className="p-4 text-sm">
                             <code>{currentTest.code}</code>
                           </pre>
                         </ScrollArea>
                       </div>
                     ) : (
-                      <div className="code-empty-state flex flex-col items-center justify-center h-[500px] text-center space-y-4">
+                      <div className="code-empty-state flex flex-col flex-1 items-center justify-center text-center space-y-4">
                         <div className="empty-state-art" aria-hidden="true">
                           <div className="art-orbit orbit-one" />
                           <div className="art-orbit orbit-two" />
@@ -683,15 +683,15 @@ function App() {
                     )}
                   </TabsContent>
 
-                  <TabsContent value="logs" className="space-y-4">
+                  <TabsContent value="logs" className="flex flex-col flex-1 space-y-3 m-0 data-[state=inactive]:hidden">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-semibold">Execution Logs</h3>
+                      <h3 className="font-semibold text-sm">Execution Logs</h3>
                       {executionLogs.length > 0 && (
                         <Badge variant="outline">{executionLogs.length} entries</Badge>
                       )}
                     </div>
 
-                    <ScrollArea className="code-surface h-[500px] w-full rounded-md border bg-slate-50 dark:bg-slate-900">
+                    <ScrollArea className="code-surface flex-1 w-full rounded-md border bg-slate-50 dark:bg-slate-900">
                       {executionLogs.length > 0 ? (
                         <div className="p-4 space-y-2">
                           {executionLogs.map((log, index) => (
@@ -704,7 +704,7 @@ function App() {
                           ))}
                         </div>
                       ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
+                        <div className="flex flex-col flex-1 items-center justify-center h-full text-center space-y-4 py-20">
                           <Terminal className="w-16 h-16 text-muted-foreground/50" />
                           <div>
                             <h3 className="font-semibold text-lg mb-2">No execution logs yet</h3>
@@ -717,7 +717,7 @@ function App() {
                     </ScrollArea>
                   </TabsContent>
 
-                  <TabsContent value="results" className="space-y-4">
+                  <TabsContent value="results" className="flex flex-col flex-1 space-y-4 m-0 data-[state=inactive]:hidden">
                     {testResults ? (
                       <div className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -793,7 +793,7 @@ function App() {
                         )}
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center justify-center h-[500px] text-center space-y-4">
+                      <div className="flex flex-col flex-1 items-center justify-center h-full min-h-[480px] text-center space-y-4">
                         <BarChart3 className="w-16 h-16 text-muted-foreground/50" />
                         <div>
                           <h3 className="font-semibold text-lg mb-2">No test results yet</h3>
@@ -805,12 +805,12 @@ function App() {
                     )}
                   </TabsContent>
 
-                  <TabsContent value="media" className="space-y-4">
+                  <TabsContent value="media" className="flex flex-col flex-1 space-y-4 m-0 data-[state=inactive]:hidden">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-semibold">Screenshots & Videos</h3>
+                      <h3 className="font-semibold text-sm">Screenshots & Videos</h3>
                     </div>
 
-                    <div className="flex flex-col items-center justify-center h-[500px] text-center space-y-4">
+                    <div className="flex flex-col flex-1 items-center justify-center h-full min-h-[480px] text-center space-y-4">
                       <Image className="w-16 h-16 text-muted-foreground/50" />
                       <div>
                         <h3 className="font-semibold text-lg mb-2">No media artifacts yet</h3>
@@ -821,16 +821,6 @@ function App() {
                     </div>
                   </TabsContent>
                 </Tabs>
-                <div className="execution-statusbar">
-                  <span>
-                    <span className="statusbar-dot" />
-                    {isExecuting ? "Execution in progress" : "Test execution workspace"}
-                  </span>
-                  <span>
-                    <Code size={12} />
-                    {currentTest ? currentTest.testType : "No test selected"}
-                  </span>
-                </div>
               </CardContent>
             </Card>
           </div>
