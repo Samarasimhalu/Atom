@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge.jsx";
 import { Progress } from "@/components/ui/progress.jsx";
 import { Alert, AlertDescription } from "@/components/ui/alert.jsx";
 import { Mic, MicOff, RefreshCw, Sparkles, Volume2, Zap } from "lucide-react";
+import { fetchPulseSnapshot, ingestPulseTraffic } from "@/lib/atomClient";
 
 const SpeechRecognitionImpl =
   typeof window !== "undefined" ? window.SpeechRecognition || window.webkitSpeechRecognition : null;
@@ -52,19 +53,10 @@ export default function PulsePage({ apiBaseUrl, requestHeaders, onGenerateFromGa
   const dataRef = useRef(data);
   dataRef.current = data;
 
-  const api = useCallback(
-    async (path, options = {}) => {
-      const response = await fetch(`${apiBaseUrl}${path}`, { headers: requestHeaders, credentials: "include", ...options });
-      if (!response.ok) throw new Error(`request_failed_${response.status}`);
-      return response.json();
-    },
-    [apiBaseUrl, requestHeaders],
-  );
-
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [gaps, sum] = await Promise.all([api("/api/pulse/gaps"), api("/api/pulse/summary")]);
+      const { gaps, sum } = await fetchPulseSnapshot({ apiBaseUrl, requestHeaders });
       setData(gaps);
       setSummary(sum.text);
       setError(null);
@@ -75,7 +67,7 @@ export default function PulsePage({ apiBaseUrl, requestHeaders, onGenerateFromGa
     } finally {
       setLoading(false);
     }
-  }, [api]);
+  }, [apiBaseUrl, requestHeaders]);
 
   useEffect(() => {
     refresh();
@@ -83,7 +75,7 @@ export default function PulsePage({ apiBaseUrl, requestHeaders, onGenerateFromGa
 
   const loadDemo = async () => {
     try {
-      await api("/api/pulse/events", { method: "POST", body: JSON.stringify({ events: demoEvents() }) });
+      await ingestPulseTraffic(demoEvents(), { apiBaseUrl, requestHeaders });
       await refresh();
     } catch (e) {
       setError("Unable to load demo traffic. The pulse:ingest permission is required.");

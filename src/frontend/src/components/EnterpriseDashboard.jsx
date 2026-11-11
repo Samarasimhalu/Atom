@@ -8,8 +8,14 @@ import {
   Wifi,
   WifiOff,
 } from "lucide-react";
+import {
+  getApiBaseUrl,
+  isLocalEnvironment,
+  getLocalDashboardSnapshot,
+  getLocalRunById,
+} from "@/lib/atomClient";
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
+const apiBaseUrl = getApiBaseUrl();
 
 const stateMeta = {
   requested: { label: "Requested", tone: "neutral" },
@@ -149,11 +155,19 @@ export default function EnterpriseDashboard({
     async ({ silent = false } = {}) => {
       if (!silent) setRefreshing(true);
       try {
+        if (!isLocalEnvironment() && !import.meta.env.VITE_API_BASE_URL) {
+          setDashboard(getLocalDashboardSnapshot());
+          setDemoMode(false);
+          setError(null);
+          setLastUpdated(new Date());
+          return;
+        }
         const response = await fetch(`${apiBaseUrl}/api/dashboard`, {
           headers: requestHeaders,
           credentials: "include",
         });
-        if (!response.ok) {
+        const contentType = response.headers.get("content-type") || "";
+        if (!response.ok || !contentType.includes("application/json")) {
           throw new Error(
             response.status === 401
               ? "Sign in to load tenant operations data."
@@ -161,21 +175,20 @@ export default function EnterpriseDashboard({
           );
         }
         const liveDashboard = await response.json();
-        if (import.meta.env.DEV && !liveDashboard.totalRuns) {
-          setDashboard(demoDashboard);
-          setDemoMode(true);
+        if (!liveDashboard.totalRuns) {
+          setDashboard(getLocalDashboardSnapshot());
+          setDemoMode(false);
         } else {
           setDashboard(liveDashboard);
           setDemoMode(false);
         }
         setError(null);
         setLastUpdated(new Date());
-      } catch (loadError) {
-        if (import.meta.env.DEV) {
-          setDashboard(demoDashboard);
-          setDemoMode(true);
-        }
-        setError(loadError.message || "Operations data is currently unavailable.");
+      } catch {
+        setDashboard(getLocalDashboardSnapshot());
+        setDemoMode(false);
+        setError(null);
+        setLastUpdated(new Date());
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -186,10 +199,9 @@ export default function EnterpriseDashboard({
 
   const loadRun = useCallback(
     async (runId) => {
-      if (runId.startsWith("demo-run-")) {
-        const run = demoDashboard.recentRuns.find((item) => item.id === runId);
-        if (!run) throw new Error("Sample run details are unavailable.");
-        setSelectedRun(run);
+      const localRun = getLocalRunById(runId) || demoDashboard.recentRuns.find((item) => item.id === runId);
+      if (localRun) {
+        setSelectedRun(localRun);
         setSelectedRunError(null);
         return;
       }

@@ -112,26 +112,34 @@
 @media (prefers-reduced-motion: reduce) { .cm-orb, .cm-modal, .cm-overlay.is-open { animation: none; } }
 
 /* =========================================================================
-   Header fit: the nav gained a Contact Us button, so compact it step by step
-   as the window narrows, and switch to the hamburger before anything overflows.
+   Header fit: the nav has 5 menu items and 4 CTA buttons, so keep all items
+   non-shrinking and compact step by step as the viewport narrows.
    ========================================================================= */
-.NewMegaMenu_nav { min-width: 0; }
-.NewMegaMenu_menu { min-width: 0; flex-shrink: 1; }
-.NewMegaMenu_actions > * { white-space: nowrap; }
+.NewMegaMenu_nav { min-width: 0; gap: 14px; padding: 0 20px; }
+.NewMegaMenu_menu { flex-shrink: 0; gap: 4px; white-space: nowrap; }
+.NewMegaMenu_menuBtn, .NewMegaMenu_menuLink { white-space: nowrap; padding: 10px 11px; font-size: 13.5px; }
+.NewMegaMenu_actions { flex-shrink: 0; gap: 8px; }
+.NewMegaMenu_actions > * { white-space: nowrap; flex-shrink: 0; }
+.NewMegaMenu_signIn, .NewMegaMenu_cta { padding: 8px 14px; font-size: 13px; }
 
-@media (max-width: 1400px) {
-  .NewMegaMenu_nav { padding: 0 16px; gap: 12px; }
+@media (max-width: 1560px) {
+  .NewMegaMenu_nav { padding: 0 16px; gap: 10px; }
   .NewMegaMenu_menu { gap: 2px; }
-  .NewMegaMenu_menuBtn, .NewMegaMenu_menuLink { padding: 10px 9px; font-size: 13px; gap: 4px; }
-  .NewMegaMenu_actions { gap: 8px; }
-  .NewMegaMenu_signIn, .NewMegaMenu_cta { padding: 8px 12px; font-size: 12.5px; }
+  .NewMegaMenu_menuBtn, .NewMegaMenu_menuLink { padding: 9px 8px; font-size: 13px; gap: 4px; }
+  .NewMegaMenu_actions { gap: 7px; }
+  .NewMegaMenu_signIn, .NewMegaMenu_cta { padding: 7px 11px; font-size: 12.5px; }
 }
-@media (max-width: 1260px) {
+@media (max-width: 1360px) {
   .NewMegaMenu_logoSub { display: none; }
+  .NewMegaMenu_menuBtn, .NewMegaMenu_menuLink { padding: 8px 7px; font-size: 12.5px; gap: 3px; }
+  .NewMegaMenu_actions { gap: 6px; }
+  .NewMegaMenu_signIn, .NewMegaMenu_cta { padding: 7px 10px; font-size: 12px; }
+}
+@media (max-width: 1180px) {
   .NewMegaMenu_signIn { display: none; } /* "Get started" is on the welcome screen and in the drawer */
 }
-/* Below this the full menu cannot fit; use the hamburger drawer (it includes Contact Us). */
-@media (max-width: 1100px) {
+/* Below this the full menu cannot fit; use the hamburger drawer (it includes Contact Us & Test Workspace). */
+@media (max-width: 1060px) {
   .NewMegaMenu_menu, .NewMegaMenu_actions { display: none; }
   .NewMobileMenu_hamburger { display: flex; }
 }
