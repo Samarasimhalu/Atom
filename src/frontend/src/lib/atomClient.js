@@ -30,6 +30,19 @@ export function getApiBaseUrl() {
   return "http://localhost:3001";
 }
 
+export function getWebsiteUrl(path = "/#features") {
+  if (typeof window === "undefined") return "https://www.atomworld.net" + path;
+  if (isLocalEnvironment()) {
+    if (window.location.port === "5173") {
+      const hostname = window.location.hostname || "localhost";
+      return `http://${hostname}:3000${path}`;
+    }
+    return `${window.location.origin}${path}`;
+  }
+  const origin = (typeof window !== "undefined" && window.location.origin) || "https://www.atomworld.net";
+  return `${origin}${path}`;
+}
+
 // In-memory store for generated tests, runs, and Pulse sessions on the website
 const sessionStore = {
   generatedSpecs: [],
