@@ -12,6 +12,8 @@
     <title>ATOM — Automated Testing and Orchestration Mesh</title>
     <link rel="icon" type="image/png" href="assets/atom-logo.png" />
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="hub.css" />
+    <link rel="stylesheet" href="contact.css" />
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
@@ -540,6 +542,7 @@
         <div class="NewMegaMenu_actions">
           <a href="#start" class="NewMegaMenu_signIn">Get Started</a>
           <a href="https://github.com/samarasimhalu/Atom" class="NewMegaMenu_cta">View Source ↗</a>
+          <button type="button" class="NewMegaMenu_cta NewMegaMenu_contact" data-open-contact aria-haspopup="dialog">Contact Us</button>
         </div>
 
         <!-- Mobile Hamburger -->
@@ -612,14 +615,124 @@
       <div class="NewMobileMenu_drawerFooter">
         <a href="#start" class="NewMegaMenu_signIn" style="text-align:center;">Start Locally</a>
         <a href="https://github.com/samarasimhalu/Atom" class="NewMegaMenu_cta" style="text-align:center;">View Source ↗</a>
+          <button type="button" class="NewMegaMenu_cta NewMegaMenu_contact" data-open-contact aria-haspopup="dialog" style="text-align:center;">Contact Us</button>
       </div>
     </aside>
 
     <main id="main-content">
+      <!-- FEATURE HUB: landing page of cards; each card opens only that part of the site. -->
+      <div class="hub-back is-hidden" id="hubBack">
+        <button type="button" class="hub-back__btn" aria-label="Back to all features">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          All features
+        </button>
+        <span class="hub-back__label" id="hubBackLabel"></span>
+      </div>
+
+      <section class="hub" id="featureHub" aria-labelledby="hub-title">
+        <div class="hub__inner">
+          <header class="hub__head">
+            <span class="hub__eyebrow">Explore ATOM</span>
+            <h1 class="hub__title" id="hub-title">Pick a feature and <span>see it in action</span></h1>
+            <p class="hub__sub">Everything ATOM does for governed, AI-assisted testing, one card at a time. Open any card, and come back whenever you like.</p>
+          </header>
+
+          <div class="hub__grid">
+            <a class="hub-card" href="#overview" data-feature="overview" data-title="Product Overview" style="--accent:#3b82f6;--i:0">
+              <div class="hub-card__top"><span class="hub-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="2.5"/><ellipse cx="12" cy="12" rx="10" ry="4.2"/><ellipse cx="12" cy="12" rx="10" ry="4.2" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4.2" transform="rotate(120 12 12)"/></svg></span><span class="hub-card__badge">Start here</span></div>
+              <h2 class="hub-card__title">Product Overview</h2>
+              <p class="hub-card__desc">What ATOM is, and the live governed-run lifecycle at a glance.</p>
+              <div class="hub-card__tags"><span>Overview</span><span>Live demo</span></div>
+              <div class="hub-card__foot"><span class="hub-card__meta">1 min</span><span class="hub-card__cta">Explore <span aria-hidden="true">&rarr;</span></span></div>
+            </a>
+
+            <a class="hub-card" href="#walkthrough" data-feature="walkthrough" data-title="Governed Run Walkthrough" style="--accent:#8b5cf6;--i:1">
+              <div class="hub-card__top"><span class="hub-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg></span><span class="hub-card__badge">Interactive</span></div>
+              <h2 class="hub-card__title">Governed Run Walkthrough</h2>
+              <p class="hub-card__desc">Step through a request to a replayable run: plan, approve, execute and keep the evidence.</p>
+              <div class="hub-card__tags"><span>4 stages</span><span>Approval</span><span>Audit trail</span></div>
+              <div class="hub-card__foot"><span class="hub-card__meta">Step by step</span><span class="hub-card__cta">Explore <span aria-hidden="true">&rarr;</span></span></div>
+            </a>
+
+            <a class="hub-card" href="#capabilities" data-feature="capabilities" data-title="Test Surfaces" style="--accent:#0ea5e9;--i:2">
+              <div class="hub-card__top"><span class="hub-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></span><span class="hub-card__badge">Core</span></div>
+              <h2 class="hub-card__title">Test Surfaces</h2>
+              <p class="hub-card__desc">UI, API, visual, mixed and mobile coverage through one governed workflow.</p>
+              <div class="hub-card__tags"><span>UI</span><span>API</span><span>Visual</span><span>Mobile</span></div>
+              <div class="hub-card__foot"><span class="hub-card__meta">One mesh</span><span class="hub-card__cta">Explore <span aria-hidden="true">&rarr;</span></span></div>
+            </a>
+
+            <a class="hub-card" href="#mobile-automation" data-feature="mobile-automation" data-title="Mobile Automation" style="--accent:#ec4899;--i:3">
+              <div class="hub-card__top"><span class="hub-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg></span><span class="hub-card__badge">iOS &amp; Android</span></div>
+              <h2 class="hub-card__title">Mobile Automation</h2>
+              <p class="hub-card__desc">Generate and run native mobile tests through a managed execution boundary.</p>
+              <div class="hub-card__tags"><span>Appium</span><span>iOS</span><span>Android</span></div>
+              <div class="hub-card__foot"><span class="hub-card__meta">Managed workers</span><span class="hub-card__cta">Explore <span aria-hidden="true">&rarr;</span></span></div>
+            </a>
+
+            <a class="hub-card" href="#pulse" data-feature="pulse" data-title="Atom Pulse" style="--accent:#10b981;--i:4">
+              <div class="hub-card__top"><span class="hub-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></span><span class="hub-card__badge">New</span></div>
+              <h2 class="hub-card__title">Atom Pulse</h2>
+              <p class="hub-card__desc">Find the real-user journeys nobody tested, and ask the &ldquo;Hey Atom&rdquo; voice copilot to close the gap.</p>
+              <div class="hub-card__tags"><span>Real-user coverage</span><span>Voice</span><span>Privacy-first</span></div>
+              <div class="hub-card__foot"><span class="hub-card__meta">Coverage gaps</span><span class="hub-card__cta">Explore <span aria-hidden="true">&rarr;</span></span></div>
+            </a>
+
+            <a class="hub-card" href="#api-workflow" data-feature="api-workflow" data-title="API Test Chaining" style="--accent:#f59e0b;--i:5">
+              <div class="hub-card__top"><span class="hub-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg></span><span class="hub-card__badge">API</span></div>
+              <h2 class="hub-card__title">API Test Chaining</h2>
+              <p class="hub-card__desc">Chain API tests with controlled data flow instead of ad-hoc scripts.</p>
+              <div class="hub-card__tags"><span>Data flow</span><span>Assertions</span><span>Reusable</span></div>
+              <div class="hub-card__foot"><span class="hub-card__meta">Workflows</span><span class="hub-card__cta">Explore <span aria-hidden="true">&rarr;</span></span></div>
+            </a>
+
+            <a class="hub-card" href="#simulator" data-feature="simulator" data-title="Live API Simulator" style="--accent:#6366f1;--i:6">
+              <div class="hub-card__top"><span class="hub-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7 6h10M6 8l5 8M18 8l-5 8"/></svg></span><span class="hub-card__badge">Try it</span></div>
+              <h2 class="hub-card__title">Live API Simulator</h2>
+              <p class="hub-card__desc">Watch a governed API chain move through the mesh, and export the results.</p>
+              <div class="hub-card__tags"><span>Hands-on</span><span>JSON</span><span>PDF export</span></div>
+              <div class="hub-card__foot"><span class="hub-card__meta">Interactive</span><span class="hub-card__cta">Explore <span aria-hidden="true">&rarr;</span></span></div>
+            </a>
+
+            <a class="hub-card" href="#controls" data-feature="controls" data-title="Governance &amp; Controls" style="--accent:#14b8a6;--i:7">
+              <div class="hub-card__top"><span class="hub-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg></span><span class="hub-card__badge">Trust</span></div>
+              <h2 class="hub-card__title">Governance &amp; Controls</h2>
+              <p class="hub-card__desc">Automation that is fast and accountable: policy, RBAC and human approval.</p>
+              <div class="hub-card__tags"><span>RBAC</span><span>Policy</span><span>Tenant isolation</span></div>
+              <div class="hub-card__foot"><span class="hub-card__meta">Built in</span><span class="hub-card__cta">Explore <span aria-hidden="true">&rarr;</span></span></div>
+            </a>
+
+            <a class="hub-card" href="#operations" data-feature="operations" data-title="Architecture" style="--accent:#0891b2;--i:8">
+              <div class="hub-card__top"><span class="hub-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="6" rx="1.5"/><rect x="3" y="15" width="18" height="6" rx="1.5"/><path d="M7 6h.01M7 18h.01M12 9v6"/></svg></span><span class="hub-card__badge">Platform</span></div>
+              <h2 class="hub-card__title">Architecture</h2>
+              <p class="hub-card__desc">A control plane kept separate from isolated execution workers.</p>
+              <div class="hub-card__tags"><span>Control plane</span><span>Workers</span><span>Isolation</span></div>
+              <div class="hub-card__foot"><span class="hub-card__meta">Under the hood</span><span class="hub-card__cta">Explore <span aria-hidden="true">&rarr;</span></span></div>
+            </a>
+
+            <a class="hub-card" href="#assurance" data-feature="assurance" data-title="Security &amp; Compliance" style="--accent:#ef4444;--i:9">
+              <div class="hub-card__top"><span class="hub-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span><span class="hub-card__badge">Assurance</span></div>
+              <h2 class="hub-card__title">Security &amp; Compliance</h2>
+              <p class="hub-card__desc">Operational controls delivered as product features, ready for audit.</p>
+              <div class="hub-card__tags"><span>SOC 2</span><span>Audit logs</span><span>Secrets</span></div>
+              <div class="hub-card__foot"><span class="hub-card__meta">Audit-ready</span><span class="hub-card__cta">Explore <span aria-hidden="true">&rarr;</span></span></div>
+            </a>
+
+            <a class="hub-card hub-card--wide" href="#start" data-feature="start" data-title="Get Started" style="--accent:#2563eb;--i:10">
+              <div class="hub-card__top"><span class="hub-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c1-4 3-6 7-7M14 4c3 0 6 3 6 6-3 1-6 3-8 6l-4-4c2-3 3-6 6-8z"/><circle cx="15" cy="9" r="1.2"/></svg></span><span class="hub-card__badge">Go</span></div>
+              <h2 class="hub-card__title">Get Started</h2>
+              <p class="hub-card__desc">Bring controlled testing into your delivery workflow in a few steps.</p>
+              <div class="hub-card__tags"><span>Setup</span><span>Quick start</span></div>
+              <div class="hub-card__foot"><span class="hub-card__meta">Few minutes</span><span class="hub-card__cta">Explore <span aria-hidden="true">&rarr;</span></span></div>
+            </a>
+          </div>
+        </div>
+      </section>
+
       <!-- =====================================================================
            2. HERO BANNER (FireFlink 2-Column Layout + Strictly ATOM Data)
            ===================================================================== -->
-      <section id="top" class="nbs_section" aria-label="Hero banner">
+      <section id="top" class="nbs_section" data-view="overview" aria-label="Hero banner">
         <div class="nbs_bg_grid" aria-hidden="true"></div>
         <div class="nbs_inner">
           <!-- Left Column -->
@@ -739,7 +852,7 @@
       <!-- =====================================================================
            3. ATOM GOVERNED LIFECYCLE ENGINE (.engine)
            ===================================================================== -->
-      <section class="hero-engine-section" aria-label="ATOM Governed Run Lifecycle">
+      <section class="hero-engine-section" data-view="overview" aria-label="ATOM Governed Run Lifecycle">
         <div class="container">
           <div class="engine" id="heroEngine">
             <canvas class="engine-canvas" id="heroCanvas" aria-hidden="true"></canvas>
@@ -1661,5 +1774,7 @@ curl -sS http://localhost:3001/api/readyz | jq</code></pre>
     </footer>
 
     <script src="simulation.js"></script>
+    <script src="hub.js"></script>
+    <script src="contact.js"></script>
   </body>
 </html>

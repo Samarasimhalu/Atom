@@ -1,0 +1,198 @@
+/* =========================================================================
+   ATOM feature hub: landing page of feature cards + single-feature view mode
+   ========================================================================= */
+.is-hidden { display: none !important; }
+
+body.hub-mode { background: #060d1f; }
+body.hub-mode .ff-footer { display: none; }
+
+.hub {
+  position: relative;
+  min-height: calc(100vh - 64px);
+  padding: 72px var(--page-gutter, 24px) 96px;
+  color: #e6edf8;
+  overflow: hidden;
+  background:
+    radial-gradient(900px 480px at 15% -10%, rgba(59, 130, 246, 0.35), transparent 60%),
+    radial-gradient(800px 460px at 95% 10%, rgba(139, 92, 246, 0.28), transparent 60%),
+    radial-gradient(700px 500px at 50% 110%, rgba(20, 184, 166, 0.18), transparent 60%),
+    #060d1f;
+}
+.hub::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at 50% 0%, #000 20%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 0%, #000 20%, transparent 75%);
+  pointer-events: none;
+}
+.hub__inner { position: relative; max-width: 1240px; margin: 0 auto; }
+
+.hub__head { text-align: center; max-width: 760px; margin: 0 auto 56px; }
+.hub__eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: #bfdbfe; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(147, 197, 253, 0.3);
+}
+.hub__eyebrow::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #34d399; box-shadow: 0 0 10px #34d399; }
+.hub__title { margin: 20px 0 14px; font-size: clamp(2rem, 4.5vw, 3.4rem); line-height: 1.1; font-weight: 700; color: #fff; letter-spacing: -0.02em; }
+.hub__title span { background: linear-gradient(90deg, #60a5fa, #a78bfa 60%, #2dd4bf); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hub__sub { margin: 0; font-size: 1.05rem; color: #9fb0cc; }
+
+.hub__grid { display: grid; gap: 22px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+
+.hub-card {
+  --accent: #3b82f6;
+  position: relative;
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 22px;
+  border-radius: 24px;
+  text-decoration: none; color: #0b1530;
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5fb 100%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 18px 40px -18px rgba(0, 0, 0, 0.6);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  animation: hubIn 0.55s ease both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+.hub-card::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(260px 120px at 100% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%);
+}
+.hub-card:hover, .hub-card:focus-visible {
+  transform: translateY(-6px) rotate(-0.4deg);
+  box-shadow: 0 28px 50px -18px color-mix(in srgb, var(--accent) 60%, #000);
+  outline: none;
+}
+.hub-card:focus-visible { box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--accent); }
+
+.hub-card__top { display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 1; }
+.hub-card__icon {
+  width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center;
+  color: #fff; background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #000));
+  box-shadow: 0 8px 18px -6px var(--accent);
+}
+.hub-card__icon svg { width: 24px; height: 24px; }
+.hub-card__badge {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 999px;
+  color: color-mix(in srgb, var(--accent) 80%, #000); background: color-mix(in srgb, var(--accent) 14%, #fff);
+}
+.hub-card__title { position: relative; z-index: 1; margin: 4px 0 0; font-size: 1.45rem; line-height: 1.15; font-weight: 700; letter-spacing: -0.01em; }
+.hub-card__desc { position: relative; z-index: 1; margin: 0; font-size: 0.9rem; line-height: 1.5; color: #4a5a78; }
+.hub-card__tags { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 6px; }
+.hub-card__tags span { font-size: 11.5px; font-weight: 500; color: #3b4a68; background: #e4eaf4; padding: 4px 10px; border-radius: 8px; }
+
+.hub-card__foot { position: relative; z-index: 1; margin-top: auto; padding-top: 6px; display: flex; align-items: center; justify-content: space-between; }
+.hub-card__meta { font-size: 12px; color: #6b7a96; font-weight: 500; }
+.hub-card__cta {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 18px; border-radius: 12px; font-size: 13px; font-weight: 600;
+  color: #fff; background: #0b1530; transition: background 0.2s ease, gap 0.2s ease;
+}
+.hub-card:hover .hub-card__cta { background: var(--accent); gap: 10px; }
+
+@keyframes hubIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .hub-card { animation: none; transition: none; }
+  .hub-card:hover { transform: none; }
+}
+
+/* Back bar shown while a single feature is open */
+.hub-back {
+  position: sticky; top: var(--hdr-h, 64px); z-index: 900;
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px var(--page-gutter, 24px);
+  background: rgba(6, 13, 31, 0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+.hub-back__btn {
+  display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  padding: 8px 16px; border-radius: 999px; font: 600 13px var(--ff-font-poppins, sans-serif);
+  color: #fff; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.25);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.hub-back__btn:hover { background: rgba(255, 255, 255, 0.2); transform: translateX(-2px); }
+.hub-back__btn:focus-visible { outline: 3px solid #60a5fa; outline-offset: 2px; }
+.hub-back__label { color: #9fb0cc; font-size: 13px; }
+.hub-back__label b { color: #fff; font-weight: 600; }
+
+/* Anchored content shouldn't hide under the two sticky bars */
+main section { scroll-margin-top: 120px; }
+
+@media (max-width: 640px) {
+  .hub { padding-top: 48px; }
+  .hub__grid { grid-template-columns: 1fr; }
+}
+
+/* ---- Fit-to-screen layout (desktop): all cards visible without scrolling ---- */
+@media (min-width: 1000px) and (min-height: 600px) {
+  body.hub-mode { overflow: hidden; }
+  .hub {
+    height: calc(100vh - var(--hdr-h, 64px));
+    min-height: 0;
+    padding: clamp(10px, 2vh, 24px) clamp(16px, 3vw, 40px) clamp(12px, 2.4vh, 28px);
+    display: flex; flex-direction: column;
+  }
+  .hub__inner { flex: 1; min-height: 0; width: 100%; display: flex; flex-direction: column; }
+  .hub__head { max-width: 900px; margin: 0 auto clamp(8px, 2vh, 22px); }
+  .hub__eyebrow { padding: 3px 12px; font-size: 11px; }
+  .hub__title { margin: clamp(6px, 1.2vh, 12px) 0 clamp(2px, 0.6vh, 8px); font-size: clamp(1.3rem, 3.6vh, 2.3rem); }
+  .hub__sub { font-size: clamp(0.78rem, 1.7vh, 0.95rem); }
+
+  .hub__grid {
+    flex: 1; min-height: 0;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    gap: clamp(8px, 1.6vh, 18px);
+  }
+  .hub-card { padding: clamp(10px, 1.8vh, 18px); gap: clamp(4px, 0.9vh, 10px); border-radius: 18px; min-height: 0; overflow: hidden; }
+  .hub-card--wide { grid-column: span 2; }
+  .hub-card__icon { width: clamp(30px, 4.6vh, 40px); height: clamp(30px, 4.6vh, 40px); border-radius: 11px; }
+  .hub-card__icon svg { width: clamp(16px, 2.4vh, 22px); height: clamp(16px, 2.4vh, 22px); }
+  .hub-card__badge { font-size: 10px; padding: 3px 9px; }
+  .hub-card__title { margin: 0; font-size: clamp(1rem, 2.5vh, 1.3rem); }
+  .hub-card__desc {
+    font-size: clamp(0.72rem, 1.55vh, 0.86rem); line-height: 1.4;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .hub-card__tags { display: none; }
+  .hub-card__foot { padding-top: 0; }
+  .hub-card__cta { padding: clamp(5px, 1vh, 9px) 14px; font-size: 12px; border-radius: 10px; }
+  .hub-card:hover, .hub-card:focus-visible { transform: translateY(-3px); }
+}
+
+/* ---- Animated neural-network background ---- */
+.hub { background: radial-gradient(1000px 600px at 20% 0%, #1b3a73 0%, transparent 65%), radial-gradient(900px 600px at 100% 100%, #17315f 0%, transparent 60%), #0f2147; }
+.hub::before { display: none; }
+.hub__net { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.hub__inner { z-index: 1; }
+
+/* ---- Card -> slide right -> expand transition ---- */
+.hub-card--flying {
+  position: fixed !important; margin: 0 !important; z-index: 1500;
+  animation: none !important; transition: none !important; transform: none !important;
+  pointer-events: none; will-change: left, top, width, height;
+}
+.hub-card--flying .hub-card__top,
+.hub-card--flying .hub-card__title,
+.hub-card--flying .hub-card__desc,
+.hub-card--flying .hub-card__tags,
+.hub-card--flying .hub-card__foot { transition: opacity 0.3s ease; }
+.hub-card--flying.is-expanding .hub-card__top,
+.hub-card--flying.is-expanding .hub-card__title,
+.hub-card--flying.is-expanding .hub-card__desc,
+.hub-card--flying.is-expanding .hub-card__tags,
+.hub-card--flying.is-expanding .hub-card__foot { opacity: 0; }
+.hub.is-leaving .hub-card:not(.hub-card--flying) { opacity: 0.18; transform: scale(0.96) !important; filter: blur(2px); transition: opacity 0.5s ease, transform 0.5s ease, filter 0.5s ease; }
+.hub.is-leaving .hub__head { opacity: 0.2; transition: opacity 0.5s ease; }
+
+/* Card enlarges in place: the rest of the cards just recede */
+.hub.is-leaving .hub-card:not(.hub-card--flying) { opacity: 0.25; transform: scale(0.97) !important; filter: blur(1px); transition: opacity 0.45s ease, transform 0.45s ease, filter 0.45s ease; }
+.hub.is-leaving .hub__head { opacity: 0.25; }
+.hub-card--flying { box-shadow: 0 30px 70px -20px rgba(0, 0, 0, 0.7); }
