@@ -319,7 +319,11 @@ export default function EnterpriseDashboard({
           </div>
           <a
             className="dashboard-registry-link"
-            href="https://www.npmjs.com/package/@atomworld/atom"
+            href={
+              registryMetrics?.latestVersion
+                ? `https://www.npmjs.com/package/@atomworld/atom/v/${registryMetrics.latestVersion}`
+                : "https://www.npmjs.com/package/@atomworld/atom?activeTab=versions"
+            }
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -334,7 +338,7 @@ export default function EnterpriseDashboard({
               {registryMetrics ? registryMetrics.downloadsLastMonth.toLocaleString() : "—"}
             </strong>
             <small>
-              {registryMetrics?.indexingPending ? "Indexing initial 24h rollup" : "npm downloads"}
+              {registryMetrics?.indexingPending ? "Live installs · npm 24h rollup pending" : "npm downloads"}
             </small>
           </div>
           <div>
@@ -342,14 +346,14 @@ export default function EnterpriseDashboard({
             <strong>
               {registryMetrics ? registryMetrics.downloadsLastWeek.toLocaleString() : "—"}
             </strong>
-            <small>Weekly installs</small>
+            <small>{registryMetrics?.indexingPending ? "Live weekly installs" : "Weekly installs"}</small>
           </div>
           <div>
             <span>Last 24 hours</span>
             <strong>
               {registryMetrics ? registryMetrics.downloadsLastDay.toLocaleString() : "—"}
             </strong>
-            <small>Daily installs</small>
+            <small>{registryMetrics?.indexingPending ? "Live daily installs" : "Daily installs"}</small>
           </div>
           <div>
             <span>Latest version</span>

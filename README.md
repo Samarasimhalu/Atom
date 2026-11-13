@@ -5,9 +5,10 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@atomworld/atom"><img src="https://img.shields.io/npm/v/@atomworld/atom?color=6366f1&label=npm&logo=npm" alt="npm version"></a>
-  <a href="https://www.npmjs.com/package/@atomworld/atom"><img src="https://img.shields.io/npm/dm/@atomworld/atom?color=10b981&label=downloads&logo=npm" alt="npm monthly downloads"></a>
-  <a href="https://www.npmjs.com/package/@atomworld/atom"><img src="https://img.shields.io/npm/l/@atomworld/atom?color=0ea5e9" alt="package license"></a>
+  <a href="https://www.npmjs.com/package/@atomworld/atom?activeTab=versions"><img src="https://img.shields.io/npm/v/@atomworld/atom?color=6366f1&label=npm&logo=npm&cacheSeconds=60" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/@atomworld/atom?activeTab=versions"><img src="https://img.shields.io/badge/registry-%40atomworld%2Fatom-10b981?logo=npm" alt="npm registry package"></a>
+  <a href="https://github.com/Samarasimhalu/Atom/pkgs/npm/atom"><img src="https://img.shields.io/badge/GitHub_Packages-%40samarasimhalu%2Fatom-2563eb?logo=github" alt="GitHub Packages"></a>
+  <a href="https://www.npmjs.com/package/@atomworld/atom?activeTab=versions"><img src="https://img.shields.io/npm/l/@atomworld/atom?color=0ea5e9" alt="package license"></a>
   <a href="https://github.com/Samarasimhalu/Atom/actions/workflows/ci.yml?query=branch%3Amain"><img src="https://github.com/Samarasimhalu/Atom/actions/workflows/ci.yml/badge.svg?branch=main" alt="Continuous integration status"></a>
   <img src="https://img.shields.io/badge/Playwright_worker-1.62.1-2EAD33?logo=playwright&logoColor=white" alt="Playwright worker version 1.62.1">
   <img src="https://img.shields.io/badge/native_mobile-iOS%20%2B%20Android-7D3C98" alt="Native iOS and Android automation">

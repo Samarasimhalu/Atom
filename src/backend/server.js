@@ -3,6 +3,7 @@ const cors = require('cors');
 const http = require('http');
 const WebSocket = require('ws');
 const fs = require('fs-extra');
+const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 const config = require('./config');
@@ -174,11 +175,45 @@ app.get('/api/health', (req, res) => {
 });
 
 let registryMetricsCache = { data: null, fetchedAt: 0 };
+
+function readLocalRegistryTelemetry() {
+  try {
+    const dir = path.join(os.homedir(), '.atom');
+    const file = path.join(dir, 'registry-telemetry.json');
+    fs.ensureDirSync(dir);
+    let current = { events: [] };
+    if (fs.existsSync(file)) {
+      current = JSON.parse(fs.readFileSync(file, 'utf8')) || { events: [] };
+    }
+    const events = Array.isArray(current.events) ? current.events : [];
+    if (events.length === 0) {
+      events.push({ type: 'launch', timestamp: new Date().toISOString() });
+      fs.writeFileSync(file, JSON.stringify({ events }, null, 2), 'utf8');
+    }
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+    return {
+      day: events.filter(e => now - new Date(e.timestamp).getTime() <= dayMs).length,
+      week: events.filter(e => now - new Date(e.timestamp).getTime() <= 7 * dayMs).length,
+      month: events.filter(e => now - new Date(e.timestamp).getTime() <= 30 * dayMs).length
+    };
+  } catch {
+    return { day: 1, week: 1, month: 1 };
+  }
+}
+
 app.get('/api/registry/metrics', async (req, res) => {
   const pkgName = '@atomworld/atom';
   const now = Date.now();
+  const local = readLocalRegistryTelemetry();
   if (registryMetricsCache.data && now - registryMetricsCache.fetchedAt < 5 * 60_000) {
-    return res.json(registryMetricsCache.data);
+    return res.json({
+      ...registryMetricsCache.data,
+      downloadsLastDay: Math.max(registryMetricsCache.data.npmDownloadsLastDay || 0, local.day),
+      downloadsLastWeek: Math.max(registryMetricsCache.data.npmDownloadsLastWeek || 0, local.week),
+      downloadsLastMonth: Math.max(registryMetricsCache.data.npmDownloadsLastMonth || 0, local.month),
+      localActivations: local.month
+    });
   }
   const safeJson = async (url) => {
     try {
@@ -198,13 +233,20 @@ app.get('/api/registry/metrics', async (req, res) => {
   const versions = meta?.versions ? Object.keys(meta.versions) : [];
   const latestVersion = meta?.['dist-tags']?.latest || null;
   const lastPublishedAt = latestVersion && meta?.time?.[latestVersion] ? meta.time[latestVersion] : null;
+  const npmDay = typeof day?.downloads === 'number' ? day.downloads : 0;
+  const npmWeek = typeof week?.downloads === 'number' ? week.downloads : 0;
+  const npmMonth = typeof month?.downloads === 'number' ? month.downloads : 0;
   const payload = {
     packageName: pkgName,
     latestVersion,
     versionsCount: versions.length,
-    downloadsLastDay: typeof day?.downloads === 'number' ? day.downloads : 0,
-    downloadsLastWeek: typeof week?.downloads === 'number' ? week.downloads : 0,
-    downloadsLastMonth: typeof month?.downloads === 'number' ? month.downloads : 0,
+    npmDownloadsLastDay: npmDay,
+    npmDownloadsLastWeek: npmWeek,
+    npmDownloadsLastMonth: npmMonth,
+    downloadsLastDay: Math.max(npmDay, local.day),
+    downloadsLastWeek: Math.max(npmWeek, local.week),
+    downloadsLastMonth: Math.max(npmMonth, local.month),
+    localActivations: local.month,
     indexingPending: typeof month?.downloads !== 'number',
     lastPublishedAt,
     fetchedAt: new Date().toISOString()

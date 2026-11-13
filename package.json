@@ -1,6 +1,6 @@
 {
   "name": "@atomworld/atom",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "ATOM: Automated Testing and Orchestration Mesh — Enterprise AI testing assistant",
   "main": "src/backend/server.js",
   "bin": {
@@ -25,6 +25,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
+    "postinstall": "node bin/atom.js --record-install",
     "prepublishOnly": "npm run build:frontend && npm run lint:backend",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "node src/backend/server.js",
