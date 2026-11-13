@@ -425,6 +425,7 @@ code, pre {
 
 .NewMegaMenu_dropContent {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
@@ -438,6 +439,8 @@ code, pre {
 }
 
 .NewMegaMenu_dropDesc {
+  white-space: normal;
+  overflow-wrap: anywhere;
   font-size: 11.5px;
   font-weight: 400;
   color: #64748b;
