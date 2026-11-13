@@ -1,6 +1,6 @@
 {
   "name": "@atomworld/atom",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "ATOM: Automated Testing and Orchestration Mesh — Enterprise AI testing assistant",
   "main": "src/backend/server.js",
   "bin": {
