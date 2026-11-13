@@ -555,6 +555,15 @@ app.get('/api/artifacts/local/:key(*)', requirePermission('artifacts:read'), asy
   }
 });
 
+const frontendDistDir = path.resolve(__dirname, '../frontend/dist');
+if (process.env.ATOM_SERVE_UI === 'true' && fs.existsSync(frontendDistDir)) {
+  app.use(express.static(frontendDistDir));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/') || req.path === '/ws') return next();
+    return res.sendFile(path.join(frontendDistDir, 'index.html'));
+  });
+}
+
 app.use('*', (req, res) => {
   res.status(404).json({
     error: 'Endpoint not found',

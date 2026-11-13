@@ -1,9 +1,31 @@
 {
-  "name": "atom-app",
-  "version": "1.0.0",
+  "name": "@atomworld/atom",
+  "version": "1.0.1",
   "description": "ATOM: Automated Testing and Orchestration Mesh — Enterprise AI testing assistant",
-  "main": "src/main/main.js",
+  "main": "src/backend/server.js",
+  "bin": {
+    "atom": "./bin/atom.js"
+  },
+  "files": [
+    "bin/",
+    "src/backend/",
+    "src/frontend/dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://www.atomworld.net",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Samarasimhalu/Atom.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
+    "prepublishOnly": "npm run build:frontend && npm run lint:backend",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "node src/backend/server.js",
     "dev:frontend": "cd src/frontend && npm run dev",
