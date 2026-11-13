@@ -295,69 +295,17 @@ export default function EnterpriseDashboard({
   };
 
   return (
-    <section id="atom-overview" aria-labelledby="dashboard-title" className="dashboard-page-content">
-      <header className="dashboard-heading">
-        <div>
-          <span className="eyebrow">DURABLE OPERATIONS &amp; CI</span>
-          <h1 id="dashboard-title">Governed Run Mesh</h1>
-          <p className="dashboard-description">
-            Live execution events, worker status, and audit-ready run evidence.
-          </p>
-        </div>
-        <div className="dashboard-heading-actions">
-          <LiveStatus status={streamStatus} onReconnect={onReconnect} />
-          <span className="dashboard-updated">
-            {demoMode
-              ? "Preview data"
-              : lastUpdated
-                ? `Updated ${formatTimestamp(lastUpdated)}`
-                : "Waiting for data"}
-          </span>
-          <button
-            type="button"
-            className="dashboard-refresh"
-            onClick={() => void load()}
-            disabled={refreshing}
-          >
-            <RefreshCw className={refreshing ? "dashboard-spin" : ""} size={15} aria-hidden="true" />
-            Refresh
-          </button>
-        </div>
-      </header>
-
-      {demoMode ? (
-        <div className="dashboard-notice" role="status">
-          <span>
-            <strong>Preview data</strong>
-            {error
-              ? ` — Live data unavailable: ${error} Sample metrics are not saved.`
-              : " — Sample metrics are not saved."}
-          </span>
-          <button type="button" onClick={() => void load()} disabled={refreshing}>
-            Retry live data
-          </button>
-        </div>
-      ) : null}
-      {!demoMode && error ? (
-        <div className="dashboard-notice dashboard-notice--error" role="alert">
-          <span>
-            <strong>Dashboard unavailable</strong> — {error}
-          </span>
-          <button type="button" onClick={() => void load()} disabled={refreshing}>
-            Retry
-          </button>
-        </div>
-      ) : null}
-
-      <section className="dashboard-panel dashboard-registry" aria-label="npm Registry Telemetry">
+    <div className="dashboard-stack">
+      <section className="dashboard-panel dashboard-registry dashboard-registry--standalone" aria-label="npm Registry Telemetry">
         <div className="dashboard-registry-header">
           <div className="dashboard-registry-title">
             <span className="dashboard-registry-icon" aria-hidden="true">
               <Package size={18} />
             </span>
             <div>
+              <span className="eyebrow dashboard-registry-eyebrow">PACKAGE REGISTRY TELEMETRY</span>
               <h2>
-                npm Registry Telemetry · <code>{registryMetrics?.packageName || "@atomworld/atom"}</code>
+                npm Registry · <code>{registryMetrics?.packageName || "@atomworld/atom"}</code>
               </h2>
               <p>
                 {registryMetrics?.latestVersion
@@ -412,6 +360,60 @@ export default function EnterpriseDashboard({
           </div>
         </div>
       </section>
+
+      <section id="atom-overview" aria-labelledby="dashboard-title" className="dashboard-page-content">
+        <header className="dashboard-heading">
+          <div>
+            <span className="eyebrow">DURABLE OPERATIONS &amp; CI</span>
+            <h1 id="dashboard-title">Governed Run Mesh</h1>
+            <p className="dashboard-description">
+              Live execution events, worker status, and audit-ready run evidence.
+            </p>
+          </div>
+        <div className="dashboard-heading-actions">
+          <LiveStatus status={streamStatus} onReconnect={onReconnect} />
+          <span className="dashboard-updated">
+            {demoMode
+              ? "Preview data"
+              : lastUpdated
+                ? `Updated ${formatTimestamp(lastUpdated)}`
+                : "Waiting for data"}
+          </span>
+          <button
+            type="button"
+            className="dashboard-refresh"
+            onClick={() => void load()}
+            disabled={refreshing}
+          >
+            <RefreshCw className={refreshing ? "dashboard-spin" : ""} size={15} aria-hidden="true" />
+            Refresh
+          </button>
+        </div>
+      </header>
+
+      {demoMode ? (
+        <div className="dashboard-notice" role="status">
+          <span>
+            <strong>Preview data</strong>
+            {error
+              ? ` — Live data unavailable: ${error} Sample metrics are not saved.`
+              : " — Sample metrics are not saved."}
+          </span>
+          <button type="button" onClick={() => void load()} disabled={refreshing}>
+            Retry live data
+          </button>
+        </div>
+      ) : null}
+      {!demoMode && error ? (
+        <div className="dashboard-notice dashboard-notice--error" role="alert">
+          <span>
+            <strong>Dashboard unavailable</strong> — {error}
+          </span>
+          <button type="button" onClick={() => void load()} disabled={refreshing}>
+            Retry
+          </button>
+        </div>
+      ) : null}
 
       <div className="dashboard-metrics" aria-label="Run and test summary">
         <Metric
@@ -612,6 +614,7 @@ export default function EnterpriseDashboard({
             </section>
         </div>
       </div>
-    </section>
+      </section>
+    </div>
   );
 }

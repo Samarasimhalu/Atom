@@ -5,6 +5,9 @@
 </p>
 
 <p align="center">
+  <a href="https://www.npmjs.com/package/@atomworld/atom"><img src="https://img.shields.io/npm/v/@atomworld/atom?color=6366f1&label=npm&logo=npm" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/@atomworld/atom"><img src="https://img.shields.io/npm/dm/@atomworld/atom?color=10b981&label=downloads&logo=npm" alt="npm monthly downloads"></a>
+  <a href="https://www.npmjs.com/package/@atomworld/atom"><img src="https://img.shields.io/npm/l/@atomworld/atom?color=0ea5e9" alt="package license"></a>
   <a href="https://github.com/Samarasimhalu/Atom/actions/workflows/ci.yml?query=branch%3Amain"><img src="https://github.com/Samarasimhalu/Atom/actions/workflows/ci.yml/badge.svg?branch=main" alt="Continuous integration status"></a>
   <img src="https://img.shields.io/badge/Playwright_worker-1.62.1-2EAD33?logo=playwright&logoColor=white" alt="Playwright worker version 1.62.1">
   <img src="https://img.shields.io/badge/native_mobile-iOS%20%2B%20Android-7D3C98" alt="Native iOS and Android automation">
@@ -14,6 +17,19 @@
 </p>
 
 **Atom** is an AI-assisted testing platform designed for controlled test generation, approval-gated execution, and tenant-aware artifact handling. It combines a React interface with an Express API, a governed AI gateway, an isolated Playwright worker image, and a dedicated immutable Appium worker for managed native iOS and Android testing.
+
+### Install & Run via npm
+
+Run Atom directly from the [`@atomworld/atom`](https://www.npmjs.com/package/@atomworld/atom) npm package without cloning the repository:
+
+```bash
+# Run immediately with npx
+npx @atomworld/atom
+
+# Or install globally
+npm install -g @atomworld/atom
+atom
+```
 
 > **Security posture:** Atom treats generated test code as untrusted input. Test execution is disabled by default and is permitted only when a prebuilt isolated worker image is configured explicitly.
 
