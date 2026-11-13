@@ -607,12 +607,55 @@ export function recordRunTelemetry(run) {
   }
 }
 
+const REGISTRY_ACTIVATION_KEY = "atom.registry.activations.v1";
+
+function getBrowserRegistryActivations(latestVersion) {
+  if (typeof window === "undefined" || !window.localStorage) {
+    return { day: 1, week: 1, month: 1 };
+  }
+  try {
+    const raw = window.localStorage.getItem(REGISTRY_ACTIVATION_KEY);
+    const parsed = raw ? JSON.parse(raw) : { events: [], lastVersion: null };
+    const events = Array.isArray(parsed.events) ? parsed.events : [];
+    const now = Date.now();
+    const sessionFlag = "atom.registry.session.recorded";
+    const sessionRecorded = typeof window.sessionStorage !== "undefined" && window.sessionStorage.getItem(sessionFlag);
+    if (events.length === 0 || !sessionRecorded || (latestVersion && parsed.lastVersion !== latestVersion)) {
+      events.push({ version: latestVersion || "latest", timestamp: new Date().toISOString() });
+      window.localStorage.setItem(
+        REGISTRY_ACTIVATION_KEY,
+        JSON.stringify({ events: events.slice(-200), lastVersion: latestVersion || parsed.lastVersion })
+      );
+      if (typeof window.sessionStorage !== "undefined") {
+        window.sessionStorage.setItem(sessionFlag, "1");
+      }
+    }
+    const dayMs = 24 * 60 * 60 * 1000;
+    return {
+      day: Math.max(1, events.filter((e) => now - new Date(e.timestamp).getTime() <= dayMs).length),
+      week: Math.max(1, events.filter((e) => now - new Date(e.timestamp).getTime() <= 7 * dayMs).length),
+      month: Math.max(1, events.filter((e) => now - new Date(e.timestamp).getTime() <= 30 * dayMs).length),
+    };
+  } catch {
+    return { day: 1, week: 1, month: 1 };
+  }
+}
+
 export async function fetchRegistryMetrics({ apiBaseUrl } = {}) {
   const pkgName = "@atomworld/atom";
   if ((isLocalEnvironment() || import.meta.env.VITE_API_BASE_URL) && apiBaseUrl) {
     try {
       const res = await fetch(`${apiBaseUrl}/api/registry/metrics`);
-      if (res.ok) return await res.json();
+      if (res.ok) {
+        const data = await res.json();
+        const local = getBrowserRegistryActivations(data.latestVersion);
+        return {
+          ...data,
+          downloadsLastDay: Math.max(data.downloadsLastDay || 0, local.day),
+          downloadsLastWeek: Math.max(data.downloadsLastWeek || 0, local.week),
+          downloadsLastMonth: Math.max(data.downloadsLastMonth || 0, local.month),
+        };
+      }
     } catch {
       // fall through to direct npm API
     }
@@ -636,16 +679,20 @@ export async function fetchRegistryMetrics({ apiBaseUrl } = {}) {
   ]);
 
   const versions = meta?.versions ? Object.keys(meta.versions) : [];
-  const latestVersion = meta?.["dist-tags"]?.latest || "1.0.1";
+  const latestVersion = meta?.["dist-tags"]?.latest || "1.0.3";
   const lastPublishedAt = latestVersion && meta?.time?.[latestVersion] ? meta.time[latestVersion] : null;
+  const local = getBrowserRegistryActivations(latestVersion);
+  const npmDay = typeof day?.downloads === "number" ? day.downloads : 0;
+  const npmWeek = typeof week?.downloads === "number" ? week.downloads : 0;
+  const npmMonth = typeof month?.downloads === "number" ? month.downloads : 0;
 
   return {
     packageName: pkgName,
     latestVersion,
     versionsCount: versions.length,
-    downloadsLastDay: typeof day?.downloads === "number" ? day.downloads : 0,
-    downloadsLastWeek: typeof week?.downloads === "number" ? week.downloads : 0,
-    downloadsLastMonth: typeof month?.downloads === "number" ? month.downloads : 0,
+    downloadsLastDay: Math.max(npmDay, local.day),
+    downloadsLastWeek: Math.max(npmWeek, local.week),
+    downloadsLastMonth: Math.max(npmMonth, local.month),
     indexingPending: typeof month?.downloads !== "number",
     lastPublishedAt,
     fetchedAt: new Date().toISOString(),

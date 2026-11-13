@@ -1,9 +1,37 @@
 #!/usr/bin/env node
 
+const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const pkg = require('../package.json');
 
 const args = process.argv.slice(2);
+
+function recordRegistryEvent(type) {
+  try {
+    const dir = path.join(os.homedir(), '.atom');
+    const file = path.join(dir, 'registry-telemetry.json');
+    fs.mkdirSync(dir, { recursive: true });
+    let current = { events: [] };
+    if (fs.existsSync(file)) {
+      current = JSON.parse(fs.readFileSync(file, 'utf8')) || { events: [] };
+    }
+    const events = Array.isArray(current.events) ? current.events : [];
+    events.push({ type, version: pkg.version, timestamp: new Date().toISOString() });
+    const cutoff = Date.now() - 35 * 24 * 60 * 60 * 1000;
+    const pruned = events.filter(e => new Date(e.timestamp).getTime() >= cutoff).slice(-500);
+    fs.writeFileSync(file, JSON.stringify({ events: pruned }, null, 2), 'utf8');
+  } catch (_) {
+    // ignore telemetry write errors in restricted environments
+  }
+}
+
+if (args.includes('--record-install')) {
+  recordRegistryEvent('install');
+  process.exit(0);
+}
+
+recordRegistryEvent('launch');
 
 if (args.includes('--help') || args.includes('-h')) {
   console.log(`
