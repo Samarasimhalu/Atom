@@ -318,65 +318,133 @@ class FallbackTestGenerator {
   }
 
   getUITemplate(prompt) {
-    const lowerPrompt = prompt.toLowerCase();
-    
-    if (lowerPrompt.includes('login')) {
+    const lower = String(prompt || '').toLowerCase();
+    const cleanPrompt = String(prompt || 'UI Test').replace(/\s+/g, ' ').replace(/'/g, "\\'").slice(0, 120);
+
+    if (lower.includes('checkout') || lower.includes('cart') || lower.includes('pay') || lower.includes('order')) {
       return `import { test, expect } from '@playwright/test';
 
-test.describe('Login Tests', () => {
-  test('should handle login functionality', async ({ page }) => {
-    // Navigate to login page
-    await page.goto('https://example.com/login');
-    
-    // Fill login form
-    await page.fill('[data-testid="email"]', 'test@example.com');
-    await page.fill('[data-testid="password"]', 'password123');
-    
-    // Submit form
-    await page.click('[data-testid="login-button"]');
-    
-    // Verify result
-    await expect(page.locator('[data-testid="dashboard"]')).toBeVisible();
-    
-    // Take screenshot for verification
-    await page.screenshot({ path: 'login-test.png' });
+// ATOM Governed Playwright UI Spec
+// Scenario: ${cleanPrompt}
+test.describe('Checkout & Payment Flow — ${cleanPrompt}', () => {
+  test('completes multi-step checkout and verifies payment confirmation', async ({ page }) => {
+    await page.goto('https://www.atomworld.net/cart', { waitUntil: 'domcontentloaded' });
+
+    // Step 1: Verify cart items and initiate checkout
+    const checkoutBtn = page.locator('[data-testid="checkout-btn"], button:has-text("Checkout")').first();
+    await expect(checkoutBtn).toBeVisible();
+    await checkoutBtn.click();
+
+    // Step 2: Validate checkout route and submit payment
+    await expect(page).toHaveURL(/\\/checkout/);
+    const payBtn = page.locator('[data-testid="pay-submit"], button[type="submit"]').first();
+    await expect(payBtn).toBeEnabled();
+    await payBtn.click();
+
+    // Step 3: Assert confirmation state and capture audit screenshot
+    const confirmation = page.locator('[data-testid="order-confirmed"], [role="status"]').first();
+    await expect(confirmation).toBeVisible();
+    await page.screenshot({ path: 'checkout-confirmation.png', fullPage: true });
+  });
+});`;
+    }
+
+    if (lower.includes('search') || lower.includes('filter') || lower.includes('query')) {
+      return `import { test, expect } from '@playwright/test';
+
+// ATOM Governed Playwright UI Spec
+// Scenario: ${cleanPrompt}
+test.describe('Search & Discovery Flow — ${cleanPrompt}', () => {
+  test('executes search query, filters results, and verifies list view', async ({ page }) => {
+    await page.goto('https://www.atomworld.net', { waitUntil: 'domcontentloaded' });
+
+    // Step 1: Query search input
+    const searchInput = page.locator('[data-testid="search-input"], input[type="search"]').first();
+    await expect(searchInput).toBeVisible();
+    await searchInput.fill('${cleanPrompt.replace(/[^\w\s]/gi, '').slice(0, 30) || 'governed testing'}');
+    await searchInput.press('Enter');
+
+    // Step 2: Verify search results populated
+    const resultsContainer = page.locator('[data-testid="search-results"], .results-list').first();
+    await expect(resultsContainer).toBeVisible();
+
+    // Step 3: Verify first result item and capture evidence
+    const firstResult = page.locator('[data-testid="result-item"]').first();
+    await expect(firstResult).toBeVisible();
+    await page.screenshot({ path: 'search-results.png' });
+  });
+});`;
+    }
+
+    if (lower.includes('login') || lower.includes('auth') || lower.includes('signin') || lower.includes('sign in')) {
+      return `import { test, expect } from '@playwright/test';
+
+// ATOM Governed Playwright UI Spec
+// Scenario: ${cleanPrompt}
+test.describe('Authentication Flow — ${cleanPrompt}', () => {
+  test('authenticates valid credentials and verifies secure dashboard landing', async ({ page }) => {
+    await page.goto('https://www.atomworld.net/login', { waitUntil: 'domcontentloaded' });
+
+    // Step 1: Input authenticated credentials
+    await page.fill('[data-testid="email"], input[type="email"]', 'developer@atomworld.net');
+    await page.fill('[data-testid="password"], input[type="password"]', '••••••••••••');
+
+    // Step 2: Submit authentication
+    await page.click('[data-testid="login-button"], button[type="submit"]');
+
+    // Step 3: Verify landing route and session state
+    await expect(page).toHaveURL(/\\/(dashboard|workspace)/);
+    await expect(page.locator('[data-testid="user-profile"], [data-testid="dashboard"]')).toBeVisible();
+    await page.screenshot({ path: 'auth-success.png' });
   });
 });`;
     }
 
     return `import { test, expect } from '@playwright/test';
 
-test.describe('UI Tests', () => {
-  test('should test UI functionality', async ({ page }) => {
-    // Navigate to the page
-    await page.goto('https://example.com');
-    
-    // Verify page loads
-    await expect(page).toHaveTitle(/Example/);
-    
-    // Interact with elements
-    await page.click('button');
-    
-    // Verify results
-    await expect(page.locator('.result')).toBeVisible();
-    
-    // Take screenshot
-    await page.screenshot({ path: 'ui-test.png' });
+// ATOM Governed Playwright UI Spec
+// Scenario: ${cleanPrompt}
+test.describe('${cleanPrompt}', () => {
+  test('verifies user flow and captures durable evidence', async ({ page }) => {
+    await page.goto('https://www.atomworld.net', { waitUntil: 'domcontentloaded' });
+
+    // Step 1: Verify primary surface heading
+    const heading = page.locator('h1, h2').first();
+    await expect(heading).toBeVisible();
+
+    // Step 2: Execute scenario interaction
+    const actionTarget = page.locator('button, a[role="button"], input').first();
+    await expect(actionTarget).toBeVisible();
+    await actionTarget.click();
+
+    // Step 3: Verify state and capture screenshot
+    await expect(page.locator('body')).toBeVisible();
+    await page.screenshot({ path: 'scenario-evidence.png', fullPage: true });
   });
 });`;
   }
 
   getAPITemplate(prompt) {
+    const cleanPrompt = String(prompt || 'API Scenario').replace(/\s+/g, ' ').replace(/'/g, "\\'").slice(0, 120);
     return `import { test, expect } from '@playwright/test';
 
-test.describe('API Tests', () => {
-  test('should test API functionality', async ({ request }) => {
-    const response = await request.get('/api/endpoint');
-    
-    expect(response.status()).toBe(200);
-    
-    const responseBody = await response.json();
-    expect(responseBody).toHaveProperty('data');
+// ATOM Governed API Plan Spec (api-test-plan/v1)
+// Scenario: ${cleanPrompt}
+test.describe('Governed API Chain — ${cleanPrompt}', () => {
+  test('executes authenticated API chain with forward-only assertions', async ({ request }) => {
+    // Stage 1: Health check & readiness validation
+    const healthRes = await request.get('/api/health');
+    expect(healthRes.status()).toBe(200);
+
+    // Stage 2: Execute governed request for scenario
+    const apiRes = await request.post('/api/endpoint', {
+      data: { scenario: '${cleanPrompt}' },
+      headers: { 'Content-Type': 'application/json' },
+    });
+    expect([200, 201, 202]).toContain(apiRes.status());
+
+    const payload = await apiRes.json();
+    expect(payload).toBeDefined();
   });
 });`;
   }
