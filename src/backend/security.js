@@ -80,7 +80,7 @@ function securityHeaders(req, res, next) {
   res.setHeader('Referrer-Policy', 'no-referrer');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   const csp = process.env.ATOM_SERVE_UI === 'true'
-    ? "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' ws: wss:; frame-ancestors 'none'; base-uri 'none'"
+    ? "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' ws: wss: https://api.npmjs.org https://registry.npmjs.org; frame-ancestors 'none'; base-uri 'none'"
     : "default-src 'self'; frame-ancestors 'none'; base-uri 'none'";
   res.setHeader('Content-Security-Policy', csp);
   if (req.secure || req.headers['x-forwarded-proto'] === 'https') {

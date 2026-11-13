@@ -5265,3 +5265,119 @@ code, pre {
   border: 1px solid rgba(96, 165, 250, 0.4) !important;
   color: #ffffff !important;
 }
+
+/* npm Registry Telemetry Panel */
+.dashboard-registry {
+  margin-bottom: 20px;
+  padding: 20px 24px !important;
+  background: linear-gradient(135deg, rgba(15, 28, 62, 0.85), rgba(24, 39, 86, 0.72)) !important;
+  border: 1px solid rgba(56, 189, 248, 0.25) !important;
+  border-radius: 18px !important;
+}
+
+.dashboard-registry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.dashboard-registry-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dashboard-registry-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(56, 189, 248, 0.16);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+}
+
+.dashboard-registry-title h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.dashboard-registry-title h2 code {
+  color: #38bdf8;
+  font-size: 13.5px;
+  background: rgba(56, 189, 248, 0.1);
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+.dashboard-registry-title p {
+  margin: 3px 0 0;
+  font-size: 12.5px;
+  color: #94a3b8;
+}
+
+.dashboard-registry-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #e0f2fe;
+  background: rgba(37, 99, 235, 0.28);
+  border: 1px solid rgba(96, 165, 250, 0.4);
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.dashboard-registry-link:hover {
+  background: rgba(37, 99, 235, 0.45);
+  border-color: rgba(147, 197, 253, 0.7);
+}
+
+.dashboard-registry-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 768px) {
+  .dashboard-registry-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.dashboard-registry-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(8, 14, 30, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.dashboard-registry-stats span {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.dashboard-registry-stats strong {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.dashboard-registry-stats small {
+  font-size: 11.5px;
+  color: #64748b;
+}
