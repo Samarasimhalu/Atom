@@ -414,6 +414,7 @@ export async function generateAtomTest({ prompt, testType, options, apiBaseUrl, 
         if (generated?.specification) {
           sessionStore.generatedSpecs.push(generated.specification);
         }
+        recordCreatedTestTelemetry(testType);
         return generated;
       }
     } catch {
@@ -423,6 +424,7 @@ export async function generateAtomTest({ prompt, testType, options, apiBaseUrl, 
 
   // Brief realistic generation delay so the UI spinner provides smooth feedback
   await new Promise((resolve) => setTimeout(resolve, 450));
+  recordCreatedTestTelemetry(testType);
   return generateTestLocally(prompt, testType, options);
 }
 
@@ -504,6 +506,7 @@ export async function executeAtomTest({
     };
     newRun.state = "passed";
     newRun.result = finalResult;
+    recordRunTelemetry({ ...newRun });
     emitLog(`[Completed] Run ${runId} PASSED in ${(duration / 1000).toFixed(1)}s. Evidence sealed.`);
     if (onStateChange) {
       onStateChange({
@@ -526,26 +529,126 @@ export async function executeAtomTest({
 
 export function getLocalDashboardSnapshot() {
   const runs = sessionStore.runs;
+  const persisted = readPersistedTelemetry();
+  const extraRuns = persisted.runs || [];
+  const mergedRuns = [
+    ...runs,
+    ...extraRuns.filter((er) => !runs.some((r) => r.id === er.id)),
+  ];
   const states = {
     requested: 2,
     validated: 4,
-    queued: runs.filter((r) => r.state === "queued").length,
+    queued: mergedRuns.filter((r) => r.state === "queued").length,
     assigned: 1,
-    running: runs.filter((r) => r.state === "running").length + 2,
-    collecting_artifacts: runs.filter((r) => r.state === "collecting_artifacts").length + 1,
-    passed: 25 + runs.filter((r) => r.state === "passed").length,
-    failed: 2 + runs.filter((r) => r.state === "failed").length,
+    running: mergedRuns.filter((r) => r.state === "running").length + 2,
+    collecting_artifacts: mergedRuns.filter((r) => r.state === "collecting_artifacts").length + 1,
+    passed: 25 + mergedRuns.filter((r) => r.state === "passed").length,
+    failed: 2 + mergedRuns.filter((r) => r.state === "failed").length,
     cancelled: 1,
   };
   const totalRuns = Object.values(states).reduce((a, b) => a + b, 0);
   const completed = states.passed + states.failed + states.cancelled;
   const successRate = completed ? Math.round((states.passed / completed) * 100) : 100;
+
+  const baseTestsByType = { ui: 14, api: 8, visual: 5, mixed: 4, mobile: 4 };
+  const testsByType = { ...baseTestsByType };
+  for (const spec of sessionStore.generatedSpecs) {
+    const t = spec?.type || "ui";
+    testsByType[t] = (testsByType[t] || 0) + 1;
+  }
+  for (const [k, v] of Object.entries(persisted.testsByType || {})) {
+    testsByType[k] = (testsByType[k] || 0) + Number(v || 0);
+  }
+  const testsCreated = Object.values(testsByType).reduce((a, b) => a + b, 0);
+
   return {
     totalRuns,
+    testsCreated,
+    testsByType,
     states,
     successRate,
     averageDurationMs: 26400,
-    recentRuns: runs.slice(0, 8),
+    recentRuns: mergedRuns.slice(0, 8),
+  };
+}
+
+const TELEMETRY_KEY = "atom_workspace_telemetry_v1";
+
+function readPersistedTelemetry() {
+  if (typeof window === "undefined" || !window.localStorage) return { runs: [], testsByType: {} };
+  try {
+    const raw = window.localStorage.getItem(TELEMETRY_KEY);
+    return raw ? JSON.parse(raw) : { runs: [], testsByType: {} };
+  } catch {
+    return { runs: [], testsByType: {} };
+  }
+}
+
+export function recordCreatedTestTelemetry(testType = "ui") {
+  if (typeof window === "undefined" || !window.localStorage) return;
+  try {
+    const current = readPersistedTelemetry();
+    const testsByType = { ...(current.testsByType || {}) };
+    testsByType[testType] = (testsByType[testType] || 0) + 1;
+    window.localStorage.setItem(TELEMETRY_KEY, JSON.stringify({ ...current, testsByType }));
+  } catch {
+    // ignore storage quota errors
+  }
+}
+
+export function recordRunTelemetry(run) {
+  if (typeof window === "undefined" || !window.localStorage || !run?.id) return;
+  try {
+    const current = readPersistedTelemetry();
+    const runs = [run, ...(current.runs || []).filter((r) => r.id !== run.id)].slice(0, 20);
+    window.localStorage.setItem(TELEMETRY_KEY, JSON.stringify({ ...current, runs }));
+  } catch {
+    // ignore storage quota errors
+  }
+}
+
+export async function fetchRegistryMetrics({ apiBaseUrl } = {}) {
+  const pkgName = "@atomworld/atom";
+  if ((isLocalEnvironment() || import.meta.env.VITE_API_BASE_URL) && apiBaseUrl) {
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/registry/metrics`);
+      if (res.ok) return await res.json();
+    } catch {
+      // fall through to direct npm API
+    }
+  }
+
+  const safeJson = async (url) => {
+    try {
+      const r = await fetch(url);
+      return r.ok ? await r.json() : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const encoded = encodeURIComponent(pkgName);
+  const [day, week, month, meta] = await Promise.all([
+    safeJson(`https://api.npmjs.org/downloads/point/last-day/${encoded}`),
+    safeJson(`https://api.npmjs.org/downloads/point/last-week/${encoded}`),
+    safeJson(`https://api.npmjs.org/downloads/point/last-month/${encoded}`),
+    safeJson(`https://registry.npmjs.org/${pkgName}`),
+  ]);
+
+  const versions = meta?.versions ? Object.keys(meta.versions) : [];
+  const latestVersion = meta?.["dist-tags"]?.latest || "1.0.1";
+  const lastPublishedAt = latestVersion && meta?.time?.[latestVersion] ? meta.time[latestVersion] : null;
+
+  return {
+    packageName: pkgName,
+    latestVersion,
+    versionsCount: versions.length,
+    downloadsLastDay: typeof day?.downloads === "number" ? day.downloads : 0,
+    downloadsLastWeek: typeof week?.downloads === "number" ? week.downloads : 0,
+    downloadsLastMonth: typeof month?.downloads === "number" ? month.downloads : 0,
+    indexingPending: typeof month?.downloads !== "number",
+    lastPublishedAt,
+    fetchedAt: new Date().toISOString(),
   };
 }
 

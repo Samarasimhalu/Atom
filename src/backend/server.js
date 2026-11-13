@@ -173,6 +173,46 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+let registryMetricsCache = { data: null, fetchedAt: 0 };
+app.get('/api/registry/metrics', async (req, res) => {
+  const pkgName = '@atomworld/atom';
+  const now = Date.now();
+  if (registryMetricsCache.data && now - registryMetricsCache.fetchedAt < 5 * 60_000) {
+    return res.json(registryMetricsCache.data);
+  }
+  const safeJson = async (url) => {
+    try {
+      const r = await fetch(url, { headers: { Accept: 'application/json' } });
+      return r.ok ? await r.json() : null;
+    } catch {
+      return null;
+    }
+  };
+  const encoded = encodeURIComponent(pkgName);
+  const [day, week, month, meta] = await Promise.all([
+    safeJson(`https://api.npmjs.org/downloads/point/last-day/${encoded}`),
+    safeJson(`https://api.npmjs.org/downloads/point/last-week/${encoded}`),
+    safeJson(`https://api.npmjs.org/downloads/point/last-month/${encoded}`),
+    safeJson(`https://registry.npmjs.org/${pkgName}`)
+  ]);
+  const versions = meta?.versions ? Object.keys(meta.versions) : [];
+  const latestVersion = meta?.['dist-tags']?.latest || null;
+  const lastPublishedAt = latestVersion && meta?.time?.[latestVersion] ? meta.time[latestVersion] : null;
+  const payload = {
+    packageName: pkgName,
+    latestVersion,
+    versionsCount: versions.length,
+    downloadsLastDay: typeof day?.downloads === 'number' ? day.downloads : 0,
+    downloadsLastWeek: typeof week?.downloads === 'number' ? week.downloads : 0,
+    downloadsLastMonth: typeof month?.downloads === 'number' ? month.downloads : 0,
+    indexingPending: typeof month?.downloads !== 'number',
+    lastPublishedAt,
+    fetchedAt: new Date().toISOString()
+  };
+  registryMetricsCache = { data: payload, fetchedAt: now };
+  res.json(payload);
+});
+
 // Authentication, tenant context, and bounded API request rates.
 app.use('/api', authenticate(config), requireTenant, createRateLimiter(config.rateLimit));
 const requireLegacyTestApi = (req, res, next) => config.features.legacyTestApi
@@ -361,7 +401,22 @@ app.get('/api/admin/runtime-attestation', requirePermission('admin:runtime'), (r
 });
 
 app.get('/api/dashboard', requirePermission('dashboard:read'), async (req, res) => {
-  res.json(await store.getDashboard(req.tenantId));
+  const [dashboard, savedTests, auditEvents] = await Promise.all([
+    store.getDashboard(req.tenantId),
+    testManager.getAllTests().catch(() => []),
+    store.listAudit(req.tenantId, 500).catch(() => [])
+  ]);
+  const generatedCount = auditEvents.filter(e => e.action === 'ai.test_generated').length;
+  const testsByType = savedTests.reduce((acc, test) => {
+    const t = test.testType || test.mcpConfig?.type || 'ui';
+    acc[t] = (acc[t] || 0) + 1;
+    return acc;
+  }, {});
+  res.json({
+    ...dashboard,
+    testsCreated: Math.max(savedTests.length, generatedCount),
+    testsByType
+  });
 });
 
 app.post('/api/approvals', requirePermission('runs:create'), validationMiddleware(validateExecutionRequest), async (req, res) => {
@@ -554,6 +609,15 @@ app.get('/api/artifacts/local/:key(*)', requirePermission('artifacts:read'), asy
     throw error;
   }
 });
+
+const frontendDistDir = path.resolve(__dirname, '../frontend/dist');
+if (process.env.ATOM_SERVE_UI === 'true' && fs.existsSync(frontendDistDir)) {
+  app.use(express.static(frontendDistDir));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/') || req.path === '/ws') return next();
+    return res.sendFile(path.join(frontendDistDir, 'index.html'));
+  });
+}
 
 app.use('*', (req, res) => {
   res.status(404).json({

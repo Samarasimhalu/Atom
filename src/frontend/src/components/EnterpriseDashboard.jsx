@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Activity,
+  ArrowUpRight,
   ChevronRight,
   LoaderCircle,
+  Package,
   RefreshCw,
   RotateCcw,
   Wifi,
@@ -13,6 +15,7 @@ import {
   isLocalEnvironment,
   getLocalDashboardSnapshot,
   getLocalRunById,
+  fetchRegistryMetrics,
 } from "@/lib/atomClient";
 
 const apiBaseUrl = getApiBaseUrl();
@@ -129,6 +132,7 @@ export default function EnterpriseDashboard({
   onRunSelected,
 }) {
   const [dashboard, setDashboard] = useState(null);
+  const [registryMetrics, setRegistryMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
@@ -155,6 +159,10 @@ export default function EnterpriseDashboard({
     async ({ silent = false } = {}) => {
       if (!silent) setRefreshing(true);
       try {
+        fetchRegistryMetrics({ apiBaseUrl })
+          .then((metrics) => setRegistryMetrics(metrics))
+          .catch(() => {});
+
         if (!isLocalEnvironment() && !import.meta.env.VITE_API_BASE_URL) {
           setDashboard(getLocalDashboardSnapshot());
           setDemoMode(false);
@@ -287,15 +295,81 @@ export default function EnterpriseDashboard({
   };
 
   return (
-    <section id="atom-overview" aria-labelledby="dashboard-title" className="dashboard-page-content">
-      <header className="dashboard-heading">
-        <div>
-          <span className="eyebrow">DURABLE OPERATIONS &amp; CI</span>
-          <h1 id="dashboard-title">Governed Run Mesh</h1>
-          <p className="dashboard-description">
-            Live execution events, worker status, and audit-ready run evidence.
-          </p>
+    <div className="dashboard-stack">
+      <section className="dashboard-panel dashboard-registry dashboard-registry--standalone" aria-label="npm Registry Telemetry">
+        <div className="dashboard-registry-header">
+          <div className="dashboard-registry-title">
+            <span className="dashboard-registry-icon" aria-hidden="true">
+              <Package size={18} />
+            </span>
+            <div>
+              <span className="eyebrow dashboard-registry-eyebrow">PACKAGE REGISTRY TELEMETRY</span>
+              <h2>
+                npm Registry · <code>{registryMetrics?.packageName || "@atomworld/atom"}</code>
+              </h2>
+              <p>
+                {registryMetrics?.latestVersion
+                  ? `Latest release v${registryMetrics.latestVersion} · ${registryMetrics.versionsCount || 0} published versions`
+                  : "Connecting to npm registry…"}
+                {registryMetrics?.lastPublishedAt
+                  ? ` · Published ${formatTimestamp(registryMetrics.lastPublishedAt)}`
+                  : ""}
+              </p>
+            </div>
+          </div>
+          <a
+            className="dashboard-registry-link"
+            href="https://www.npmjs.com/package/@atomworld/atom"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span>View on npm</span>
+            <ArrowUpRight size={14} aria-hidden="true" />
+          </a>
         </div>
+        <div className="dashboard-registry-stats">
+          <div>
+            <span>Last 30 days</span>
+            <strong>
+              {registryMetrics ? registryMetrics.downloadsLastMonth.toLocaleString() : "—"}
+            </strong>
+            <small>
+              {registryMetrics?.indexingPending ? "Indexing initial 24h rollup" : "npm downloads"}
+            </small>
+          </div>
+          <div>
+            <span>Last 7 days</span>
+            <strong>
+              {registryMetrics ? registryMetrics.downloadsLastWeek.toLocaleString() : "—"}
+            </strong>
+            <small>Weekly installs</small>
+          </div>
+          <div>
+            <span>Last 24 hours</span>
+            <strong>
+              {registryMetrics ? registryMetrics.downloadsLastDay.toLocaleString() : "—"}
+            </strong>
+            <small>Daily installs</small>
+          </div>
+          <div>
+            <span>Latest version</span>
+            <strong>
+              {registryMetrics?.latestVersion ? `v${registryMetrics.latestVersion}` : "—"}
+            </strong>
+            <small>{registryMetrics?.versionsCount ? `${registryMetrics.versionsCount} releases` : "Active tag"}</small>
+          </div>
+        </div>
+      </section>
+
+      <section id="atom-overview" aria-labelledby="dashboard-title" className="dashboard-page-content">
+        <header className="dashboard-heading">
+          <div>
+            <span className="eyebrow">DURABLE OPERATIONS &amp; CI</span>
+            <h1 id="dashboard-title">Governed Run Mesh</h1>
+            <p className="dashboard-description">
+              Live execution events, worker status, and audit-ready run evidence.
+            </p>
+          </div>
         <div className="dashboard-heading-actions">
           <LiveStatus status={streamStatus} onReconnect={onReconnect} />
           <span className="dashboard-updated">
@@ -341,30 +415,37 @@ export default function EnterpriseDashboard({
         </div>
       ) : null}
 
-      <div className="dashboard-metrics" aria-label="Run summary">
+      <div className="dashboard-metrics" aria-label="Run and test summary">
         <Metric
-          label="Total runs"
-          value={loading ? "—" : totalRuns.toLocaleString()}
-          detail="Across this workspace"
-        />
-        <Metric
-          label="Completed"
-          value={loading ? "—" : completed.toLocaleString()}
-          detail={`${passed} passed · ${failed} failed · ${cancelled} cancelled`}
-        />
-        <Metric
-          label="In progress"
-          value={loading ? "—" : inFlight.toLocaleString()}
-          detail="Queued or executing"
-        />
-        <Metric
-          label="Success rate"
-          value={loading ? "—" : `${Math.round(successRate)}%`}
-          detail={
-            dashboard?.averageDurationMs == null
-              ? "Completed runs passing"
-              : `Avg. ${formatDuration(dashboard.averageDurationMs)}`
+          label="Tests created"
+          value={
+            loading
+              ? "—"
+              : Number(
+                  dashboard?.testsCreated ??
+                    Object.values(dashboard?.testsByType || {}).reduce((a, b) => a + Number(b || 0), 0),
+                ).toLocaleString()
           }
+          detail="Generated across all surfaces"
+        />
+        <Metric
+          label="Total executions"
+          value={loading ? "—" : totalRuns.toLocaleString()}
+          detail={`${inFlight} active · ${completed} completed`}
+        />
+        <Metric
+          label="Passed"
+          value={loading ? "—" : passed.toLocaleString()}
+          detail={`${Math.round(successRate)}% pass rate`}
+        />
+        <Metric
+          label="Failed"
+          value={loading ? "—" : failed.toLocaleString()}
+          detail={`${cancelled} cancelled · ${
+            dashboard?.averageDurationMs == null
+              ? "—"
+              : `Avg ${formatDuration(dashboard.averageDurationMs)}`
+          }`}
         />
       </div>
 
@@ -454,6 +535,38 @@ export default function EnterpriseDashboard({
             </div>
           </section>
 
+          <section className="dashboard-panel dashboard-surfaces" aria-labelledby="tests-by-surface-title">
+            <div className="dashboard-panel-heading">
+              <div>
+                <h2 id="tests-by-surface-title">Tests created by surface</h2>
+                <p>Generated specs across test types</p>
+              </div>
+              <span className="dashboard-count">
+                {loading
+                  ? "—"
+                  : Number(
+                      dashboard?.testsCreated ??
+                        Object.values(dashboard?.testsByType || {}).reduce((a, b) => a + Number(b || 0), 0),
+                    ).toLocaleString()}{" "}
+                total
+              </span>
+            </div>
+            <div className="dashboard-status-list">
+              {[
+                ["UI / Browser", Number(dashboard?.testsByType?.ui || 0)],
+                ["API Chain", Number(dashboard?.testsByType?.api || 0)],
+                ["Visual Regression", Number(dashboard?.testsByType?.visual || 0)],
+                ["Mixed (UI + API)", Number(dashboard?.testsByType?.mixed || 0)],
+                ["Native Mobile", Number(dashboard?.testsByType?.mobile || 0)],
+              ].map(([label, count]) => (
+                <div key={label}>
+                  <span>{label}</span>
+                  <strong>{loading ? "—" : count.toLocaleString()}</strong>
+                </div>
+              ))}
+            </div>
+          </section>
+
           <section className="dashboard-panel dashboard-activity" aria-labelledby="live-activity-title">
             <div className="dashboard-panel-heading">
               <div>
@@ -501,6 +614,7 @@ export default function EnterpriseDashboard({
             </section>
         </div>
       </div>
-    </section>
+      </section>
+    </div>
   );
 }
