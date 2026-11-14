@@ -1,0 +1,12 @@
+{
+  "name": "explainer-video",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "python3 -m venv .venv && .venv/bin/pip install kokoro-onnx soundfile && npx playwright install chromium",
+    "video": "node record.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

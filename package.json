@@ -25,6 +25,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
+    "video:explainer": "npm --prefix explainer-video run video --",
     "postinstall": "node bin/atom.js --record-install",
     "prepublishOnly": "npm run build:frontend && npm run lint:backend",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",

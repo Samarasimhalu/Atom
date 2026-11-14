@@ -11,3 +11,7 @@ data/
 .DS_Store
 npm-debug.log*
 pnpm-debug.log*
+explainer-video/node_modules/
+explainer-video/.venv/
+explainer-video/output/
+
