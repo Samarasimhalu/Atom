@@ -27,9 +27,12 @@ Run Atom directly from the [`@atomworld/atom`](https://www.npmjs.com/package/@at
 # Run immediately with npx
 npx @atomworld/atom
 
-# Or install globally
+# Or install globally (also registers the Atom MCP server and installs the IDE panel if detected)
 npm install -g @atomworld/atom
 atom
+
+# Configure Atom MCP and the IDE right-side panel for the current workspace
+atom setup
 ```
 
 > **Security posture:** Atom treats generated test code as untrusted input. Test execution is disabled by default and is permitted only when a prebuilt isolated worker image is configured explicitly.
@@ -37,6 +40,7 @@ atom
 ## Contents
 
 - [What Atom provides](#what-atom-provides)
+- [Atom MCP & Right-Side IDE Workspace](#atom-mcp--right-side-ide-workspace)
 - [Architecture and security controls](#architecture-and-security-controls)
 - [Prerequisites](#prerequisites)
 - [Quick start](#quick-start)
@@ -65,7 +69,58 @@ Atom turns a structured natural-language request into a governed test specificat
 | **Identity and RBAC** | Supports development identity headers, HS256 JWTs, and an OIDC/SAML foundation. Built-in roles include `viewer`, `developer`, `approver`, `admin`, and `owner`. |
 | **Durable operations** | Supports PostgreSQL persistence, Redis/BullMQ queues, S3-compatible artifact storage, idempotency keys, run cancellation, and replayable run events. |
 | **Governance** | Applies a policy engine, approval workflow, signed-webhook support, retention controls, access-review evidence, and an AI evaluation harness. |
+| **Governed UI & MCP IDE workspace** | Exposes Test Workspace capabilities over stdio JSON-RPC (`Atom` MCP server) and renders a minimal Copilot-style right-side IDE panel (`Ask Atom`) to pick an agent, configure an OpenAI/Anthropic/Google key & model, set `Test Dir` (`atom/` by default), generate & execute tests, pop up a results-only execution dashboard, and sync metrics to the Atom database. |
 | **Assurance** | Includes SOC 2 readiness materials, release verification, SBOM/provenance controls, dependency checks, secret scanning, image scanning, and a non-destructive security smoke simulation. |
+
+## Atom MCP & Right-Side IDE Workspace
+
+Atom ships a Model Context Protocol (MCP) server named **`Atom`** (`bin/atom-mcp.js` / `atom mcp`) and an IDE extension (`ide/atom-vscode-extension`) that renders a **Test Workspace** panel inside the right secondary sidebar (similar to Copilot or Antigravity) with a `ViewColumn.Beside` split-tab fallback (`Ctrl+Alt+A` / `Cmd+Alt+A`).
+
+### Automatic install & manual setup
+
+When `@atomworld/atom` is installed via `npm` outside CI/source installs, `postinstall` (`node bin/atom.js --record-install`) automatically records `~/.atom/runtime.json`, registers the `Atom` stdio MCP server in detected clients (workspace `.vscode/mcp.json`, VS Code User, GitHub Copilot CLI, Cursor, Antigravity, and Claude Desktop) without overwriting existing servers, and installs `atom-test-workspace.vsix` into detected `code` / `cursor` / `agy` CLIs.
+
+Set `ATOM_SKIP_MCP_INSTALL=1` or `ATOM_SKIP_IDE_INSTALL=1` before `npm install` to skip automatic registration, or manage setup explicitly at any time:
+
+```bash
+# Configure both Atom MCP and the right-side IDE extension for the current project
+atom setup
+
+# Register only the Atom MCP server (add --clients vscode,copilot,cursor,antigravity,claude to target specific clients)
+atom install-mcp --workspace .
+
+# Install only the right-side IDE extension (VS Code, Cursor, or Antigravity)
+atom install-ide --ide all
+
+# Start the stdio Atom MCP server directly
+atom mcp --workspace .
+```
+
+### Default `atom/` storage vs. explicit `Test Dir`
+
+- **Default:** Generated tests (`.spec.ts`) and metadata (`.atom/tests-index.json`, `.atom/specs/<id>.json`) are saved inside **`<workspace>/atom/`**.
+- **Explicit folder:** Type, browse, or paste an inside-workspace folder path in the panel's **Test Dir** option, pass `folder` to `atom_create_test` / `atom_run_task`, or state it in your prompt (e.g., `"save it in folder billing/regression"`). Paths escaping the workspace root are rejected (`invalid_target_folder`).
+
+### Ask Atom composer, Agents, Model Key, and Results Dashboard
+
+Inside the right-side IDE panel (`Ask Atom`), the dark composer docks cleanly beneath the ATOM logo with three focused controls:
+
+1. **Agent:** Pick **`UI Agent`** (`ui-agent`), **`Mobile Agent`** (`mobile-agent` with Android/iOS selection), **`API Agent`** (`api-agent`), **`Visual Agent`** (`visual-agent`), **`Mixed Agent`** (`mixed-agent`), or **`QA Auditor`** (`atom-qa`).
+2. **Model Key (right of Agent):** Immediately prompts for your **OpenAI** (`sk-...`), **Anthropic** (`sk-ant-...`), or **Google Gemini** (`AIza...`) API key in `SecretStorage` (never written to disk/logs) and filters models for that provider, with a **Built-in Fallback** option if no key is provided.
+3. **Test Dir:** Paste or browse the workspace folder where generated specs should be stored (defaults to `atom/`).
+
+Clicking **Send** generates and saves the test immediately and prompts with **`▶ Execute`**. After execution completes, the **Test Execution Dashboard** pops open with **only results** (status, total/passed/failed/skipped counts, duration, runner, saved file, and error reason). Every generated test and execution is synced automatically to the Atom database (`~/.atom/atom-db` / `./data` / PostgreSQL when configured) so running `npm run dev` displays live execution metrics in the dashboard.
+
+| MCP Tool / Resource | Purpose |
+|---|---|
+| `atom_create_test` | Generate a governed UI, API, Visual, Mixed, or Mobile test and save it under `atom/` or an explicit folder. |
+| `atom_run_task` | Execute an end-to-end workflow for a chosen ATOM agent and task. |
+| `atom_execute_test` | Run a saved test via Local Playwright CLI or ATOM Governed Backend (native mobile fails closed without an Appium worker). |
+| `atom_list_tests` / `atom_read_test` / `atom_delete_test` | Browse, read, and delete workspace tests stored across `atom/` and custom folders. |
+| `atom_policy_audit` | Evaluate a test against `PolicyEngine`, `TestSpecification`, and static safety checks. |
+| `atom_pulse_gaps` | Inspect Atom Pulse real-user journey coverage gaps and suggested prompts. |
+| `atom_list_agents` | Discover registered agents, tasks, test types, browsers, mobile profiles, and example prompts. |
+| `atom://workspace/summary` & `atom://tests/<id>` | MCP resources exposing workspace state and saved test code. |
 
 ## Mobile automation with Appium
 

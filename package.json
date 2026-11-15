@@ -1,15 +1,19 @@
 {
   "name": "@atomworld/atom",
-  "version": "1.0.4",
+  "version": "1.0.7",
   "description": "ATOM: Automated Testing and Orchestration Mesh — Enterprise AI testing assistant",
   "main": "src/backend/server.js",
   "bin": {
-    "atom": "./bin/atom.js"
+    "atom": "./bin/atom.js",
+    "atom-mcp": "./bin/atom-mcp.js"
   },
   "files": [
     "bin/",
     "src/backend/",
+    "src/mcp/",
     "src/frontend/dist/",
+    "ide/atom-vscode-extension/",
+    "scripts/package-ide-extension.js",
     "README.md",
     "LICENSE"
   ],
@@ -27,7 +31,9 @@
   "scripts": {
     "video:explainer": "npm --prefix explainer-video run video --",
     "postinstall": "node bin/atom.js --record-install",
-    "prepublishOnly": "npm run build:frontend && npm run lint:backend",
+    "mcp": "node bin/atom-mcp.js",
+    "build:extension": "node scripts/package-ide-extension.js",
+    "prepublishOnly": "npm run build:frontend && npm run build:extension && npm run lint:backend",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "node src/backend/server.js",
     "dev:frontend": "cd src/frontend && npm run dev",
@@ -41,7 +47,7 @@
     "build:frontend": "cd src/frontend && npm run build",
     "build:site-app": "npm.cmd --prefix src/frontend run build -- --base=/app/ --outDir=../../site/app --emptyOutDir",
     "start": "npm run dev",
-    "lint:backend": "node --check src/backend/server.js && node --check src/backend/config.js && node --check src/backend/security.js && node --check src/backend/validation.js && node --check src/backend/mcpExecutor.js && node --check src/backend/appiumExecutor.js && node --check src/backend/executionRouter.js && node --check workers/appium/run-mobile-test.js && node --check src/backend/persistence.js && node --check src/backend/runQueue.js && node --check src/backend/runService.js && node --check src/backend/objectStorage.js && node --check src/backend/aiGateway.js && node --check src/backend/testSpecification.js && node --check src/backend/apiTestPlan.js && node --check src/backend/pulse.js && node --check src/backend/policyEngine.js && node --check src/backend/approvalWorkflow.js && node --check src/backend/evaluationHarness.js && node --check src/backend/signedWebhook.js && node --check src/backend/identityProvider.js && node --check src/backend/websocketTickets.js && node --check scripts/verify-release.js && node --check scripts/security-pentest-smoke.js && node --check scripts/remediate-p0-release.js && node --check scripts/validate-p1-release.js && node --check scripts/generate-access-review.js",
+    "lint:backend": "node --check bin/atom.js && node --check bin/atom-mcp.js && node --check src/mcp/agents.js && node --check src/mcp/workspaceStorage.js && node --check src/mcp/llmClient.js && node --check src/mcp/atomDbSync.js && node --check src/mcp/workspaceEngine.js && node --check src/mcp/server.js && node --check src/mcp/installer.js && node --check ide/atom-vscode-extension/extension.js && node --check ide/atom-vscode-extension/webview/main.js && node --check scripts/package-ide-extension.js && node --check src/backend/server.js && node --check src/backend/config.js && node --check src/backend/security.js && node --check src/backend/validation.js && node --check src/backend/mcpExecutor.js && node --check src/backend/appiumExecutor.js && node --check src/backend/executionRouter.js && node --check workers/appium/run-mobile-test.js && node --check src/backend/persistence.js && node --check src/backend/runQueue.js && node --check src/backend/runService.js && node --check src/backend/objectStorage.js && node --check src/backend/aiGateway.js && node --check src/backend/testSpecification.js && node --check src/backend/apiTestPlan.js && node --check src/backend/pulse.js && node --check src/backend/policyEngine.js && node --check src/backend/approvalWorkflow.js && node --check src/backend/evaluationHarness.js && node --check src/backend/signedWebhook.js && node --check src/backend/identityProvider.js && node --check src/backend/websocketTickets.js && node --check scripts/verify-release.js && node --check scripts/security-pentest-smoke.js && node --check scripts/remediate-p0-release.js && node --check scripts/validate-p1-release.js && node --check scripts/generate-access-review.js",
     "infra:up": "docker compose -f infra/docker-compose.yml up -d",
     "infra:down": "docker compose -f infra/docker-compose.yml down",
     "db:migrate": "psql \"$DATABASE_URL\" -f infra/migrations/001_enterprise_foundation.sql",

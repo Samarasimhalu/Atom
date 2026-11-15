@@ -1,0 +1,146 @@
+{
+  "version": 1,
+  "updatedAt": "2026-11-15T20:08:04.435Z",
+  "tests": [
+    {
+      "id": "7789a6f8-b47c-4b67-aa51-1f517e3809b8",
+      "name": "ui-perform-login-operation-on-this-website-with-use.spec.ts",
+      "prompt": "Perform login operation on this https://practice.expandtesting.com/login website with username and password",
+      "testType": "ui",
+      "agent": "ui-agent",
+      "task": "generate_and_save",
+      "folder": "atom",
+      "relativePath": "atom/ui-perform-login-operation-on-this-website-with-use.spec.ts",
+      "summary": "Generated UI test using free (ollama/qwen2.5:3b) for: Perform login operation on this https://practice.expandtesting.com/login website with username and password",
+      "tags": [
+        "ui",
+        "login",
+        "authentication",
+        "form",
+        "validation"
+      ],
+      "browser": "chromium",
+      "policy": {
+        "allowed": true,
+        "approvalRequired": false,
+        "reasons": [],
+        "target": {
+          "protocol": "https:",
+          "hostname": "practice.expandtesting.com",
+          "port": null
+        },
+        "policyVersion": "2026-08-20-p0"
+      },
+      "createdAt": "2026-11-15T20:00:04.960Z",
+      "updatedAt": "2026-11-15T20:08:04.435Z",
+      "lastRun": {
+        "runId": "atom-run-09716404",
+        "status": "passed",
+        "duration": 5957,
+        "summary": {
+          "testCount": 1,
+          "passedCount": 1,
+          "failedCount": 0,
+          "skippedCount": 0
+        },
+        "media": {
+          "screenshots": [
+            {
+              "filename": "1-test-finished-1.png",
+              "filePath": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-09716404\\media\\1-test-finished-1.png",
+              "relativePath": ".atom/runs/atom-run-09716404/media/1-test-finished-1.png",
+              "size": 75605
+            }
+          ],
+          "videos": [],
+          "traces": []
+        },
+        "timestamp": "2026-11-15T20:08:04.435Z"
+      }
+    },
+    {
+      "id": "398b9148-6666-4a98-9426-87ff4a8774dc",
+      "name": "ui-create-a-ui-test-case-to-perform-login-on-with-u.spec.ts",
+      "prompt": "Create a UI test case to perform login on \"https://practice.expandtesting.com/login\" with username and password.",
+      "testType": "ui",
+      "agent": "ui-agent",
+      "task": "generate_and_save",
+      "folder": "atom",
+      "relativePath": "atom/ui-create-a-ui-test-case-to-perform-login-on-with-u.spec.ts",
+      "summary": "This ui test was generated based on the prompt: \"Create a UI test case to perform login on \"https://practice.expandtesting.com/login\" with username and password.\". It includes basic test structure with proper assertions and error handling using the ATOM fallback generator. The test follows enterprise-grade testing practices and includes screenshot capture for verification.",
+      "tags": [
+        "ui",
+        "login",
+        "authentication",
+        "form",
+        "validation"
+      ],
+      "browser": "chromium",
+      "policy": {
+        "allowed": true,
+        "approvalRequired": false,
+        "reasons": [],
+        "target": null,
+        "policyVersion": "2026-08-20-p0"
+      },
+      "createdAt": "2026-11-15T19:04:23.506Z",
+      "updatedAt": "2026-11-15T19:10:39.575Z",
+      "lastRun": {
+        "runId": "atom-run-f6513551",
+        "status": "failed",
+        "duration": 315032,
+        "summary": {
+          "testCount": 1,
+          "passedCount": 0,
+          "failedCount": 1,
+          "skippedCount": 0
+        },
+        "media": {
+          "screenshots": [
+            {
+              "filename": "1-page@6f3ce03a943219a8ada2d9976689c762-1794769833727.jpeg",
+              "filePath": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-f6513551\\media\\1-page@6f3ce03a943219a8ada2d9976689c762-1794769833727.jpeg",
+              "relativePath": ".atom/runs/atom-run-f6513551/media/1-page@6f3ce03a943219a8ada2d9976689c762-1794769833727.jpeg",
+              "size": 2459
+            },
+            {
+              "filename": "2-page@6f3ce03a943219a8ada2d9976689c762-1794769834079.jpeg",
+              "filePath": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-f6513551\\media\\2-page@6f3ce03a943219a8ada2d9976689c762-1794769834079.jpeg",
+              "relativePath": ".atom/runs/atom-run-f6513551/media/2-page@6f3ce03a943219a8ada2d9976689c762-1794769834079.jpeg",
+              "size": 9727
+            },
+            {
+              "filename": "3-test-failed-1.png",
+              "filePath": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-f6513551\\media\\3-test-failed-1.png",
+              "relativePath": ".atom/runs/atom-run-f6513551/media/3-test-failed-1.png",
+              "size": 61152
+            }
+          ],
+          "videos": [
+            {
+              "filename": "1-page@6f3ce03a943219a8ada2d9976689c762.webm",
+              "filePath": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-f6513551\\media\\1-page@6f3ce03a943219a8ada2d9976689c762.webm",
+              "relativePath": ".atom/runs/atom-run-f6513551/media/1-page@6f3ce03a943219a8ada2d9976689c762.webm",
+              "size": 0
+            },
+            {
+              "filename": "2-video.webm",
+              "filePath": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-f6513551\\media\\2-video.webm",
+              "relativePath": ".atom/runs/atom-run-f6513551/media/2-video.webm",
+              "size": 3294084
+            }
+          ],
+          "traces": [
+            {
+              "filename": "1-trace.zip",
+              "filePath": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-f6513551\\media\\1-trace.zip",
+              "relativePath": ".atom/runs/atom-run-f6513551/media/1-trace.zip",
+              "size": 1134089
+            }
+          ]
+        },
+        "timestamp": "2026-11-15T19:10:39.575Z"
+      }
+    }
+  ]
+}

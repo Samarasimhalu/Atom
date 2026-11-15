@@ -1,0 +1,282 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "c:\\Users\\jayas\\Atom\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--config",
+      "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-bbf09eb3\\playwright.atom.config.cjs"
+    ],
+    "configFile": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-bbf09eb3\\playwright.atom.config.cjs",
+    "rootDir": "c:/Users/jayas/Atom/atom",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "c:/Users/jayas/Atom/.atom/runs/atom-run-bbf09eb3/artifacts",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "c:/Users/jayas/Atom/atom",
+        "testIgnore": [],
+        "testMatch": [
+          "/(?:^|[\\\\/])ui-perform-login-operation-on-this-website-with-use\\.spec\\.ts$/"
+        ],
+        "timeout": 300000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json",
+        {
+          "outputFile": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-bbf09eb3\\results.json"
+        }
+      ],
+      [
+        "line",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "ui-perform-login-operation-on-this-website-with-use.spec.ts",
+      "file": "ui-perform-login-operation-on-this-website-with-use.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Perform Login Operation on Practice Expand Testing Login Page",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 300000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 9138,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveTitle\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/Welcome to the Secure Area/\u001b[39m\nReceived string:  \u001b[31m\"Test Login Page for Automation Testing Practice\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveTitle\" with timeout 5000ms\u001b[22m\n\u001b[2m    14 × locator resolved to <html lang=\"en\">…</html>\u001b[22m\n\u001b[2m       - unexpected value \"Test Login Page for Automation Testing Practice\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveTitle\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/Welcome to the Secure Area/\u001b[39m\nReceived string:  \u001b[31m\"Test Login Page for Automation Testing Practice\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveTitle\" with timeout 5000ms\u001b[22m\n\u001b[2m    14 × locator resolved to <html lang=\"en\">…</html>\u001b[22m\n\u001b[2m       - unexpected value \"Test Login Page for Automation Testing Practice\"\u001b[22m\n\n    at c:\\Users\\jayas\\Atom\\atom\\ui-perform-login-operation-on-this-website-with-use.spec.ts:44:22",
+                    "location": {
+                      "file": "c:\\Users\\jayas\\Atom\\atom\\ui-perform-login-operation-on-this-website-with-use.spec.ts",
+                      "column": 22,
+                      "line": 44
+                    },
+                    "snippet": "\u001b[0m \u001b[90m 42 |\u001b[39m\n \u001b[90m 43 |\u001b[39m   \u001b[90m// Assert the page title after successful login\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 44 |\u001b[39m   \u001b[36mawait\u001b[39m expect(page)\u001b[33m.\u001b[39mtoHaveTitle(\u001b[35m/Welcome to the Secure Area/\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                      \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 45 |\u001b[39m\n \u001b[90m 46 |\u001b[39m   \u001b[90m// Assert the presence of success message\u001b[39m\n \u001b[90m 47 |\u001b[39m   \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m'#submit-login'\u001b[39m\u001b[33m,\u001b[39m { hasText\u001b[33m:\u001b[39m \u001b[32m'Logout'\u001b[39m }))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\u001b[0m"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "c:\\Users\\jayas\\Atom\\atom\\ui-perform-login-operation-on-this-website-with-use.spec.ts",
+                        "column": 22,
+                        "line": 44
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveTitle\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/Welcome to the Secure Area/\u001b[39m\nReceived string:  \u001b[31m\"Test Login Page for Automation Testing Practice\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveTitle\" with timeout 5000ms\u001b[22m\n\u001b[2m    14 × locator resolved to <html lang=\"en\">…</html>\u001b[22m\n\u001b[2m       - unexpected value \"Test Login Page for Automation Testing Practice\"\u001b[22m\n\n\n  42 |\n  43 |   // Assert the page title after successful login\n> 44 |   await expect(page).toHaveTitle(/Welcome to the Secure Area/);\n     |                      ^\n  45 |\n  46 |   // Assert the presence of success message\n  47 |   await expect(page.locator('#submit-login', { hasText: 'Logout' })).toBeVisible();\n    at c:\\Users\\jayas\\Atom\\atom\\ui-perform-login-operation-on-this-website-with-use.spec.ts:44:22"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-15T20:05:27.340Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-bbf09eb3\\artifacts\\ui-perform-login-operation-904b5-e-Expand-Testing-Login-Page\\test-failed-1.png"
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-bbf09eb3\\artifacts\\ui-perform-login-operation-904b5-e-Expand-Testing-Login-Page\\video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-bbf09eb3\\artifacts\\ui-perform-login-operation-904b5-e-Expand-Testing-Login-Page\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-bbf09eb3\\artifacts\\ui-perform-login-operation-904b5-e-Expand-Testing-Login-Page\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "c:\\Users\\jayas\\Atom\\atom\\ui-perform-login-operation-on-this-website-with-use.spec.ts",
+                    "column": 22,
+                    "line": 44
+                  }
+                },
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 10041,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveTitle\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/Welcome to the Secure Area/\u001b[39m\nReceived string:  \u001b[31m\"Test Login Page for Automation Testing Practice\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveTitle\" with timeout 5000ms\u001b[22m\n\u001b[2m    14 × locator resolved to <html lang=\"en\">…</html>\u001b[22m\n\u001b[2m       - unexpected value \"Test Login Page for Automation Testing Practice\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveTitle\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/Welcome to the Secure Area/\u001b[39m\nReceived string:  \u001b[31m\"Test Login Page for Automation Testing Practice\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveTitle\" with timeout 5000ms\u001b[22m\n\u001b[2m    14 × locator resolved to <html lang=\"en\">…</html>\u001b[22m\n\u001b[2m       - unexpected value \"Test Login Page for Automation Testing Practice\"\u001b[22m\n\n    at c:\\Users\\jayas\\Atom\\atom\\ui-perform-login-operation-on-this-website-with-use.spec.ts:44:22",
+                    "location": {
+                      "file": "c:\\Users\\jayas\\Atom\\atom\\ui-perform-login-operation-on-this-website-with-use.spec.ts",
+                      "column": 22,
+                      "line": 44
+                    },
+                    "snippet": "\u001b[0m \u001b[90m 42 |\u001b[39m\n \u001b[90m 43 |\u001b[39m   \u001b[90m// Assert the page title after successful login\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 44 |\u001b[39m   \u001b[36mawait\u001b[39m expect(page)\u001b[33m.\u001b[39mtoHaveTitle(\u001b[35m/Welcome to the Secure Area/\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                      \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 45 |\u001b[39m\n \u001b[90m 46 |\u001b[39m   \u001b[90m// Assert the presence of success message\u001b[39m\n \u001b[90m 47 |\u001b[39m   \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m'#submit-login'\u001b[39m\u001b[33m,\u001b[39m { hasText\u001b[33m:\u001b[39m \u001b[32m'Logout'\u001b[39m }))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\u001b[0m"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "c:\\Users\\jayas\\Atom\\atom\\ui-perform-login-operation-on-this-website-with-use.spec.ts",
+                        "column": 22,
+                        "line": 44
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveTitle\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/Welcome to the Secure Area/\u001b[39m\nReceived string:  \u001b[31m\"Test Login Page for Automation Testing Practice\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveTitle\" with timeout 5000ms\u001b[22m\n\u001b[2m    14 × locator resolved to <html lang=\"en\">…</html>\u001b[22m\n\u001b[2m       - unexpected value \"Test Login Page for Automation Testing Practice\"\u001b[22m\n\n\n  42 |\n  43 |   // Assert the page title after successful login\n> 44 |   await expect(page).toHaveTitle(/Welcome to the Secure Area/);\n     |                      ^\n  45 |\n  46 |   // Assert the presence of success message\n  47 |   await expect(page.locator('#submit-login', { hasText: 'Logout' })).toBeVisible();\n    at c:\\Users\\jayas\\Atom\\atom\\ui-perform-login-operation-on-this-website-with-use.spec.ts:44:22"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 1,
+                  "startTime": "2026-11-15T20:05:36.984Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-bbf09eb3\\artifacts\\ui-perform-login-operation-904b5-e-Expand-Testing-Login-Page-retry1\\test-failed-1.png"
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-bbf09eb3\\artifacts\\ui-perform-login-operation-904b5-e-Expand-Testing-Login-Page-retry1\\video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-bbf09eb3\\artifacts\\ui-perform-login-operation-904b5-e-Expand-Testing-Login-Page-retry1\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-bbf09eb3\\artifacts\\ui-perform-login-operation-904b5-e-Expand-Testing-Login-Page-retry1\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "c:\\Users\\jayas\\Atom\\atom\\ui-perform-login-operation-on-this-website-with-use.spec.ts",
+                    "column": 22,
+                    "line": 44
+                  }
+                },
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 8953,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveTitle\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/Welcome to the Secure Area/\u001b[39m\nReceived string:  \u001b[31m\"Test Login Page for Automation Testing Practice\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveTitle\" with timeout 5000ms\u001b[22m\n\u001b[2m    14 × locator resolved to <html lang=\"en\">…</html>\u001b[22m\n\u001b[2m       - unexpected value \"Test Login Page for Automation Testing Practice\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveTitle\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/Welcome to the Secure Area/\u001b[39m\nReceived string:  \u001b[31m\"Test Login Page for Automation Testing Practice\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveTitle\" with timeout 5000ms\u001b[22m\n\u001b[2m    14 × locator resolved to <html lang=\"en\">…</html>\u001b[22m\n\u001b[2m       - unexpected value \"Test Login Page for Automation Testing Practice\"\u001b[22m\n\n    at c:\\Users\\jayas\\Atom\\atom\\ui-perform-login-operation-on-this-website-with-use.spec.ts:44:22",
+                    "location": {
+                      "file": "c:\\Users\\jayas\\Atom\\atom\\ui-perform-login-operation-on-this-website-with-use.spec.ts",
+                      "column": 22,
+                      "line": 44
+                    },
+                    "snippet": "\u001b[0m \u001b[90m 42 |\u001b[39m\n \u001b[90m 43 |\u001b[39m   \u001b[90m// Assert the page title after successful login\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 44 |\u001b[39m   \u001b[36mawait\u001b[39m expect(page)\u001b[33m.\u001b[39mtoHaveTitle(\u001b[35m/Welcome to the Secure Area/\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                      \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 45 |\u001b[39m\n \u001b[90m 46 |\u001b[39m   \u001b[90m// Assert the presence of success message\u001b[39m\n \u001b[90m 47 |\u001b[39m   \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m'#submit-login'\u001b[39m\u001b[33m,\u001b[39m { hasText\u001b[33m:\u001b[39m \u001b[32m'Logout'\u001b[39m }))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\u001b[0m"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "c:\\Users\\jayas\\Atom\\atom\\ui-perform-login-operation-on-this-website-with-use.spec.ts",
+                        "column": 22,
+                        "line": 44
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveTitle\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/Welcome to the Secure Area/\u001b[39m\nReceived string:  \u001b[31m\"Test Login Page for Automation Testing Practice\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveTitle\" with timeout 5000ms\u001b[22m\n\u001b[2m    14 × locator resolved to <html lang=\"en\">…</html>\u001b[22m\n\u001b[2m       - unexpected value \"Test Login Page for Automation Testing Practice\"\u001b[22m\n\n\n  42 |\n  43 |   // Assert the page title after successful login\n> 44 |   await expect(page).toHaveTitle(/Welcome to the Secure Area/);\n     |                      ^\n  45 |\n  46 |   // Assert the presence of success message\n  47 |   await expect(page.locator('#submit-login', { hasText: 'Logout' })).toBeVisible();\n    at c:\\Users\\jayas\\Atom\\atom\\ui-perform-login-operation-on-this-website-with-use.spec.ts:44:22"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 2,
+                  "startTime": "2026-11-15T20:05:47.612Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-bbf09eb3\\artifacts\\ui-perform-login-operation-904b5-e-Expand-Testing-Login-Page-retry2\\test-failed-1.png"
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-bbf09eb3\\artifacts\\ui-perform-login-operation-904b5-e-Expand-Testing-Login-Page-retry2\\video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-bbf09eb3\\artifacts\\ui-perform-login-operation-904b5-e-Expand-Testing-Login-Page-retry2\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-bbf09eb3\\artifacts\\ui-perform-login-operation-904b5-e-Expand-Testing-Login-Page-retry2\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "c:\\Users\\jayas\\Atom\\atom\\ui-perform-login-operation-on-this-website-with-use.spec.ts",
+                    "column": 22,
+                    "line": 44
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "0036b82d7274c2b1a579-0dff6c9912e07f1ad709",
+          "file": "ui-perform-login-operation-on-this-website-with-use.spec.ts",
+          "line": 4,
+          "column": 5
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-11-15T20:05:27.004Z",
+    "duration": 29835.211,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

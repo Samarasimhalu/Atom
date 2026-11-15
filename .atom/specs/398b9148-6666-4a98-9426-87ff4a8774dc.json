@@ -1,0 +1,186 @@
+{
+  "id": "398b9148-6666-4a98-9426-87ff4a8774dc",
+  "name": "ui-create-a-ui-test-case-to-perform-login-on-with-u.spec.ts",
+  "prompt": "Create a UI test case to perform login on \"https://practice.expandtesting.com/login\" with username and password.",
+  "testType": "ui",
+  "agent": "ui-agent",
+  "task": "generate_and_save",
+  "folder": "atom",
+  "relativePath": "atom/ui-create-a-ui-test-case-to-perform-login-on-with-u.spec.ts",
+  "summary": "This ui test was generated based on the prompt: \"Create a UI test case to perform login on \"https://practice.expandtesting.com/login\" with username and password.\". It includes basic test structure with proper assertions and error handling using the ATOM fallback generator. The test follows enterprise-grade testing practices and includes screenshot capture for verification.",
+  "tags": [
+    "ui",
+    "login",
+    "authentication",
+    "form",
+    "validation"
+  ],
+  "browser": "chromium",
+  "policy": {
+    "allowed": true,
+    "approvalRequired": false,
+    "reasons": [],
+    "target": null,
+    "policyVersion": "2026-08-20-p0"
+  },
+  "createdAt": "2026-11-15T19:04:23.506Z",
+  "updatedAt": "2026-11-15T19:10:39.576Z",
+  "lastRun": {
+    "runId": "atom-run-f6513551",
+    "status": "failed",
+    "duration": 315032,
+    "summary": {
+      "testCount": 1,
+      "passedCount": 0,
+      "failedCount": 1,
+      "skippedCount": 0
+    },
+    "media": {
+      "screenshots": [
+        {
+          "filename": "1-page@6f3ce03a943219a8ada2d9976689c762-1794769833727.jpeg",
+          "filePath": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-f6513551\\media\\1-page@6f3ce03a943219a8ada2d9976689c762-1794769833727.jpeg",
+          "relativePath": ".atom/runs/atom-run-f6513551/media/1-page@6f3ce03a943219a8ada2d9976689c762-1794769833727.jpeg",
+          "size": 2459
+        },
+        {
+          "filename": "2-page@6f3ce03a943219a8ada2d9976689c762-1794769834079.jpeg",
+          "filePath": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-f6513551\\media\\2-page@6f3ce03a943219a8ada2d9976689c762-1794769834079.jpeg",
+          "relativePath": ".atom/runs/atom-run-f6513551/media/2-page@6f3ce03a943219a8ada2d9976689c762-1794769834079.jpeg",
+          "size": 9727
+        },
+        {
+          "filename": "3-test-failed-1.png",
+          "filePath": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-f6513551\\media\\3-test-failed-1.png",
+          "relativePath": ".atom/runs/atom-run-f6513551/media/3-test-failed-1.png",
+          "size": 61152
+        }
+      ],
+      "videos": [
+        {
+          "filename": "1-page@6f3ce03a943219a8ada2d9976689c762.webm",
+          "filePath": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-f6513551\\media\\1-page@6f3ce03a943219a8ada2d9976689c762.webm",
+          "relativePath": ".atom/runs/atom-run-f6513551/media/1-page@6f3ce03a943219a8ada2d9976689c762.webm",
+          "size": 0
+        },
+        {
+          "filename": "2-video.webm",
+          "filePath": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-f6513551\\media\\2-video.webm",
+          "relativePath": ".atom/runs/atom-run-f6513551/media/2-video.webm",
+          "size": 3294084
+        }
+      ],
+      "traces": [
+        {
+          "filename": "1-trace.zip",
+          "filePath": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-f6513551\\media\\1-trace.zip",
+          "relativePath": ".atom/runs/atom-run-f6513551/media/1-trace.zip",
+          "size": 1134089
+        }
+      ]
+    },
+    "timestamp": "2026-11-15T19:10:39.575Z"
+  },
+  "filePath": "c:\\Users\\jayas\\Atom\\atom\\ui-create-a-ui-test-case-to-perform-login-on-with-u.spec.ts",
+  "testData": {
+    "id": "398b9148-6666-4a98-9426-87ff4a8774dc",
+    "prompt": "Create a UI test case to perform login on \"https://practice.expandtesting.com/login\" with username and password.",
+    "testType": "ui",
+    "code": "import { test, expect } from '@playwright/test';\n\n// ATOM Governed Playwright UI Spec\n// Scenario: Create a UI test case to perform login on \"https://practice.expandtesting.com/login\" with username and password.\ntest.describe('Authentication Flow — Create a UI test case to perform login on \"https://practice.expandtesting.com/login\" with username and password.', () => {\n  test('authenticates valid credentials and verifies secure dashboard landing', async ({ page }) => {\n    await page.goto('https://www.atomworld.net/login', { waitUntil: 'domcontentloaded' });\n\n    // Step 1: Input authenticated credentials\n    await page.fill('[data-testid=\"email\"], input[type=\"email\"]', 'developer@atomworld.net');\n    await page.fill('[data-testid=\"password\"], input[type=\"password\"]', '••••••••••••');\n\n    // Step 2: Submit authentication\n    await page.click('[data-testid=\"login-button\"], button[type=\"submit\"]');\n\n    // Step 3: Verify landing route and session state\n    await expect(page).toHaveURL(/\\/(dashboard|workspace)/);\n    await expect(page.locator('[data-testid=\"user-profile\"], [data-testid=\"dashboard\"]')).toBeVisible();\n    await page.screenshot({ path: 'auth-success.png' });\n  });\n});",
+    "mcpConfig": {
+      "name": "test-1794769463504",
+      "description": "Create a UI test case to perform login on \"https://practice.expandtesting.com/login\" with username and password.",
+      "type": "ui",
+      "timeout": 300000,
+      "retries": 2,
+      "screenshot": "only-on-failure",
+      "video": "retain-on-failure",
+      "trace": "retain-on-failure",
+      "headless": true,
+      "browser": "chromium",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "workers": 4,
+      "tags": [
+        "ui",
+        "login",
+        "authentication",
+        "form",
+        "validation"
+      ],
+      "metadata": {
+        "generated": "2026-11-15T19:04:23.504Z",
+        "prompt": "Create a UI test case to perform login on \"https://practice.expandtesting.com/login\" with username and password.",
+        "aiGenerated": true
+      }
+    },
+    "summary": "This ui test was generated based on the prompt: \"Create a UI test case to perform login on \"https://practice.expandtesting.com/login\" with username and password.\". It includes basic test structure with proper assertions and error handling using the ATOM fallback generator. The test follows enterprise-grade testing practices and includes screenshot capture for verification.",
+    "options": {},
+    "metadata": {
+      "generated": "2026-11-15T19:04:23.502Z",
+      "generator": "ATOM AI",
+      "version": "1.0.0"
+    },
+    "specification": {
+      "schemaVersion": "1.0",
+      "id": "398b9148-6666-4a98-9426-87ff4a8774dc",
+      "name": "generated-398b9148-6666-4a98-9426-87ff4a8774dc",
+      "purpose": "Create a UI test case to perform login on \"https://practice.expandtesting.com/login\" with username and password.",
+      "type": "ui",
+      "target": {
+        "url": "",
+        "environment": "development"
+      },
+      "browser": "chromium",
+      "tags": [
+        "ui",
+        "login",
+        "authentication",
+        "form",
+        "validation"
+      ],
+      "steps": [],
+      "assertions": [],
+      "timeoutMs": 300000,
+      "retries": 2,
+      "apiPlan": null,
+      "code": "import { test, expect } from '@playwright/test';\n\n// ATOM Governed Playwright UI Spec\n// Scenario: Create a UI test case to perform login on \"https://practice.expandtesting.com/login\" with username and password.\ntest.describe('Authentication Flow — Create a UI test case to perform login on \"https://practice.expandtesting.com/login\" with username and password.', () => {\n  test('authenticates valid credentials and verifies secure dashboard landing', async ({ page }) => {\n    await page.goto('https://www.atomworld.net/login', { waitUntil: 'domcontentloaded' });\n\n    // Step 1: Input authenticated credentials\n    await page.fill('[data-testid=\"email\"], input[type=\"email\"]', 'developer@atomworld.net');\n    await page.fill('[data-testid=\"password\"], input[type=\"password\"]', '••••••••••••');\n\n    // Step 2: Submit authentication\n    await page.click('[data-testid=\"login-button\"], button[type=\"submit\"]');\n\n    // Step 3: Verify landing route and session state\n    await expect(page).toHaveURL(/\\/(dashboard|workspace)/);\n    await expect(page.locator('[data-testid=\"user-profile\"], [data-testid=\"dashboard\"]')).toBeVisible();\n    await page.screenshot({ path: 'auth-success.png' });\n  });\n});"
+    },
+    "policy": {
+      "allowed": true,
+      "approvalRequired": false,
+      "reasons": [],
+      "target": null,
+      "policyVersion": "2026-08-20-p0"
+    },
+    "savedFile": "atom/ui-create-a-ui-test-case-to-perform-login-on-with-u.spec.ts",
+    "folder": "atom"
+  },
+  "specification": {
+    "schemaVersion": "1.0",
+    "id": "398b9148-6666-4a98-9426-87ff4a8774dc",
+    "name": "generated-398b9148-6666-4a98-9426-87ff4a8774dc",
+    "purpose": "Create a UI test case to perform login on \"https://practice.expandtesting.com/login\" with username and password.",
+    "type": "ui",
+    "target": {
+      "url": "",
+      "environment": "development"
+    },
+    "browser": "chromium",
+    "tags": [
+      "ui",
+      "login",
+      "authentication",
+      "form",
+      "validation"
+    ],
+    "steps": [],
+    "assertions": [],
+    "timeoutMs": 300000,
+    "retries": 2,
+    "apiPlan": null,
+    "code": "import { test, expect } from '@playwright/test';\n\n// ATOM Governed Playwright UI Spec\n// Scenario: Create a UI test case to perform login on \"https://practice.expandtesting.com/login\" with username and password.\ntest.describe('Authentication Flow — Create a UI test case to perform login on \"https://practice.expandtesting.com/login\" with username and password.', () => {\n  test('authenticates valid credentials and verifies secure dashboard landing', async ({ page }) => {\n    await page.goto('https://www.atomworld.net/login', { waitUntil: 'domcontentloaded' });\n\n    // Step 1: Input authenticated credentials\n    await page.fill('[data-testid=\"email\"], input[type=\"email\"]', 'developer@atomworld.net');\n    await page.fill('[data-testid=\"password\"], input[type=\"password\"]', '••••••••••••');\n\n    // Step 2: Submit authentication\n    await page.click('[data-testid=\"login-button\"], button[type=\"submit\"]');\n\n    // Step 3: Verify landing route and session state\n    await expect(page).toHaveURL(/\\/(dashboard|workspace)/);\n    await expect(page.locator('[data-testid=\"user-profile\"], [data-testid=\"dashboard\"]')).toBeVisible();\n    await page.screenshot({ path: 'auth-success.png' });\n  });\n});"
+  }
+}

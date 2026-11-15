@@ -1,0 +1,13 @@
+{
+  "servers": {
+    "Atom": {
+      "type": "stdio",
+      "command": "C:\\Program Files\\nodejs\\node.exe",
+      "args": [
+        "C:\\Users\\jayas\\Atom\\bin\\atom-mcp.js",
+        "--workspace",
+        "${workspaceFolder}"
+      ]
+    }
+  }
+}

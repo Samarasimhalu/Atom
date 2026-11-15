@@ -1,0 +1,89 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "c:\\Users\\jayas\\Atom\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--config",
+      "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-b4733786\\playwright.atom.config.cjs"
+    ],
+    "configFile": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-b4733786\\playwright.atom.config.cjs",
+    "rootDir": "c:/Users/jayas/Atom/atom",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {},
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "c:/Users/jayas/Atom/.atom/runs/atom-run-b4733786/artifacts",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {},
+        "id": "",
+        "name": "",
+        "testDir": "c:/Users/jayas/Atom/atom",
+        "testIgnore": [],
+        "testMatch": [
+          "/(?:^|[\\\\/])ui-perform-login-operation-on-this-website-with-use\\.spec\\.ts$/"
+        ],
+        "timeout": 300000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json",
+        {
+          "outputFile": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-b4733786\\results.json"
+        }
+      ],
+      [
+        "line",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [],
+  "errors": [
+    {
+      "message": "SyntaxError: c:\\Users\\jayas\\Atom\\atom\\ui-perform-login-operation-on-this-website-with-use.spec.ts: Identifier 'test' has already been declared. (3:9)\n\n\u001b[0m \u001b[90m 1 |\u001b[39m \u001b[36mimport\u001b[39m { test\u001b[33m,\u001b[39m expect } \u001b[36mfrom\u001b[39m \u001b[32m'@playwright/test'\u001b[39m\u001b[33m;\u001b[39m\n \u001b[90m 2 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 3 |\u001b[39m \u001b[36mimport\u001b[39m { test\u001b[33m,\u001b[39m expect\u001b[33m,\u001b[39m tekton } \u001b[36mfrom\u001b[39m \u001b[32m'@playwright/test'\u001b[39m\u001b[33m;\u001b[39m\n \u001b[90m   |\u001b[39m          \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 4 |\u001b[39m\n \u001b[90m 5 |\u001b[39m \u001b[90m// Define the test suite for login functionality\u001b[39m\n \u001b[90m 6 |\u001b[39m test(\u001b[32m'Perform Login Operation on Practice Expand Testing Login Page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m",
+      "stack": "SyntaxError: c:\\Users\\jayas\\Atom\\atom\\ui-perform-login-operation-on-this-website-with-use.spec.ts: Identifier 'test' has already been declared. (3:9)\n\n\u001b[0m \u001b[90m 1 |\u001b[39m \u001b[36mimport\u001b[39m { test\u001b[33m,\u001b[39m expect } \u001b[36mfrom\u001b[39m \u001b[32m'@playwright/test'\u001b[39m\u001b[33m;\u001b[39m\n \u001b[90m 2 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 3 |\u001b[39m \u001b[36mimport\u001b[39m { test\u001b[33m,\u001b[39m expect\u001b[33m,\u001b[39m tekton } \u001b[36mfrom\u001b[39m \u001b[32m'@playwright/test'\u001b[39m\u001b[33m;\u001b[39m\n \u001b[90m   |\u001b[39m          \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 4 |\u001b[39m\n \u001b[90m 5 |\u001b[39m \u001b[90m// Define the test suite for login functionality\u001b[39m\n \u001b[90m 6 |\u001b[39m test(\u001b[32m'Perform Login Operation on Practice Expand Testing Login Page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m",
+      "location": {
+        "file": "c:\\Users\\jayas\\Atom\\atom\\ui-perform-login-operation-on-this-website-with-use.spec.ts",
+        "line": 3,
+        "column": 9
+      },
+      "snippet": "\u001b[90m   at \u001b[39mui-perform-login-operation-on-this-website-with-use.spec.ts:3\n\n\u001b[0m \u001b[90m 1 |\u001b[39m \u001b[36mimport\u001b[39m { test\u001b[33m,\u001b[39m expect } \u001b[36mfrom\u001b[39m \u001b[32m'@playwright/test'\u001b[39m\u001b[33m;\u001b[39m\n \u001b[90m 2 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 3 |\u001b[39m \u001b[36mimport\u001b[39m { test\u001b[33m,\u001b[39m expect\u001b[33m,\u001b[39m tekton } \u001b[36mfrom\u001b[39m \u001b[32m'@playwright/test'\u001b[39m\u001b[33m;\u001b[39m\n \u001b[90m   |\u001b[39m         \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 4 |\u001b[39m\n \u001b[90m 5 |\u001b[39m \u001b[90m// Define the test suite for login functionality\u001b[39m\n \u001b[90m 6 |\u001b[39m test(\u001b[32m'Perform Login Operation on Practice Expand Testing Login Page'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m"
+    },
+    {
+      "message": "Error: No tests found",
+      "stack": "Error: No tests found"
+    }
+  ],
+  "stats": {
+    "startTime": "2026-11-15T20:00:17.855Z",
+    "duration": 40.80500000000001,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}
