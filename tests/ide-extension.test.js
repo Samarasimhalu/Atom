@@ -13,6 +13,10 @@ test('ATOM VS Code right-sidebar extension manifest contributes secondarySidebar
 
   assert.equal(manifest.name, 'atom-test-workspace');
   assert.equal(manifest.displayName, 'ATOM World');
+  assert.equal(
+    manifest.description,
+    'ATOM is an Automated Testing and Orchestration Mesh. It turns plain-language requests into UI, API, visual and native mobile tests, then runs them in isolated workers behind policy checks, human approval and a full audit trail.\n\nReplayable runs. Real-user coverage with Atom Pulse. Built for teams that need speed without losing control.'
+  );
   assert.equal(manifest.main, './extension.js');
   assert.ok(Array.isArray(manifest.contributes.viewsContainers.secondarySidebar));
   assert.equal(manifest.contributes.viewsContainers.secondarySidebar[0].id, 'atom-sidebar');

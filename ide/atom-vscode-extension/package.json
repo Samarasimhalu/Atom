@@ -1,7 +1,7 @@
 {
   "name": "atom-test-workspace",
   "displayName": "ATOM World",
-  "description": "ATOM World right-side IDE panel powered by the Atom MCP server. Ask Atom, choose agents and OpenAI/Anthropic/Google models, save into atom/ or any Test Dir, and execute with live Results.",
+  "description": "ATOM is an Automated Testing and Orchestration Mesh. It turns plain-language requests into UI, API, visual and native mobile tests, then runs them in isolated workers behind policy checks, human approval and a full audit trail.\n\nReplayable runs. Real-user coverage with Atom Pulse. Built for teams that need speed without losing control.",
   "version": "1.0.5",
   "publisher": "atomworld",
   "license": "Apache-2.0",
