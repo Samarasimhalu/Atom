@@ -1,0 +1,127 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "c:\\Users\\jayas\\Atom\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--config",
+      "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-5243afca\\playwright.atom.config.cjs"
+    ],
+    "configFile": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-5243afca\\playwright.atom.config.cjs",
+    "rootDir": "c:/Users/jayas/Atom/atom",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "c:/Users/jayas/Atom/.atom/runs/atom-run-5243afca/artifacts",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "c:/Users/jayas/Atom/atom",
+        "testIgnore": [],
+        "testMatch": [
+          "/(?:^|[\\\\/])ui-perform-login-operation-on-this-website-with-use\\.spec\\.ts$/"
+        ],
+        "timeout": 300000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json",
+        {
+          "outputFile": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-5243afca\\results.json"
+        }
+      ],
+      [
+        "line",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "ui-perform-login-operation-on-this-website-with-use.spec.ts",
+      "file": "ui-perform-login-operation-on-this-website-with-use.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Perform Login Operation on Practice Expand Testing Login Page",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 300000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4394,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-15T20:06:42.665Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "c:\\Users\\jayas\\Atom\\.atom\\runs\\atom-run-5243afca\\artifacts\\ui-perform-login-operation-904b5-e-Expand-Testing-Login-Page\\test-finished-1.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0036b82d7274c2b1a579-0dff6c9912e07f1ad709",
+          "file": "ui-perform-login-operation-on-this-website-with-use.spec.ts",
+          "line": 4,
+          "column": 5
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-11-15T20:06:42.330Z",
+    "duration": 4871.962,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

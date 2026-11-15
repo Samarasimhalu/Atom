@@ -1,0 +1,160 @@
+{
+  "name": "atom-test-workspace",
+  "displayName": "ATOM World",
+  "description": "ATOM World right-side IDE panel powered by the Atom MCP server. Ask Atom, choose agents and OpenAI/Anthropic/Google models, save into atom/ or any Test Dir, and execute with live Results.",
+  "version": "1.0.5",
+  "publisher": "atomworld",
+  "license": "Apache-2.0",
+  "icon": "media/atom-logo.png",
+  "engines": {
+    "vscode": "^1.97.0"
+  },
+  "categories": [
+    "Testing",
+    "Other"
+  ],
+  "keywords": [
+    "atom",
+    "mcp",
+    "testing",
+    "playwright",
+    "ai",
+    "automation"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onView:atom.testWorkspaceView"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "secondarySidebar": [
+        {
+          "id": "atom-sidebar",
+          "title": "ATOM World",
+          "icon": "media/atom-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "atom-sidebar": [
+        {
+          "type": "webview",
+          "id": "atom.testWorkspaceView",
+          "name": "ATOM World"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "atom.openNewWindow",
+        "title": "ATOM World: New Window",
+        "icon": "$(add)"
+      },
+      {
+        "command": "atom.openRightPanel",
+        "title": "ATOM World: Open Right Sidebar",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "atom.openBesideEditor",
+        "title": "ATOM World: Open in Right Split Tab",
+        "icon": "$(split-horizontal)"
+      },
+      {
+        "command": "atom.refreshTests",
+        "title": "ATOM World: Refresh Workspace Tests",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "atom.configureMcp",
+        "title": "ATOM World: Configure Atom MCP in Workspace",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "atom.showGuide",
+        "title": "ATOM World: Guide",
+        "icon": "$(question)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "atom.openNewWindow",
+          "when": "view == atom.testWorkspaceView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "atom.refreshTests",
+          "when": "view == atom.testWorkspaceView",
+          "group": "navigation@2"
+        },
+        {
+          "command": "atom.openBesideEditor",
+          "when": "view == atom.testWorkspaceView",
+          "group": "navigation@3"
+        },
+        {
+          "command": "atom.showGuide",
+          "when": "view == atom.testWorkspaceView",
+          "group": "navigation@4"
+        },
+        {
+          "command": "atom.configureMcp",
+          "when": "view == atom.testWorkspaceView",
+          "group": "secondary@1"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "atom.openRightPanel",
+        "key": "ctrl+alt+a",
+        "mac": "cmd+alt+a"
+      }
+    ],
+    "configuration": {
+      "title": "ATOM World",
+      "properties": {
+        "atom.defaultFolder": {
+          "type": "string",
+          "default": "atom",
+          "description": "Default folder inside the workspace where generated tests are stored."
+        },
+        "atom.defaultAgent": {
+          "type": "string",
+          "default": "ui-agent",
+          "enum": [
+            "ui-agent",
+            "mobile-agent",
+            "api-agent",
+            "visual-agent",
+            "mixed-agent",
+            "atom-qa"
+          ],
+          "description": "Default ATOM agent selected in the Ask Atom composer."
+        },
+        "atom.executionMode": {
+          "type": "string",
+          "default": "auto",
+          "enum": [
+            "auto",
+            "local-playwright",
+            "atom-backend"
+          ],
+          "description": "Execution target used when running tests from the IDE panel."
+        },
+        "atom.apiBaseUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Optional ATOM backend URL (e.g. http://localhost:3001) for governed backend generation and execution."
+        },
+        "atom.mcpServerPath": {
+          "type": "string",
+          "default": "",
+          "description": "Optional explicit path to the Atom MCP server entrypoint (bin/atom-mcp.js)."
+        }
+      }
+    }
+  }
+}

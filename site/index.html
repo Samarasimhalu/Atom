@@ -1660,14 +1660,14 @@ curl -sS "${ATOM_API}/api/pulse/gaps" \
         <div class="container">
           <div class="mobile-layout">
             <div>
-              <span class="eyebrow">Start locally</span>
-              <h2 id="start-title">Bring controlled testing into your delivery workflow.</h2>
+              <span class="eyebrow">Install &amp; Start</span>
+              <h2 id="start-title">Install in seconds from npm, or run locally.</h2>
               <p style="color:var(--muted);">
-                Clone the project, install its committed backend (<code>npm ci</code>) and frontend (<code>pnpm --dir src/frontend install --frozen-lockfile</code>) dependencies, and begin with the safe development profile. Execution remains disabled until a hardened worker image is explicitly configured.
+                Run ATOM straight from the public npm registry or GitHub Packages via <code>@atomworld/atom</code>, or clone the repo to run the full development profile. Execution stays disabled by default until a hardened worker image is configured.
               </p>
               <div style="display:flex;gap:12px;flex-wrap:wrap;margin:20px 0;">
-                <a class="btn btn-primary" href="https://github.com/samarasimhalu/Atom" target="_blank" rel="noopener noreferrer">Open GitHub Repository ↗</a>
-                <a class="btn btn-ghost" href="https://github.com/samarasimhalu/Atom/tree/main/docs" target="_blank" rel="noopener noreferrer">Browse Documentation ↗</a>
+                <a class="btn btn-primary" href="https://www.npmjs.com/package/@atomworld/atom" target="_blank" rel="noopener noreferrer">View @atomworld/atom on npm ↗</a>
+                <a class="btn btn-ghost" href="https://github.com/samarasimhalu/Atom" target="_blank" rel="noopener noreferrer">Open GitHub Repository ↗</a>
               </div>
 
               <div class="atom-table-wrap">
@@ -1679,13 +1679,13 @@ curl -sS "${ATOM_API}/api/pulse/gaps" \
                     </tr>
                   </thead>
                   <tbody>
+                    <tr><td><code>npx @atomworld/atom</code></td><td>Launches ATOM Workspace &amp; Dashboard immediately on port <code>3001</code>.</td></tr>
+                    <tr><td><code>npm install -g @atomworld/atom</code></td><td>Installs the <code>atom</code> CLI globally and records install telemetry.</td></tr>
                     <tr><td><code>npm run dev</code></td><td>Starts Express backend (<code>:3001</code>) and Vite React frontend (<code>:5173</code>).</td></tr>
                     <tr><td><code>npm test</code></td><td>Runs the Node unit and integration regression test suite.</td></tr>
                     <tr><td><code>npm run qa:aegis</code></td><td>Runs the vendored Aegis self-healing Playwright SDK type-check and tests.</td></tr>
                     <tr><td><code>npm run security:pentest:smoke</code></td><td>Runs the authorized, non-destructive API security simulation.</td></tr>
-                    <tr><td><code>npm run evaluate:ai</code></td><td>Runs the AI-generation evaluation harness.</td></tr>
                     <tr><td><code>npm run verify:release</code></td><td>Checks production configuration and immutable worker release requirements.</td></tr>
-                    <tr><td><code>npm run infra:up</code></td><td>Starts local PostgreSQL, Redis, and MinIO services via Docker Compose.</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -1694,29 +1694,25 @@ curl -sS "${ATOM_API}/api/pulse/gaps" \
             <div class="code-panel-dark">
               <div class="code-topline">
                 <span>Quick start</span>
-                <span>Safe Development Profile</span>
+                <span>@atomworld/atom · v1.0.4</span>
               </div>
-              <pre><code># 1. Clone and install dependencies
+              <pre><code># Option 1: Install &amp; run directly from npm
+npx @atomworld/atom
+
+# Or install globally and run anywhere
+npm install -g @atomworld/atom
+atom
+
+# Option 2: Clone and run the local dev profile
 git clone https://github.com/Samarasimhalu/Atom.git
-cd Atom
-
-# Root/backend dependencies use npm's committed package-lock.json
-npm ci
-
-# Frontend dependencies use pnpm's committed pnpm-lock.yaml
+cd Atom &amp;&amp; npm ci
 corepack enable
 pnpm --dir src/frontend install --frozen-lockfile
-
-# 2. Start a safe development profile (execution disabled by default)
-export NODE_ENV=development
-export AUTH_MODE=development
-export ALLOWED_ORIGINS=http://localhost:5173
-export PORT=3001
 npm run dev
 
-# 3. Verify operational endpoints
-curl -sS http://localhost:3001/api/health | jq
-curl -sS http://localhost:3001/api/readyz | jq</code></pre>
+# Verify live health &amp; readiness endpoints
+curl -sS http://localhost:3001/api/health
+curl -sS http://localhost:3001/api/readyz</code></pre>
             </div>
           </div>
         </div>

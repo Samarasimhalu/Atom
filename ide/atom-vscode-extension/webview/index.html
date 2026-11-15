@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; img-src {{cspSource}} data: blob:; style-src {{cspSource}}; script-src 'nonce-{{nonce}}';"
+    />
+    <title>ATOM World</title>
+    <link rel="stylesheet" href="{{cssUri}}" />
+  </head>
+  <body>
+    <div class="atom-shell">
+      <header class="atom-topbar">
+        <span class="atom-topbar-title">ATOM World</span>
+        <div class="atom-topbar-actions">
+          <button
+            id="btn-new-window"
+            type="button"
+            class="icon-btn topbar-new-btn"
+            title="New ATOM World Window"
+            aria-label="New ATOM World Window"
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M8 2.75v10.5M2.75 8h10.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+      </header>
+      <div id="connection-banner" class="connection-banner hidden" role="status">
+        <span id="connection-banner-text">Connecting to Atom MCP...</span>
+      </div>
+
+      <main class="atom-canvas" id="atom-canvas">
+        <div id="thread" class="chat-thread" aria-live="polite"></div>
+
+        <section id="hero-stage" class="hero-stage" aria-label="ATOM World overview">
+          <div class="hero-card">
+            <img
+              id="atom-hero-img"
+              src="{{heroUri}}"
+              alt="ATOM - Automated Testing & Orchestration Mesh"
+            />
+          </div>
+
+          <div class="hero-copy">
+            <h1 class="hero-title">
+              <span class="hero-title-main">Governed AI testing</span>
+              <span class="hero-title-accent">for web, API and mobile.</span>
+            </h1>
+            <p class="hero-desc">
+              ATOM is an Automated Testing and Orchestration Mesh. It turns plain-language requests
+              into UI, API, visual and native mobile tests, then runs them in isolated workers
+              behind policy checks, human approval and a full audit trail.
+            </p>
+            <p class="hero-sub">
+              Replayable runs. Real-user coverage with Atom Pulse. Built for teams that need speed
+              without losing control.
+            </p>
+          </div>
+        </section>
+      </main>
+
+      <footer class="composer-dock">
+        <!-- Agent Selector Popover -->
+        <div id="popover-agent" class="popover hidden" role="dialog" aria-label="Select Agent">
+          <div class="popover-header">
+            <span>Select Agent</span>
+            <button type="button" class="popover-close" data-close-popover="popover-agent" aria-label="Close">×</button>
+          </div>
+          <div id="agent-list" class="agent-list"></div>
+          <div id="mobile-options" class="mobile-options hidden">
+            <div class="field-row">
+              <label for="select-mobile-platform">Mobile Platform</label>
+              <select id="select-mobile-platform">
+                <option value="android">Android (UiAutomator2)</option>
+                <option value="ios">iOS (XCUITest)</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <label for="input-mobile-device">Device Name</label>
+              <input id="input-mobile-device" type="text" placeholder="Pixel 8 / iPhone 16" />
+            </div>
+            <div class="popover-actions">
+              <button id="btn-mobile-next" type="button" class="btn-primary">Next: Model Key</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Model Key (OpenAI / Anthropic / Google) Popover -->
+        <div id="popover-model-key" class="popover hidden" role="dialog" aria-label="API Key and Model">
+          <div class="popover-header">
+            <span id="model-key-title">Model Key</span>
+            <button type="button" class="popover-close" data-close-popover="popover-model-key" aria-label="Close">×</button>
+          </div>
+          <p class="popover-hint" id="model-key-hint">
+            Uses Free AI + Live DOM Inspector by default, or add your OpenAI, Anthropic, or Google API key.
+          </p>
+          <div class="field-row">
+            <label for="input-api-key">API Key</label>
+            <div class="key-input-wrap">
+              <input
+                id="input-api-key"
+                type="password"
+                placeholder="sk-... / sk-ant-... / AIza..."
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <button id="btn-toggle-key-vis" type="button" class="ghost-mini-btn">Show</button>
+            </div>
+            <div id="saved-key-status" class="saved-key-status hidden"></div>
+          </div>
+          <div class="field-row">
+            <label for="select-llm-provider">Provider</label>
+            <select id="select-llm-provider">
+              <option value="free">Free AI · Live DOM Inspector (No Key)</option>
+              <option value="auto">Auto-detect from key</option>
+              <option value="openai">OpenAI</option>
+              <option value="anthropic">Anthropic</option>
+              <option value="google">Google (Gemini)</option>
+              <option value="fallback">Built-in Fallback (Offline)</option>
+            </select>
+          </div>
+          <div class="field-row">
+            <label for="select-llm-model">Model</label>
+            <select id="select-llm-model"></select>
+          </div>
+          <div class="popover-actions">
+            <button id="btn-clear-llm" type="button" class="btn-secondary hidden">Clear Key</button>
+            <button id="btn-save-llm" type="button" class="btn-primary">Save</button>
+          </div>
+        </div>
+
+        <!-- Test Dir Popover -->
+        <div id="popover-test-dir" class="popover hidden" role="dialog" aria-label="Test Directory">
+          <div class="popover-header">
+            <span>Test Directory</span>
+            <button type="button" class="popover-close" data-close-popover="popover-test-dir" aria-label="Close">×</button>
+          </div>
+          <p class="popover-hint">
+            Paste a directory inside this workspace or leave blank to save under <code>atom/</code>.
+          </p>
+          <div class="field-row">
+            <label for="input-test-dir">Directory location</label>
+            <div class="dir-input-wrap">
+              <input
+                id="input-test-dir"
+                type="text"
+                value="atom"
+                placeholder="atom"
+                spellcheck="false"
+              />
+              <button id="btn-browse-dir" type="button" class="ghost-mini-btn">Browse</button>
+            </div>
+          </div>
+          <div class="popover-actions">
+            <button id="btn-reset-dir" type="button" class="btn-secondary">Default (atom/)</button>
+            <button id="btn-apply-dir" type="button" class="btn-primary">Done</button>
+          </div>
+        </div>
+
+        <div id="composer-card" class="composer-card">
+          <div id="active-file-chip-row" class="active-file-row hidden">
+            <span id="active-file-chip" class="active-file-chip"></span>
+            <button id="btn-remove-active-file" type="button" class="chip-remove" title="Remove active file context">×</button>
+          </div>
+
+          <textarea
+            id="input-prompt"
+            class="composer-input"
+            rows="2"
+            placeholder="Ask Atom"
+            aria-label="Ask Atom"
+          ></textarea>
+
+          <div class="composer-toolbar">
+            <div class="toolbar-left">
+              <button
+                id="btn-attach"
+                type="button"
+                class="icon-btn"
+                title="Include active IDE file in prompt"
+                aria-label="Include active file context"
+              >
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M8 2.75v10.5M2.75 8h10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+              </button>
+
+              <button id="btn-agent" type="button" class="toolbar-pill" aria-expanded="false" title="Choose Agent">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M5.5 4.5 2 8l3.5 3.5M10.5 4.5 14 8l-3.5 3.5M9 3 7 13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span id="label-agent">UI Agent</span>
+                <svg width="10" height="10" viewBox="0 0 16 16" fill="none" class="chevron" aria-hidden="true">
+                  <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+
+              <button id="btn-model-key" type="button" class="toolbar-pill" aria-expanded="false" title="Configure API Key and Model (OpenAI, Anthropic, Google)">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <circle cx="5.5" cy="8" r="2.75" stroke="currentColor" stroke-width="1.3" />
+                  <path d="M8.25 8H14M11.75 8v2M13.5 8v1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+                </svg>
+                <span id="label-model-key">Model Key</span>
+                <svg width="10" height="10" viewBox="0 0 16 16" fill="none" class="chevron" aria-hidden="true">
+                  <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+
+              <button id="btn-test-dir" type="button" class="toolbar-pill" aria-expanded="false" title="Choose or paste Test Directory">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M2 4.5A1.5 1.5 0 0 1 3.5 3h3l1.3 1.5h4.7A1.5 1.5 0 0 1 14 6v5.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 11.5v-7Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" />
+                </svg>
+                <span id="label-test-dir">atom/</span>
+                <svg width="10" height="10" viewBox="0 0 16 16" fill="none" class="chevron" aria-hidden="true">
+                  <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+            </div>
+
+            <div class="toolbar-right">
+              <button
+                id="btn-send"
+                type="button"
+                class="send-btn"
+                title="Ask Atom"
+                aria-label="Send prompt to generate test"
+                disabled
+              >
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M8 13V3.5M4 7.5 8 3.5l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+      <!-- Results-only Test Execution Dashboard Popup -->
+      <div id="results-modal" class="results-modal hidden" role="dialog" aria-modal="true" aria-labelledby="results-modal-title">
+        <div class="results-dialog">
+          <div class="results-dialog-header">
+            <div>
+              <h2 id="results-modal-title">Test Execution Dashboard</h2>
+              <span id="results-run-subtitle" class="results-subtitle">Execution summary</span>
+            </div>
+            <button id="btn-close-results" type="button" class="popover-close" aria-label="Close results dashboard">×</button>
+          </div>
+
+          <div class="results-status-bar">
+            <span id="results-status-badge" class="status-pill">—</span>
+            <span id="results-duration" class="results-meta-pill">0 ms</span>
+          </div>
+
+          <div class="results-kpis">
+            <div class="kpi-tile">
+              <span class="kpi-label">Total</span>
+              <strong id="kpi-total" class="kpi-value">0</strong>
+            </div>
+            <div class="kpi-tile kpi-pass">
+              <span class="kpi-label">Passed</span>
+              <strong id="kpi-passed" class="kpi-value">0</strong>
+            </div>
+            <div class="kpi-tile kpi-fail">
+              <span class="kpi-label">Failed</span>
+              <strong id="kpi-failed" class="kpi-value">0</strong>
+            </div>
+            <div class="kpi-tile">
+              <span class="kpi-label">Skipped</span>
+              <strong id="kpi-skipped" class="kpi-value">0</strong>
+            </div>
+          </div>
+
+          <div id="results-details" class="results-details"></div>
+
+          <div id="results-logs-section" class="results-logs-section hidden">
+            <div class="results-logs-header">
+              <span>Execution Logs</span>
+              <span id="results-logs-count" class="results-logs-count">0 lines</span>
+            </div>
+            <pre id="results-logs-pre" class="results-logs-pre"></pre>
+          </div>
+
+          <div class="results-dialog-footer">
+            <button id="btn-done-results" type="button" class="btn-primary">Done</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script nonce="{{nonce}}" src="{{jsUri}}"></script>
+  </body>
+</html>

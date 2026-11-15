@@ -28,6 +28,7 @@ const { normalizeGeneratedTest } = require('./testSpecification');
 const { OidcVerifier, mapGroupsToRoles } = require('./identityProvider');
 const { WebSocketTicketStore } = require('./websocketTickets');
 const { verifyPayload } = require('./signedWebhook');
+const { syncSharedDbIntoBackend } = require('../mcp/atomDbSync');
 const {
   createLogger,
   correlationIdMiddleware,
@@ -169,7 +170,8 @@ app.get('/api/health', (req, res) => {
     config: {
       environment: config.environment,
       supportedBrowsers: config.browsers,
-      maxConcurrentTests: config.mcp.maxConcurrentTests
+      maxConcurrentTests: config.mcp.maxConcurrentTests,
+      workerExecutionEnabled: Boolean(config.execution.enabled && config.execution.workerImage)
     }
   });
 });
@@ -381,17 +383,33 @@ app.post('/api/execute/test', requirePermission('runs:create'), validationMiddle
   }
 });
 
+async function syncLocalIdeMetricsIfEnabled(req) {
+  if (
+    config.environment === 'development' &&
+    config.persistence.mode === 'local' &&
+    !process.env.RESULT_STORAGE_PATH &&
+    !process.env.TEST_STORAGE_PATH &&
+    req?.tenantId === 'local-tenant' &&
+    process.env.ATOM_DISABLE_USER_DB_SYNC !== 'true'
+  ) {
+    await syncSharedDbIntoBackend({ store, testManager, tenantId: req.tenantId }).catch(() => {});
+  }
+}
+
 app.get('/api/runs', requirePermission('runs:read'), async (req, res) => {
+  await syncLocalIdeMetricsIfEnabled(req);
   res.json({ runs: await store.listRuns(req.tenantId, Math.min(Number(req.query.limit || 50), 200)) });
 });
 
 app.get('/api/runs/:id', requirePermission('runs:read'), async (req, res) => {
+  await syncLocalIdeMetricsIfEnabled(req);
   const run = await store.getRun(req.params.id, req.tenantId);
   if (!run) return res.status(404).json({ error: 'run_not_found', correlationId: req.correlationId });
   res.json(run);
 });
 
 app.get('/api/runs/:id/events', requirePermission('runs:read'), async (req, res) => {
+  await syncLocalIdeMetricsIfEnabled(req);
   const run = await store.getRun(req.params.id, req.tenantId);
   if (!run) return res.status(404).json({ error: 'run_not_found', correlationId: req.correlationId });
   res.json({ events: await runService.replay(req.params.id, req.tenantId, Number(req.query.after || 0)) });
@@ -404,6 +422,7 @@ app.post('/api/runs/:id/cancel', requirePermission('runs:cancel'), async (req, r
 });
 
 app.get('/api/audit', requirePermission('audit:read'), async (req, res) => {
+  await syncLocalIdeMetricsIfEnabled(req);
   res.json({ events: await store.listAudit(req.tenantId, Math.min(Number(req.query.limit || 100), 500)) });
 });
 
@@ -442,7 +461,177 @@ app.get('/api/admin/runtime-attestation', requirePermission('admin:runtime'), (r
   });
 });
 
+app.post('/api/mcp/sync', requirePermission('runs:create'), async (req, res) => {
+  if (config.environment === 'production') {
+    return res.status(404).json({ error: 'endpoint_not_found', correlationId: req.correlationId });
+  }
+  try {
+    const { event, runId, testData = {}, result = {}, log } = req.body || {};
+    const tenantId = req.tenantId;
+    const actorId = req.user.id;
+    const tenantChannel = `tenant-${tenantId}`;
+
+    if (event === 'test.generated' && testData.id) {
+      const existingTests = await testManager.loadTests();
+      const idx = existingTests.findIndex(t => t.id === testData.id);
+      const record = {
+        id: String(testData.id),
+        prompt: String(testData.prompt || '').slice(0, 1000),
+        testType: String(testData.testType || 'ui'),
+        savedFile: testData.savedFile || null,
+        folder: testData.folder || 'atom',
+        agent: testData.agent || 'ui-agent',
+        metadata: testData.metadata || {},
+        mcpConfig: testData.mcpConfig || null,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString()
+      };
+      if (idx >= 0) existingTests[idx] = { ...existingTests[idx], ...record };
+      else existingTests.push(record);
+      await testManager.saveTests(existingTests);
+
+      await store.recordAudit({
+        tenantId,
+        actorId,
+        action: 'ai.test_generated',
+        resourceType: 'test',
+        resourceId: record.id,
+        metadata: { source: 'atom-mcp', folder: record.folder, savedFile: record.savedFile, correlationId: req.correlationId }
+      });
+
+      streamingService.sendToChannel(tenantChannel, {
+        type: 'dashboard.run-state-changed',
+        state: 'generated',
+        occurredAt: new Date().toISOString()
+      });
+      return res.status(200).json({ ok: true, event, testId: record.id, correlationId: req.correlationId });
+    }
+
+    if (event === 'run.started' && runId) {
+      const idempotencyKey = `mcp-live-${runId}`;
+      const { run, created } = await store.createRun({
+        id: String(runId),
+        tenantId,
+        userId: actorId,
+        projectId: req.get('x-project-id') || 'default',
+        testData: {
+          id: testData.id || null,
+          prompt: String(testData.prompt || '').slice(0, 1000),
+          testType: String(testData.testType || 'ui'),
+          savedFile: testData.savedFile || null
+        },
+        sessionId: String(testData.sessionId || `mcp-${runId}`),
+        idempotencyKey
+      });
+      if (created) {
+        await store.transitionRun(run.id, tenantId, 'validated');
+        await store.transitionRun(run.id, tenantId, 'queued');
+        await store.transitionRun(run.id, tenantId, 'assigned');
+        await store.transitionRun(run.id, tenantId, 'running');
+        await store.recordAudit({
+          tenantId,
+          actorId,
+          action: 'run.requested',
+          resourceType: 'run',
+          resourceId: run.id,
+          metadata: { source: 'atom-mcp', runner: 'local-playwright', correlationId: req.correlationId }
+        });
+        await store.appendEvent(run.id, tenantId, 'run.started', { runId: run.id, runner: 'local-playwright' });
+        streamingService.sendToChannel(tenantChannel, {
+          type: 'dashboard.run-state-changed',
+          runId: run.id,
+          state: 'running',
+          occurredAt: new Date().toISOString()
+        });
+      }
+      return res.status(202).json({ ok: true, event, runId: run.id, state: 'running', correlationId: req.correlationId });
+    }
+
+    if (event === 'run.log' && runId && log) {
+      const existing = await store.getRun(String(runId), tenantId);
+      if (existing) {
+        const entry = {
+          runId: String(runId),
+          stream: log.stream === 'stderr' ? 'stderr' : 'stdout',
+          content: String(log.content || '').slice(0, 4000),
+          timestamp: log.timestamp || new Date().toISOString()
+        };
+        await store.appendEvent(String(runId), tenantId, 'run.log', entry);
+        streamingService.sendToChannel(`run-${runId}`, { type: 'run.log', ...entry });
+      }
+      return res.status(200).json({ ok: true, event, runId, correlationId: req.correlationId });
+    }
+
+    if (event === 'run.completed' && runId) {
+      const existing = await store.getRun(String(runId), tenantId);
+      const rawStatus = String(result.status || 'failed').toLowerCase();
+      const finalState = ['passed', 'cancelled'].includes(rawStatus) ? rawStatus : 'failed';
+      const sanitizedResult = {
+        status: finalState,
+        runner: String(result.runner || 'local-playwright'),
+        duration: Number(result.duration || 0),
+        exitCode: Number(result.exitCode ?? (finalState === 'passed' ? 0 : 1)),
+        error: result.error ? String(result.error) : null,
+        summary: result.summary || { testCount: 1, passedCount: finalState === 'passed' ? 1 : 0, failedCount: finalState === 'passed' ? 0 : 1, skippedCount: 0 },
+        savedFile: result.savedFile || testData.savedFile || null
+      };
+
+      if (existing) {
+        if (finalState === 'cancelled' && existing.state === 'running') {
+          await store.transitionRun(existing.id, tenantId, 'cancelled', { result: sanitizedResult });
+        } else if (!['passed', 'failed', 'cancelled', 'timed_out'].includes(existing.state)) {
+          if (existing.state === 'running') {
+            await store.transitionRun(existing.id, tenantId, 'collecting_artifacts', { result: sanitizedResult });
+          }
+          await store.transitionRun(existing.id, tenantId, finalState, { result: sanitizedResult });
+        }
+        await store.recordQuota(tenantId, sanitizedResult.duration / 1000);
+        await store.appendEvent(existing.id, tenantId, `run.${finalState}`, { runId: existing.id, result: sanitizedResult });
+        await store.recordAudit({
+          tenantId,
+          actorId,
+          action: `run.${finalState}`,
+          resourceType: 'run',
+          resourceId: existing.id,
+          metadata: { source: 'atom-mcp', duration: sanitizedResult.duration, correlationId: req.correlationId }
+        });
+      }
+
+      const existingResults = await testManager.loadResults();
+      const resId = `mcp-${runId}`;
+      if (!existingResults.some(r => r.id === resId || r.sessionId === result.sessionId)) {
+        existingResults.push({
+          id: resId,
+          sessionId: String(result.sessionId || `mcp-${runId}`),
+          testId: testData.id || null,
+          status: finalState,
+          duration: sanitizedResult.duration,
+          exitCode: sanitizedResult.exitCode,
+          startTime: new Date(Date.now() - sanitizedResult.duration).toISOString(),
+          endTime: new Date().toISOString(),
+          runner: sanitizedResult.runner
+        });
+        await testManager.saveResults(existingResults);
+      }
+
+      streamingService.sendToChannel(tenantChannel, {
+        type: 'dashboard.run-state-changed',
+        runId: String(runId),
+        state: finalState,
+        occurredAt: new Date().toISOString()
+      });
+      return res.status(200).json({ ok: true, event, runId, state: finalState, correlationId: req.correlationId });
+    }
+
+    return res.status(400).json({ error: 'invalid_mcp_sync_event', correlationId: req.correlationId });
+  } catch (error) {
+    logger.warn('mcp.sync.failed', { correlationId: req.correlationId, error: error.message });
+    return res.status(500).json({ error: 'mcp_sync_failed', correlationId: req.correlationId });
+  }
+});
+
 app.get('/api/dashboard', requirePermission('dashboard:read'), async (req, res) => {
+  await syncLocalIdeMetricsIfEnabled(req);
   const [dashboard, savedTests, auditEvents] = await Promise.all([
     store.getDashboard(req.tenantId),
     testManager.getAllTests().catch(() => []),
@@ -568,6 +757,7 @@ app.get('/api/results/:sessionId', requireLegacyTestApi, requirePermission('admi
 // Analytics and Insights Endpoints
 app.get('/api/analytics/dashboard', requireLegacyTestApi, requirePermission('admin:runtime'), async (req, res) => {
   try {
+    await syncLocalIdeMetricsIfEnabled(req);
     const analytics = await testManager.getDashboardAnalytics();
     res.json({ ...analytics, runs: await store.getDashboard(req.tenantId) });
   } catch (error) {
